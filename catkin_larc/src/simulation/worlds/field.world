@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<sdf version="1.5">
+  <world name="LARC">
+    <!--<include>
+      <uri>model://ground_plane</uri>
+    </include>-->
+    <include>
+      <uri>model://sun</uri>
+    </include>
+    <model name="field">
+      <pose>0 0 0  0 0 0</pose>
+      <static>true</static>
+      <link name="body">
+        <collision name="visual">
+          <geometry>
+            <mesh><uri>file://field/field0.dae</uri></mesh>
+          </geometry>
+        </collision>
+
+        <visual name="visual">
+          <geometry>
+            <mesh><uri>file://field/field0.dae</uri></mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+  </world>
+</sdf>
