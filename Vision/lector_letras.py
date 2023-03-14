@@ -3,6 +3,9 @@ import easyocr
 import numpy as np
 import time
 
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning)
+
 def ordenar_puntos(puntos):
     n_puntos = np.concatenate([puntos[0],puntos[1], puntos[2],puntos[3]]).tolist()
 
@@ -16,7 +19,7 @@ def ordenar_puntos(puntos):
 
     return [x1_order[0], x1_order[1],x2_order[0], x2_order[1]]
 
-reader = easyocr.Reader(["en"],gpu=False)
+reader = easyocr.Reader(["en"],gpu=True)
 
 cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
 
@@ -60,4 +63,4 @@ while True:
     if k==27:
         break
 cap.release()
-cv2.destroyAllWindows()
+#cv2.destroyAllWindows()

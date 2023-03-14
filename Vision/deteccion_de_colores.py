@@ -23,18 +23,18 @@ def dibujar(mask,color):
             cv2.drawContours(frame,[nuevoContorno],0,color,3)
 cap = cv2.VideoCapture(0)
 
-redBajo1 = np.array([0,100,20],np.uint8)
-redAlto1 = np.array([10,255,255],np.uint8)
+redBajo1 = np.array([0,150,45],np.uint8)
+redAlto1 = np.array([5,255,200],np.uint8)
 
-redBajo2 = np.array([170,100,20],np.uint8)
+redBajo2 = np.array([170,100,45],np.uint8)
 redAlto2 = np.array([179,255,255],np.uint8)
 
-azulBajo = np.array([100,100,20],np.uint8)
+azulBajo = np.array([110,130,45],np.uint8)
 azulAlto = np.array([125,255,255],np.uint8)
 
 verdeBajo = np.array([50,100,20],np.uint8)
 verdeAlto = np.array([80,255,255],np.uint8)
-
+ 
 
 font = cv2.FONT_HERSHEY_SIMPLEX
 while True:
