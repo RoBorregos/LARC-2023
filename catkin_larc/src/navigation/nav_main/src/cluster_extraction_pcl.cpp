@@ -41,7 +41,7 @@ void laserScanCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
     cluster_extraction.setInputCloud(downsampled_cloud);
     cluster_extraction.setClusterTolerance(0.2);
     cluster_extraction.setMinClusterSize(10);
-    cluster_extraction.setMaxClusterSize(10000);
+    cluster_extraction.setMaxClusterSize(100000);
     cluster_extraction.extract(cluster_indices);
 
     // Create a point cloud object for each cluster and publish it
