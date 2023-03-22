@@ -20,6 +20,8 @@ def dibujar(mask,color):
                 print('verde')
             if color == (0,0,255):
                 print('rojo')
+            if color == (0,255,255):
+                print('Amarillo')
             cv2.drawContours(frame,[nuevoContorno],0,color,3)
 cap = cv2.VideoCapture(0)
 
@@ -34,7 +36,9 @@ azulAlto = np.array([125,255,255],np.uint8)
 
 verdeBajo = np.array([50,100,20],np.uint8)
 verdeAlto = np.array([80,255,255],np.uint8)
- 
+
+amarillobajo = np.array([15,100,20],np.uint8)
+amarilloalto = np.array([45,255,255],np.uint8) 
 
 font = cv2.FONT_HERSHEY_SIMPLEX
 while True:
@@ -43,10 +47,12 @@ while True:
         frameHSV = cv2.cvtColor(frame,cv2.COLOR_BGR2HSV)
         maskAzul = cv2.inRange(frameHSV,azulBajo,azulAlto)
         maskVerde = cv2.inRange(frameHSV,verdeBajo,verdeAlto)
+        maskamarillo = cv2.inRange(frameHSV,amarillobajo, amarilloalto)
         maskRed1 = cv2.inRange(frameHSV,redBajo1, redAlto1)
         maskRed2 = cv2.inRange(frameHSV,redBajo2, redAlto2)
         maskred = cv2.add(maskRed1,maskRed2)
         dibujar(maskAzul,(255,0,0))
+        dibujar(maskamarillo,(0,255,255))
         dibujar(maskVerde,(0,255,0))
         dibujar(maskred,(0,0,255))
         cv2.imshow('frame',frame)
