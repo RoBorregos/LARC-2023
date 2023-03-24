@@ -11,8 +11,8 @@ def dibujar(mask,color):
             x = int(M["m10"]/M["m00"])
             y = int(M['m01']/M["m00"])
             nuevoContorno = cv2.convexHull(c)
-            cv2.circle(frame,(x,y),7,(0,255,0),-1)  
-            cv2.putText(frame,'{},{}'.format(x,y), (x+10,y), font, 0.75,(0,255,0),1,cv2.LINE_AA)
+            #cv2.circle(frame,(x,y),7,(0,255,0),-1)  
+            #cv2.putText(frame,'{},{}'.format(x,y), (x+10,y), font, 0.75,(0,255,0),1,cv2.LINE_AA)
 
             if color == (255,0,0):
                 print('azul')
