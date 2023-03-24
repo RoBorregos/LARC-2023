@@ -19,9 +19,9 @@ def ordenar_puntos(puntos):
 
     return [x1_order[0], x1_order[1],x2_order[0], x2_order[1]]
 
-reader = easyocr.Reader(["en"],gpu=True)
+reader = easyocr.Reader(["en"],gpu=False)
 
-cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+cap = cv2.VideoCapture(0)
 
 while True:
     ret,frame = cap.read()
@@ -57,10 +57,10 @@ while True:
             result = reader.readtext(dst)
             for res in result:
                 print(res[1])
-    
+    frame = cv2.resize(frame, (0, 0), fx = 0.3, fy = 0.3)
     cv2.imshow('Frame',frame)
     k = cv2.waitKey(1) & 0xFF
     if k==27:
         break
 cap.release()
-#cv2.destroyAllWindows()
+cv2.destroyAllWindows()

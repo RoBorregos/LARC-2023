@@ -11,7 +11,7 @@ def dibujar(mask,color):
             x = int(M["m10"]/M["m00"])
             y = int(M['m01']/M["m00"])
             nuevoContorno = cv2.convexHull(c)
-            cv2.circle(frame,(x,y),7,(0,255,0),-1)
+            cv2.circle(frame,(x,y),7,(0,255,0),-1)  
             cv2.putText(frame,'{},{}'.format(x,y), (x+10,y), font, 0.75,(0,255,0),1,cv2.LINE_AA)
 
             if color == (255,0,0):
@@ -19,7 +19,7 @@ def dibujar(mask,color):
             if color == (0,255,0):
                 print('verde')
             if color == (0,0,255):
-                print('rojo')
+                print('rojo')   
             if color == (0,255,255):
                 print('Amarillo')
             cv2.drawContours(frame,[nuevoContorno],0,color,3)
@@ -55,6 +55,7 @@ while True:
         dibujar(maskamarillo,(0,255,255))
         dibujar(maskVerde,(0,255,0))
         dibujar(maskred,(0,0,255))
+        frame = cv2.resize(frame, (0, 0), fx = 0.3, fy = 0.3)
         cv2.imshow('frame',frame)
         if cv2.waitKey(1) & 0xFF == ord('s'):
             break
