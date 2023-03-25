@@ -1,10 +1,17 @@
 //mecanum test
+/*
+arduino-cli monitor port -p usb:80001/3/0/2
+arduino-cli upload -p usb:80001/3/0/2 --fqbn teensy:avr:teensy40 drive_test
+arduino-cli compile --fqbn teensy:avr:teensy40 sensor_test
+arduino-cli core install --additional-urls https://www.pjrc.com/teensy/td_153/td_153.json  \
+arduino-cli board list
+*/
 
 //motor pinout
-#define FL1 5
-#define FL2 4
-#define FR1 3
-#define FR2 2
+#define FL1 2
+#define FL2 3
+#define FR1 4
+#define FR2 5
 #define BL1 6
 #define BL2 7
 #define BR1 0
