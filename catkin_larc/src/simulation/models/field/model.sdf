@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<sdf version="1.7">
+    <model name="field">
+      <pose>0 0 0.05  0 0 0</pose>
+      <static>true</static>
+      <link name="body">
+
+        <!--
+        <collision name="collsion">
+          <geometry>
+            <mesh>
+              <uri>model://field/meshes/pista2.stl</uri>
+              <scale>1 1 1</scale>
+            </mesh>
+          </geometry>
+        </collision>
+        -->
+
+        <visual name="visual">
+          <geometry>
+            <mesh>
+              <uri>model://field/meshes/pista2.stl</uri>
+              <scale>1 1 1</scale>
+            </mesh>
+          </geometry>
+        </visual>
+
+      </link>
+    </model>
+</sdf>

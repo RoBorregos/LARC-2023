@@ -1,0 +1,2 @@
+navigation/robot_description:simulation
+-DCATKIN_DEVEL_PREFIX=/home/afr2903/larc2023/catkin_larc/devel -DCMAKE_INSTALL_PREFIX=/home/afr2903/larc2023/catkin_larc/install -G Unix Makefiles

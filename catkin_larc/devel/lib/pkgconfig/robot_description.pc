@@ -1,0 +1,8 @@
+prefix=/home/afr2903/larc2023/catkin_larc/devel
+
+Name: robot_description
+Description: Description of robot_description
+Version: 0.0.0
+Cflags: -I/home/afr2903/larc2023/catkin_larc/src/navigation/robot_description/include
+Libs: -L${prefix}/lib 
+Requires: roscpp std_msgs geometry_msgs nav_msgs tf message_runtime
