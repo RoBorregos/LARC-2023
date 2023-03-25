@@ -1,2 +1,2 @@
-navigation/robot_description:simulation
--DCATKIN_DEVEL_PREFIX=/home/afr2903/larc2023/catkin_larc/devel -DCMAKE_INSTALL_PREFIX=/home/afr2903/larc2023/catkin_larc/install -G Unix Makefiles
+main_engine:navigation/nav_main:navigation/robot_description:simulation
+-DCATKIN_DEVEL_PREFIX=/home/nvidia/workspace/LARC-2023/catkin_larc/devel -DCMAKE_INSTALL_PREFIX=/home/nvidia/workspace/LARC-2023/catkin_larc/install -G Unix Makefiles
