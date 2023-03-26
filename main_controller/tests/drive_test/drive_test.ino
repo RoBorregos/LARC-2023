@@ -10,15 +10,15 @@ arduino-cli board list
 //motor pinout
 #define FL1 2
 #define FL2 3
-#define FR1 4
-#define FR2 5
-#define BL1 6
-#define BL2 7
-#define BR1 0
-#define BR2 1
+#define FR1 6
+#define FR2 7
+#define BL1 5
+#define BL2 4
+#define BR1 1
+#define BR2 0
 
 //robot measures (cm)
-#define WHEEL_RADIUS 0.27
+#define WHEEL_RADIUS 2.7
 #define WHEEL_BASE 15.5
 #define WHEEL_TRACK 23.0
 
@@ -30,6 +30,12 @@ float wheel_fl = 0;
 float wheel_fr = 0;
 float wheel_bl = 0;
 float wheel_br = 0;
+
+//ros node init
+ros::NodeHandle nh;
+
+//ros topic init
+ros::Subscriber<geometry_msgs::Twist> sub("cmd_vel", &cmd_vel_callback);
 
 void setup() {
     // put your setup code here, to run once:
