@@ -7,6 +7,9 @@ arduino-cli core install --additional-urls https://www.pjrc.com/teensy/td_153/td
 arduino-cli board list
 */
 
+#include <ros.h>
+#include <geometry_msgs/Twist.h>
+
 //motor pinout
 #define FL1 2
 #define FL2 3
@@ -31,6 +34,22 @@ float wheel_fr = 0;
 float wheel_bl = 0;
 float wheel_br = 0;
 
+void teleop( const geometry_msgs::Twist& msg){
+    Serial.println("I heard: ");
+    Serial.println(msg.linear.x);
+    Serial.println(msg.linear.y);
+    Serial.println(msg.linear.z);
+    Serial.println(msg.angular.x);
+    Serial.println(msg.angular.y);
+    Serial.println(msg.angular.z);
+    linear_x = msg.linear.x;
+    linear_y = msg.linear.y;
+    angular_z = msg.angular.z;
+    digitalWrite(13, HIGH-digitalRead(13));
+}
+
+ros::NodeHandle nh;
+ros::Subscriber<geometry_msgs::Twist> sub("cmd_vel", &teleop );
 
 void setup() {
     // put your setup code here, to run once:
@@ -43,54 +62,14 @@ void setup() {
     pinMode(BR1, OUTPUT);
     pinMode(BR2, OUTPUT);
     pinMode(13, OUTPUT);
+
+    nh.initNode();
+    nh.subscribe(sub);
+
     Serial.begin(9600);
 }
 
 void loop() {
-
-    if( Serial.available() ){
-        char data = char( Serial.read() );
-        switch( data ){
-            case 'w':
-                digitalWrite(13, HIGH);
-                linear_x = 1;
-                linear_y = 0;
-                angular_z = 0;
-                break;
-            case 'x':
-                linear_x = -1;
-                linear_y = 0;
-                angular_z = 0;
-                break;
-            case 'a':
-                linear_x = 0;
-                linear_y = -1;
-                angular_z = 0;
-                break;
-            case 'd':
-                linear_x = 0;
-                linear_y = 1;
-                angular_z = 0;
-                break;
-            case 'q':
-                linear_x = 0;
-                linear_y = 0;
-                angular_z = -1;
-                break;
-            case 'e':
-                linear_x = 0;
-                linear_y = 0;
-                angular_z = 1;
-                break;
-            case 's':
-                linear_x = 0;
-                linear_y = 0;
-                angular_z = 0;
-                break;
-        }
-    }else{
-        digitalWrite(13, LOW);
-    }
 
     // sigular wheel speed
     wheel_fl = (1/WHEEL_RADIUS)*(linear_x - linear_y - (WHEEL_TRACK + WHEEL_BASE)*angular_z);
@@ -112,33 +91,34 @@ void loop() {
 
     //motor control
     if (wheel_fl > 0) {
-        analogWrite(FL1, wheel_fl*50);
+        analogWrite(FL1, wheel_fl*100);
         analogWrite(FL2, 0);
     } else {
         analogWrite(FL1, 0);
-        analogWrite(FL2, -wheel_fl*50);
+        analogWrite(FL2, -wheel_fl*100);
     }
     if (wheel_fr > 0) {
-        analogWrite(FR1, wheel_fr*50);
+        analogWrite(FR1, wheel_fr*100);
         analogWrite(FR2, 0);
     } else {
         analogWrite(FR1, 0);
-        analogWrite(FR2, -wheel_fr*50);
+        analogWrite(FR2, -wheel_fr*100);
     }
     if (wheel_bl > 0) {
-        analogWrite(BL1, wheel_bl*50);
+        analogWrite(BL1, wheel_bl*100);
         analogWrite(BL2, 0);
     } else {
         analogWrite(BL1, 0);
-        analogWrite(BL2, -wheel_bl*50);
+        analogWrite(BL2, -wheel_bl*100);
     }
     if (wheel_br > 0) {
-        analogWrite(BR1, wheel_br*50);
+        analogWrite(BR1, wheel_br*100);
         analogWrite(BR2, 0);
     } else {
         analogWrite(BR1, 0);
-        analogWrite(BR2, -wheel_br*50);
+        analogWrite(BR2, -wheel_br*100);
     }
 
-    delay(100);
+    nh.spinOnce();
+    delay(10);
 }

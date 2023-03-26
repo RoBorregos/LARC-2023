@@ -1,5 +1,3 @@
 {
-    "configuration": "usb=serial,speed=600,opt=o2std,keys=en-us",
-    "board": "teensy:avr:teensy40",
-    "sketch": "main_controller\\main_controller.ino"
+    "board": "teensy:avr:teensy40"
 }
