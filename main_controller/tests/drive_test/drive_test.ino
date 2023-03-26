@@ -10,15 +10,15 @@ arduino-cli board list
 //motor pinout
 #define FL1 2
 #define FL2 3
-#define FR1 6
-#define FR2 7
+#define FR1 7
+#define FR2 6
 #define BL1 5
 #define BL2 4
-#define BR1 1
-#define BR2 0
+#define BR1 0
+#define BR2 1
 
 //robot measures (cm)
-#define WHEEL_RADIUS 2.7
+#define WHEEL_RADIUS 0.27
 #define WHEEL_BASE 15.5
 #define WHEEL_TRACK 23.0
 
@@ -31,11 +31,6 @@ float wheel_fr = 0;
 float wheel_bl = 0;
 float wheel_br = 0;
 
-//ros node init
-ros::NodeHandle nh;
-
-//ros topic init
-ros::Subscriber<geometry_msgs::Twist> sub("cmd_vel", &cmd_vel_callback);
 
 void setup() {
     // put your setup code here, to run once:
@@ -47,25 +42,73 @@ void setup() {
     pinMode(BL2, OUTPUT);
     pinMode(BR1, OUTPUT);
     pinMode(BR2, OUTPUT);
+    pinMode(13, OUTPUT);
     Serial.begin(9600);
 }
 
 void loop() {
+
+    if( Serial.available() ){
+        char data = char( Serial.read() );
+        switch( data ){
+            case 'w':
+                digitalWrite(13, HIGH);
+                linear_x = 1;
+                linear_y = 0;
+                angular_z = 0;
+                break;
+            case 'x':
+                linear_x = -1;
+                linear_y = 0;
+                angular_z = 0;
+                break;
+            case 'a':
+                linear_x = 0;
+                linear_y = -1;
+                angular_z = 0;
+                break;
+            case 'd':
+                linear_x = 0;
+                linear_y = 1;
+                angular_z = 0;
+                break;
+            case 'q':
+                linear_x = 0;
+                linear_y = 0;
+                angular_z = -1;
+                break;
+            case 'e':
+                linear_x = 0;
+                linear_y = 0;
+                angular_z = 1;
+                break;
+            case 's':
+                linear_x = 0;
+                linear_y = 0;
+                angular_z = 0;
+                break;
+        }
+    }else{
+        digitalWrite(13, LOW);
+    }
+
     // sigular wheel speed
     wheel_fl = (1/WHEEL_RADIUS)*(linear_x - linear_y - (WHEEL_TRACK + WHEEL_BASE)*angular_z);
     wheel_fr = (1/WHEEL_RADIUS)*(linear_x + linear_y + (WHEEL_TRACK + WHEEL_BASE)*angular_z);
     wheel_bl = (1/WHEEL_RADIUS)*(linear_x + linear_y - (WHEEL_TRACK + WHEEL_BASE)*angular_z);
     wheel_br = (1/WHEEL_RADIUS)*(linear_x - linear_y + (WHEEL_TRACK + WHEEL_BASE)*angular_z);
+    //Serial.prinln(wheel_fl);
+
 
     //debug speeds
-    Serial.print("FL: ");
+    /*Serial.print("FL: ");
     Serial.print(wheel_fl);
     Serial.print(" FR: ");
     Serial.print(wheel_fr);
     Serial.print(" BL: ");
     Serial.print(wheel_bl);
     Serial.print(" BR: ");
-    Serial.println(wheel_br);
+    Serial.println(wheel_br);*/
 
     //motor control
     if (wheel_fl > 0) {
@@ -97,12 +140,5 @@ void loop() {
         analogWrite(BR2, -wheel_br*50);
     }
 
-    delay(1500);
-    if(linear_x > 0){
-        linear_x = 0;
-        linear_y = 1;
-    } else if(linear_y > 0){
-        linear_x = 1;
-        linear_y = 0;
-    }
+    delay(100);
 }
