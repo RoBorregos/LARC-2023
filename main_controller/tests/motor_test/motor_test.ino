@@ -1,14 +1,14 @@
 //motor tests
 
 //motor pinout
-#define FL1 5
-#define FL2 4
-#define FR1 3
-#define FR2 2
-#define BL1 6
-#define BL2 7
-#define BR1 0
-#define BR2 1
+#define FL1 6
+#define FL2 7
+#define FR1 0
+#define FR2 1
+#define BL1 2
+#define BL2 3
+#define BR1 4
+#define BR2 5
 
 void setup() {
     // put your setup code here, to run once:
