@@ -1,9 +1,8 @@
 #ifndef Drive_h
 #define Drive_h
 
-#include "Motor.h"
 #include "Constants.h"
-#include "Kinematics.h"
+#include "Motor.h"
 
 class Drive{
     private:
@@ -11,12 +10,9 @@ class Drive{
         Motor frontRight;
         Motor backLeft;
         Motor backRight;
-        Kinematics kinematics;
-        Kinematics::WheelSpeeds wheelSpeeds;
     public:
-        Drive();
+        void init();
         void setSpeed(float linearX, float linearY, float angularZ);
-        void stop();
 };
 
 #endif

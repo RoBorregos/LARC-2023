@@ -8,34 +8,35 @@ class Constants{
     /* data */
     public:
         // Drive constants //
-        static const float kWheelDiameter = 0.054; //meters
-        static const float kWheelTrack = 0.23; //meters
-        static const float kWheelBase = 0.155; //meters
+        static constexpr float kWheelDiameter = 0.054; //meters
+        static constexpr float kWheelTrack = 0.23; //meters
+        static constexpr float kWheelBase = 0.155; //meters
         
         //Motors (A: fwd, B: rev)
-        static const float kMotorsRPM = 380; //RPM
-        static const int kFrontLeftA = 2;
-        static const int kFrontLeftB = 3;
-        static const int kFrontRightA = 6;
-        static const int kFrontRightB = 7;
-        static const int kBackLeftA = 5;
-        static const int kBackLeftB = 4;
-        static const int kBackRightA = 1;
-        static const int kBackRightB = 0;
+        static constexpr float kMotorsRPM = 380; //RPM
+        static constexpr float kMotorMinPWM = 150; //PWM (0-255)
+        static constexpr int kFrontLeftA = 2;
+        static constexpr int kFrontLeftB = 3;
+        static constexpr int kFrontRightA = 7;
+        static constexpr int kFrontRightB = 6;
+        static constexpr int kBackLeftA = 5;
+        static constexpr int kBackLeftB = 4;
+        static constexpr int kBackRightA = 0;
+        static constexpr int kBackRightB = 1;
 
         //Encoders
-        static const float kEncoderTicksPerRevolution = 48;
-        static const int kFrontLeftEncoder = 12;
-        static const int kFrontRightEncoder = 26;
-        static const int kBackLeftEncoder = 27;
-        static const int kBackRightEncoder = 23;
+        static constexpr float kEncoderTicksPerRevolution = 48;
+        static constexpr int kFrontLeftEncoder = 12;
+        static constexpr int kFrontRightEncoder = 26;
+        static constexpr int kBackLeftEncoder = 27;
+        static constexpr int kBackRightEncoder = 23;
 
         // Line sensor //
-        static const int kLineSensorS0 = 18;
-        static const int kLineSensorS1 = 19;
-        static const int kLineSensorS2 = 20;
-        static const int kLineSensorS3 = 21;
-        static const int kLineSensorSignal = 22;
+        static constexpr int kLineSensorS0 = 18;
+        static constexpr int kLineSensorS1 = 19;
+        static constexpr int kLineSensorS2 = 20;
+        static constexpr int kLineSensorS3 = 21;
+        static constexpr int kLineSensorSignal = 22;
 };
 
 #endif

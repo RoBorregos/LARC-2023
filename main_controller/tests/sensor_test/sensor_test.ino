@@ -46,10 +46,10 @@ void setup() {
     Serial.begin(9600);
 
     //attach interrupt to encoder pins
-    attachInterrupt(digitalPinToInterrupt(EN1), encoder1, RISING);
-    attachInterrupt(digitalPinToInterrupt(EN2), encoder2, RISING);
-    attachInterrupt(digitalPinToInterrupt(EN3), encoder3, RISING);
-    attachInterrupt(digitalPinToInterrupt(EN4), encoder4, RISING);
+    attachInterrupt(digitalPinToInterrupt(EN1), encoder1, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(EN2), encoder2, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(EN3), encoder3, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(EN4), encoder4, CHANGE);
 
     //multiplexor pinout
     pinMode(S0, OUTPUT);
@@ -79,7 +79,7 @@ void loop() {
     Serial.println(en4_count);
 
     //multiplexor test
-    Serial.print("Li//");
+    /*Serial.print("Li//");
     for (int i = 0; i < 16; i++) {
         digitalWrite(S0, i & 1);
         digitalWrite(S1, i & 2);
@@ -88,7 +88,7 @@ void loop() {
         Serial.print(" ");
         Serial.print(analogRead(SIG));
     }
-    Serial.println();
+    Serial.println();*/
 
     delay(100);
 }

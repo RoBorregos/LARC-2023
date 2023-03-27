@@ -11,19 +11,19 @@ arduino-cli board list
 #include <geometry_msgs/Twist.h>
 
 //motor pinout
-#define FL1 2
-#define FL2 3
-#define FR1 7
-#define FR2 6
-#define BL1 5
-#define BL2 4
-#define BR1 0
-#define BR2 1
+#define FL1 6
+#define FL2 7
+#define FR1 0
+#define FR2 1
+#define BL1 2
+#define BL2 3
+#define BR1 4
+#define BR2 5
 
 //robot measures (cm)
-#define WHEEL_RADIUS 0.27
-#define WHEEL_BASE 15.5
-#define WHEEL_TRACK 23.0
+#define WHEEL_RADIUS 0.027
+#define WHEEL_BASE 0.155
+#define WHEEL_TRACK 0.23
 
 float linear_x = 1;
 float linear_y = 0;
@@ -72,10 +72,17 @@ void setup() {
 void loop() {
 
     // sigular wheel speed
-    wheel_fl = (1/WHEEL_RADIUS)*(linear_x - linear_y - (WHEEL_TRACK + WHEEL_BASE)*angular_z);
-    wheel_fr = (1/WHEEL_RADIUS)*(linear_x + linear_y + (WHEEL_TRACK + WHEEL_BASE)*angular_z);
-    wheel_bl = (1/WHEEL_RADIUS)*(linear_x + linear_y - (WHEEL_TRACK + WHEEL_BASE)*angular_z);
-    wheel_br = (1/WHEEL_RADIUS)*(linear_x - linear_y + (WHEEL_TRACK + WHEEL_BASE)*angular_z);
+    wheel_fl = (linear_x - linear_y - (WHEEL_TRACK/2 + WHEEL_BASE/2)*angular_z);
+    wheel_fr = (linear_x + linear_y + (WHEEL_TRACK/2 + WHEEL_BASE/2)*angular_z);
+    wheel_bl = (linear_x + linear_y - (WHEEL_TRACK/2 + WHEEL_BASE/2)*angular_z);
+    wheel_br = (linear_x - linear_y + (WHEEL_TRACK/2 + WHEEL_BASE/2)*angular_z);
+
+    float max_speed = max(max(abs(wheel_fl), abs(wheel_fr)), max(abs(wheel_bl), abs(wheel_br)));
+    float divider = max(1, max_speed);
+    wheel_fl /= divider;
+    wheel_fr /= divider;
+    wheel_bl /= divider;
+    wheel_br /= divider;
     //Serial.prinln(wheel_fl);
 
 
@@ -91,32 +98,32 @@ void loop() {
 
     //motor control
     if (wheel_fl > 0) {
-        analogWrite(FL1, wheel_fl*100);
+        analogWrite(FL1, wheel_fl*255);
         analogWrite(FL2, 0);
     } else {
         analogWrite(FL1, 0);
-        analogWrite(FL2, -wheel_fl*100);
+        analogWrite(FL2, -wheel_fl*255);
     }
     if (wheel_fr > 0) {
-        analogWrite(FR1, wheel_fr*100);
+        analogWrite(FR1, wheel_fr*255);
         analogWrite(FR2, 0);
     } else {
         analogWrite(FR1, 0);
-        analogWrite(FR2, -wheel_fr*100);
+        analogWrite(FR2, -wheel_fr*255);
     }
     if (wheel_bl > 0) {
-        analogWrite(BL1, wheel_bl*100);
+        analogWrite(BL1, wheel_bl*255);
         analogWrite(BL2, 0);
     } else {
         analogWrite(BL1, 0);
-        analogWrite(BL2, -wheel_bl*100);
+        analogWrite(BL2, -wheel_bl*255);
     }
     if (wheel_br > 0) {
-        analogWrite(BR1, wheel_br*100);
+        analogWrite(BR1, wheel_br*255);
         analogWrite(BR2, 0);
     } else {
         analogWrite(BR1, 0);
-        analogWrite(BR2, -wheel_br*100);
+        analogWrite(BR2, -wheel_br*255);
     }
 
     nh.spinOnce();
