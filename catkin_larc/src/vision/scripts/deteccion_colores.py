@@ -3,12 +3,14 @@ import rospy
 import cv2
 import numpy as np
 from sensor_msgs.msg import Image
+from std_msgs.msg import String
 from cv_bridge import CvBridge
 
 class DetectorColores:
     def __init__(self):
         self.bridge = CvBridge()
         self.pub = rospy.Publisher('/colores_out', Image, queue_size=10)
+        self.pubcolor = rospy.Publisher('colors', String, queue_size=10)
         self.sub = rospy.Subscriber('/zed2/zed_node/rgb/image_rect_color', Image, self.callback)
         # self.subscriberDepth = rospy.Subscriber("/zed2/zed_node/depth/depth_registered", Image, self.depthImageRosCallback)
         # self.subscriberInfo = rospy.Subscriber("/zed2/zed_node/depth/camera_info", CameraInfo, self.infoImageRosCallback)
@@ -35,12 +37,17 @@ class DetectorColores:
 
                 if color == (255,0,0):
                     print('azul')
+                    self.pubcolor.publish('azul')
                 if color == (0,255,0):
                     print('verde')
+                    self.pubcolor.publish('verde')
                 if color == (0,0,255):
                     print('rojo')   
+                    self.pubcolor.publish('rojo')
                 if color == (0,255,255):
                     print('Amarillo')
+                    self.pubcolor.publish('amarillo')
+
                 cv2.drawContours(frame,[nuevoContorno],0,color,3)
 
     def callback(self, data):
@@ -48,6 +55,7 @@ class DetectorColores:
         # implement cv_bridge
         self.cv_image = self.bridge.imgmsg_to_cv2(data,desired_encoding="bgr8")
         self.detectar_colores()
+        self.pub.publish(self.bridge.cv2_to_imgmsg(self.cv_image, encoding="bgr8"))
 
     def detectar_colores(self):
         frame = self.cv_image
@@ -79,8 +87,8 @@ class DetectorColores:
         self.dibujar(maskamarillo,(0,255,255))
         self.dibujar(maskVerde,(0,255,0))
         self.dibujar(maskred,(0,0,255))
-        frame = cv2.resize(frame, (0, 0), fx = 0.3, fy = 0.3)
-        cv2.imshow('frame',frame)
+        #frame = cv2.resize(frame, (0, 0), fx = 0.3, fy = 0.3)
+        #cv2.imshow('frame',frame)
         
     def main(self):
         rospy.logwarn("Starting listener")
@@ -88,7 +96,7 @@ class DetectorColores:
         rate = rospy.Rate(10)
         try:
             while not rospy.is_shutdown():
-                self.pub.publish(self.bridge.cv2_to_imgmsg(self.cv_image, encoding="bgr8"))
+               
                 #self.pubData.publish(self.dtections)
                 rate.sleep()
                 cv2.waitKey(1)

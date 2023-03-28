@@ -4,15 +4,16 @@ import cv2
 import easyocr
 import numpy as np
 from sensor_msgs.msg import Image, CameraInfo
+from std_msgs.msg import String
 from cv_bridge import CvBridge, CvBridgeError
-from vision.msg import objectDetection, objectDetectionArray
+#from vision.msg import objectDetection, objectDetectionArray
 
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
 
 import sys
-sys.path.append(str(pathlib.Path(__file__).parent) + '/../include')
-from vision_utils import *
+#sys.path.append(str(pathlib.Path(__file__).parent) + '/../include')
+#from vision_utils import *
 
 reader = easyocr.Reader(["en"],gpu=True)
 
@@ -20,7 +21,8 @@ class DetectorLetras:
     def __init__(self):
         self.bridge = CvBridge()
         self.pub = rospy.Publisher('/letras_out', Image, queue_size=10)
-        self.pubData = rospy.Publisher('detections', objectDetectionArray, queue_size=5)
+        #self.pubData = rospy.Publisher('detections', objectDetectionArray, queue_size=5)
+        self.publetter = rospy.Publisher('letters', String, queue_size=10)
         self.sub = rospy.Subscriber('/zed2/zed_node/rgb/image_rect_color', Image, self.callback)
         self.subscriberDepth = rospy.Subscriber("/zed2/zed_node/depth/depth_registered", Image, self.depthImageRosCallback)
         self.subscriberInfo = rospy.Subscriber("/zed2/zed_node/depth/camera_info", CameraInfo, self.infoImageRosCallback)
@@ -48,6 +50,7 @@ class DetectorLetras:
         # implement cv_bridge
         self.cv_image = self.bridge.imgmsg_to_cv2(data,desired_encoding="bgr8")
         self.lector()
+        self.pub.publish(self.bridge.cv2_to_imgmsg(self.cv_image, encoding="bgr8"))
 
 
     def ordenar_puntos(self, puntos):
@@ -97,8 +100,9 @@ class DetectorLetras:
             for res in result:
 
                 rospy.logwarn(res[1])
+                self.publetter.publish(res[1])
         # frame = cv2.resize(frame, (0, 0), fx = 0.3, fy = 0.3)
-        cv2.imshow('Frame',frame)
+        #cv2.imshow('Frame',frame)
         self.cv_image = frame
 
     def obtener_texto(self, puntos, frame):
@@ -117,8 +121,8 @@ class DetectorLetras:
         rate = rospy.Rate(10) # 10hz
         try:
             while not rospy.is_shutdown():
-                self.pub.publish(self.bridge.cv2_to_imgmsg(self.cv_image, encoding="bgr8"))
-                self.pubData.publish(self.detections)
+                
+                #self.pubData.publish(self.detections)
                 #self.pubmask.publish(self.bridge.cv2_to_imgmsg(self.mask))
                 rate.sleep()
         except KeyboardInterrupt:
