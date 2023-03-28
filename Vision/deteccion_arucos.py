@@ -23,7 +23,6 @@ while True:
     frame_with_markers = cv2.aruco.drawDetectedMarkers(frame, corners, ids)
 
     # Show output frame
-    frame_with_markers = cv2.resize(frame_with_markers, (0, 0), fx = 0.4, fy = 0.4)
     cv2.imshow("Output", frame_with_markers)
 
     # Exit if 'q' key is pressed

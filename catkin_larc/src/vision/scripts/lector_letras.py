@@ -1,45 +1,133 @@
+#!/usr/bin/env python3
 import rospy
 import cv2
 import easyocr
 import numpy as np
-from sensor_msgs.msg import Image
-from cv_bridge import CvBridge
+from sensor_msgs.msg import Image, CameraInfo
+from cv_bridge import CvBridge, CvBridgeError
+from vision.msg import objectDetection, objectDetectionArray
 
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
 
-
-def callback(data): 
-    
-    rospy.loginfo(rospy.get_caller_id(), data.data)
-
-    rospy.init_node('letter_publisher')
-
-    rospy.spin()
-
-
-def listener():
-    sub = rospy.Subscriber('webcam_image', Image, callback)
-
-def ordenar_puntos(puntos):
-    n_puntos = np.concatenate([puntos[0],puntos[1], puntos[2],puntos[3]]).tolist()
-
-    y_order = sorted(n_puntos, key=lambda n_puntos: n_puntos[1])
-
-    x1_order = y_order[:2]
-    x1_order = sorted(x1_order, key=lambda x1_order: x1_order[0])
-
-    x2_order = y_order[2:4]
-    x2_order = sorted(x2_order, key=lambda x2_order: x2_order[0])
-
-    return [x1_order[0], x1_order[1],x2_order[0], x2_order[1]]
+import sys
+sys.path.append(str(pathlib.Path(__file__).parent) + '/../include')
+from vision_utils import *
 
 reader = easyocr.Reader(["en"],gpu=True)
 
+class DetectorLetras:
+    def __init__(self):
+        self.bridge = CvBridge()
+        self.pub = rospy.Publisher('/letras_out', Image, queue_size=10)
+        self.pubData = rospy.Publisher('detections', objectDetectionArray, queue_size=5)
+        self.sub = rospy.Subscriber('/zed2/zed_node/rgb/image_rect_color', Image, self.callback)
+        self.subscriberDepth = rospy.Subscriber("/zed2/zed_node/depth/depth_registered", Image, self.depthImageRosCallback)
+        self.subscriberInfo = rospy.Subscriber("/zed2/zed_node/depth/camera_info", CameraInfo, self.infoImageRosCallback)
 
-
+        self.pubmask = rospy.Publisher('/mask_letras', Image, queue_size=10)
+        self.mask  = None
+        self.cv_image = np.array([])
+        rospy.loginfo("Subscribed to image")
+        self.main()
     
-if __name__== '__main __':
-    listener()
+    # Function to handle a ROS depth input.
+    def depthImageRosCallback(self, data):
+        try:
+            self.depth_image = self.bridge.imgmsg_to_cv2(data, "32FC1")
+        except CvBridgeError as e:
+            print(e)
+
+    # Function to handle a ROS camera info input.
+    def infoImageRosCallback(self, data):
+        self.camera_info = data
+        self.subscriberInfo.unregister()
+
+    def callback(self, data):
+        # rospy.loginfo(data.data)
+        # implement cv_bridge
+        self.cv_image = self.bridge.imgmsg_to_cv2(data,desired_encoding="bgr8")
+        self.lector()
+
+
+    def ordenar_puntos(self, puntos):
+        n_puntos = np.concatenate([puntos[0],puntos[1], puntos[2],puntos[3]]).tolist()
+
+        y_order = sorted(n_puntos, key=lambda n_puntos: n_puntos[1])
+
+        x1_order = y_order[:2]
+        x1_order = sorted(x1_order, key=lambda x1_order: x1_order[0])
+
+        x2_order = y_order[2:4]
+        x2_order = sorted(x2_order, key=lambda x2_order: x2_order[0])
+
+        return [x1_order[0], x1_order[1],x2_order[0], x2_order[1]]
+
+    def lector(self):
+        rospy.loginfo("lector")
+        frame = self.cv_image
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        canny = cv2.Canny(gray,300,150)
+        canny = cv2.dilate(canny,None, iterations=1)
+        cnts = cv2.findContours(canny,cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
+        cnts = sorted(cnts, key = cv2.contourArea, reverse=True)[:1]
+    
+
+        for c in cnts:
+            epsilon = 0.01*cv2.arcLength(c,True)
+            approx = cv2.approxPolyDP(c,epsilon,True)
+
+        if len(approx)==4:
+            cv2.drawContours(frame, [approx], 0,(0,255,255),2)
+            puntos = self.ordenar_puntos(approx)
+            rospy.logwarn("Something detected")
+            cv2.circle(frame, tuple(puntos[0]), 7, (255,0,0),2)
+            cv2.circle(frame, tuple(puntos[1]), 7, (0,255,0),2)
+            cv2.circle(frame, tuple(puntos[2]), 7, (0,0,255),2)
+            cv2.circle(frame, tuple(puntos[3]), 7, (255,255,0),2)
+            pts1 = np.float32(puntos)
+            pts2 = np.float32([[0,0],[270,0],[0,270],[270,270]])
+            M = cv2.getPerspectiveTransform(pts1,pts2)
+            dst = cv2.warpPerspective(gray,M,(270,310))
+            cv2.imshow('dst',dst)
+            cv2.waitKey(1)
+            dst = cv2.cvtColor(dst, cv2.COLOR_GRAY2BGR)
+    
+            result = reader.readtext(dst)
+            for res in result:
+
+                rospy.logwarn(res[1])
+        # frame = cv2.resize(frame, (0, 0), fx = 0.3, fy = 0.3)
+        cv2.imshow('Frame',frame)
+        self.cv_image = frame
+
+    def obtener_texto(self, puntos, frame):
+        puntos = self.ordenar_puntos(puntos)
+        pts1 = np.float32(puntos)
+        pts2 = np.float32([[0,0],[300,0],[0,300],[300,300]])
+        matrix = cv2.getPerspectiveTransform(pts1, pts2)
+        img_warp_colored = cv2.warpPerspective(frame, matrix, (300,300))
+        img_warp_colored = cv2.cvtColor(img_warp_colored, cv2.COLOR_BGR2RGB)
+        resultado = reader.readtext(img_warp_colored)
+        return resultado
+
+    def main(self):
+        rospy.logwarn("Starting listener")
+        rospy.init_node('letter_reader', anonymous=True)
+        rate = rospy.Rate(10) # 10hz
+        try:
+            while not rospy.is_shutdown():
+                self.pub.publish(self.bridge.cv2_to_imgmsg(self.cv_image, encoding="bgr8"))
+                self.pubData.publish(self.detections)
+                #self.pubmask.publish(self.bridge.cv2_to_imgmsg(self.mask))
+                rate.sleep()
+        except KeyboardInterrupt:
+            rospy.logwarn("Keyboard interrupt detected, stopping listener")
+
+        
+
+
+if __name__ == "__main__":
+    DetectorLetras()
 
 
