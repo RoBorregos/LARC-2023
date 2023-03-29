@@ -1,6 +1,12 @@
 #include "Motor.h"
 
-Motor::Motor(int motorA, int motorB, int encoder){
+Motor::Motor(){
+    this->motorA = 0;
+    this->motorB = 0;
+    this->encoder = 0;
+}
+
+void Motor::init(int motorA, int motorB, int encoder){
     this->motorA = motorA;
     this->motorB = motorB;
     this->encoder = encoder;
@@ -19,6 +25,11 @@ void Motor::periodicIO(){
     analogWrite(motorB, io.direction? 0 : io.demand);
     Serial.print(io.demand);
     Serial.print(" ");
+
+    unsigned long current_time = millis();
+    float delta_time = (current_time - io.last_time) / 1000.0;
+    io.delta_ticks = io.ticks - io.last_ticks;
+    io.speed = (io.delta_ticks / delta_time) * (Constants::kWheelDiameter * PI / Constants::kEncoderTicksPerRevolution);
 }
 
 // Set the speed of the motor in m/s
@@ -44,4 +55,8 @@ float Motor::getMaxVelocity(){
 
 long Motor::getTicks(){
     return io.ticks;
+}
+
+float Motor::getSpeed(){
+    return io.speed;
 }

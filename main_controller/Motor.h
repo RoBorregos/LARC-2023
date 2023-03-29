@@ -13,6 +13,9 @@ class Motor{
         struct periodicIO{
             //INPUT
             volatile long ticks = 0;
+            long last_ticks = 0;
+            unsigned long last_time = 0;
+            float delta_ticks = 0;
             float speed = 0;
             //OUTPUT
             float demand = 0;
@@ -22,7 +25,7 @@ class Motor{
         
     public:
         Motor();
-        Motor(int motorA, int motorB, int encoder);
+        void init(int motorA, int motorB, int encoder);
         void setSpeed(float speed);
         void setPWM(int pwm);
         void stop();

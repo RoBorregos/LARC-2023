@@ -1,39 +1,13 @@
-
-
-//ros connection test
-#include <ros.h>
-#include <geometry_msgs/Twist.h>
-
-void messageCb( const geometry_msgs::Twist& msg){
-    Serial.println("I heard: ");
-    Serial.println(msg.linear.x);
-    Serial.println(msg.linear.y);
-    Serial.println(msg.linear.z);
-    Serial.println(msg.angular.x);
-    Serial.println(msg.angular.y);
-    Serial.println(msg.angular.z);
-    digitalWrite(13, HIGH-digitalRead(13));
+void setup(){
+    pinMode(8, OUTPUT);
+    pinMode(9, OUTPUT);
+    pinMode(10, OUTPUT);
+    pinMode(11, OUTPUT);
 }
 
-ros::NodeHandle nh;
-ros::Subscriber<geometry_msgs::Twist> sub("cmd_vel", &messageCb );
-
-void setup() {
-    pinMode(13, OUTPUT);
-    nh.initNode();
-    nh.subscribe(sub);
-    Serial.begin(9600);
-}
-
-void loop() {
-//    Serial.println( digitalRead(13) ); 
-    //Serial.println( Serial.read() );
-    /*if( Serial.read() != -1 ){
-        digitalWrite(13, HIGH);
-    }
-    else{
-        digitalWrite(13, LOW);
-    }*/
-    nh.spinOnce();
-    delay(1);
+void loop(){
+    analogWrite(8, 255);
+    analogWrite(9, 0);
+    analogWrite(10, 0);
+    analogWrite(11, 255);
 }

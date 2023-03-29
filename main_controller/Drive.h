@@ -13,6 +13,7 @@ class Drive{
     public:
         void init();
         void setSpeed(float linearX, float linearY, float angularZ);
+        void periodicIO();
 };
 
 #endif
