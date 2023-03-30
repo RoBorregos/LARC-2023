@@ -26,8 +26,6 @@ void Motor::encoderInterrupt(){
 void Motor::periodicIO(){
     analogWrite(motorA, io.direction? io.demand : 0);
     analogWrite(motorB, io.direction? 0 : io.demand);
-    Serial.print(io.demand);
-    Serial.print(" ");
 
     unsigned long current_time = millis();
     io.delta_time = (current_time - io.last_time) / 1000.0;
@@ -41,7 +39,7 @@ void Motor::periodicIO(){
 // Set the speed of the motor in m/s
 void Motor::setSpeed(float speed){
     io.target_speed = speed;
-    float current_speed = pidController.calculate(speed, io.speed, io.delta_time);
+    float current_speed = io.speed + pidController.calculate(speed, io.speed, io.delta_time);
     float pwm = current_speed / getMaxVelocity() * 255;
     setPWM(pwm);
 }

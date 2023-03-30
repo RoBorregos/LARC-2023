@@ -18,7 +18,7 @@ void setup() {
 
   // Set the maximum speed in steps per second:
 
-  stepper.setSpeed(1000); //max 4688 / > 1000 torque
+  stepper.setSpeed(2000); //max 4688 / > 1000 torque
 
 }
 
@@ -27,7 +27,10 @@ void loop() {
  
 
 
-    stepper.step(20);
+    stepper.step(-30000);
+    delay(1000);
+    stepper.step(30000);
+    delay(1000);
 
 
   

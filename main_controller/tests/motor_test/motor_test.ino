@@ -5,8 +5,8 @@
 #define FL2 7
 #define FR1 4
 #define FR2 5
-#define BL1 2
-#define BL2 3
+#define BL1 3
+#define BL2 2
 #define BR1 0
 #define BR2 1
 
