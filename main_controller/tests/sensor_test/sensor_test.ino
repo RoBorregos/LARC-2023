@@ -1,7 +1,7 @@
 //encoder tests
-#define EN1 12
-#define EN2 26
-#define EN3 27
+#define EN1 26
+#define EN2 27
+#define EN3 12
 #define EN4 23
 
 volatile long en1_count = 0;
@@ -52,11 +52,11 @@ void setup() {
     attachInterrupt(digitalPinToInterrupt(EN4), encoder4, CHANGE);
 
     //multiplexor pinout
-    pinMode(S0, OUTPUT);
+    /*pinMode(S0, OUTPUT);
     pinMode(S1, OUTPUT);
     pinMode(S2, OUTPUT);
     pinMode(S3, OUTPUT);
-    pinMode(SIG, INPUT);
+    pinMode(SIG, INPUT);*/
 }
 
 void loop() {

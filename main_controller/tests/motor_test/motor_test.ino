@@ -3,12 +3,12 @@
 //motor pinout
 #define FL1 6
 #define FL2 7
-#define FR1 0
-#define FR2 1
+#define FR1 4
+#define FR2 5
 #define BL1 2
 #define BL2 3
-#define BR1 4
-#define BR2 5
+#define BR1 0
+#define BR2 1
 
 void setup() {
     // put your setup code here, to run once:

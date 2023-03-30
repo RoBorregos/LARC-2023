@@ -1,31 +1,34 @@
 #include "Constants.h"
+#include "Drive.h"
 #include "Motor.h"
 
-//Drive mecanumDrive;
-Motor motor1(Constants::kFrontLeftA, Constants::kFrontLeftB, Constants::kFrontLeftEncoder);
-Motor motor2(Constants::kFrontRightA, Constants::kFrontRightB, Constants::kFrontRightEncoder);
-
-void encoderInterrupt1(){
-    motor1.encoderInterrupt();
-}
-void encoderInterrupt2(){
-    motor2.encoderInterrupt();
-}
+Drive mDrive;
 
 void setup(){
+    mDrive.init();
     Serial.begin(9600);
-    attachInterrupt(digitalPinToInterrupt(Constants::kFrontLeftEncoder), encoderInterrupt1, RISING);
-    attachInterrupt(digitalPinToInterrupt(Constants::kFrontRightEncoder), encoderInterrupt2, RISING);
+    attachInterrupt(digitalPinToInterrupt(Constants::kFrontLeftEncoder), interruptFL, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(Constants::kFrontRightEncoder), interruptFR, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(Constants::kBackLeftEncoder), interruptBL, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(Constants::kBackRightEncoder), interruptBR, CHANGE);
 }
 
 void loop(){
-    motor1.setSpeed(0.8);
-    motor2.setSpeed(0.8);
-    motor1.periodicIO();
-    motor2.periodicIO();
-
-    Serial.print(motor1.getTicks());
-    Serial.print(" ");
-    Serial.println(motor2.getTicks());
+    mDrive.setSpeed(0.8, 0, 0);
+    mDrive.periodicIO();
+    Serial.println(mDrive.getSpeed(MotorID::BackRight));
     delay(50);
+}
+
+void interruptFL(){
+    mDrive.encoderInterrupt(MotorID::FrontLeft);
+}
+void interruptFR(){
+    mDrive.encoderInterrupt(MotorID::FrontRight);
+}
+void interruptBL(){
+    mDrive.encoderInterrupt(MotorID::BackLeft);
+}
+void interruptBR(){
+    mDrive.encoderInterrupt(MotorID::BackRight);
 }

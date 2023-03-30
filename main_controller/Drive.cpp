@@ -1,20 +1,82 @@
 #include "Drive.h"
 
 void Drive::init(){
-    frontLeft = Motor(Constants::kFrontLeftA, Constants::kFrontLeftB, Constants::kFrontLeftEncoder);
-    frontRight = Motor(Constants::kFrontRightA, Constants::kFrontRightB, Constants::kFrontRightEncoder);
-    backLeft = Motor(Constants::kBackLeftA, Constants::kBackLeftB, Constants::kBackLeftEncoder);
-    backRight = Motor(Constants::kBackRightA, Constants::kBackRightB, Constants::kBackRightEncoder);
+    frontLeft.init(Constants::kFrontLeftA, Constants::kFrontLeftB, Constants::kFrontLeftEncoder);
+    frontRight.init(Constants::kFrontRightA, Constants::kFrontRightB, Constants::kFrontRightEncoder);
+    backLeft.init(Constants::kBackLeftA, Constants::kBackLeftB, Constants::kBackLeftEncoder);
+    backRight.init(Constants::kBackRightA, Constants::kBackRightB, Constants::kBackRightEncoder);
 }
 
 void Drive::setSpeed(float linearX, float linearY, float angularZ){
-    float frontLeftSpeed = linearX + linearY + angularZ;
-    float frontRightSpeed = linearX - linearY - angularZ;
-    float backLeftSpeed = linearX - linearY + angularZ;
-    float backRightSpeed = linearX + linearY - angularZ;
+    float wheelPosX = Constants::kWheelBase/2;
+    float wheelPosY = Constants::kWheelTrack/2; 
+    float frontLeftSpeed = linearX - linearY - angularZ*(wheelPosX + wheelPosY);
+    float frontRightSpeed = linearX + linearY + angularZ*(wheelPosX + wheelPosY);
+    float backLeftSpeed = linearX + linearY - angularZ*(wheelPosX + wheelPosY);
+    float backRightSpeed = linearX - linearY + angularZ*(wheelPosX + wheelPosY);
 
     frontLeft.setSpeed(frontLeftSpeed);
     frontRight.setSpeed(frontRightSpeed);
     backLeft.setSpeed(backLeftSpeed);
     backRight.setSpeed(backRightSpeed);
+}
+
+void Drive::encoderInterrupt(MotorID motorID){
+    switch(motorID){
+        case MotorID::FrontLeft:
+            frontLeft.encoderInterrupt();
+            break;
+        case MotorID::FrontRight:
+            frontRight.encoderInterrupt();
+            break;
+        case MotorID::BackLeft:
+            backLeft.encoderInterrupt();
+            break;
+        case MotorID::BackRight:
+            backRight.encoderInterrupt();
+            break;
+    }
+}
+
+float Drive::getSpeed(MotorID motorID){
+    switch(motorID){
+        case MotorID::FrontLeft:
+            return frontLeft.getSpeed();
+            break;
+        case MotorID::FrontRight:
+            return frontRight.getSpeed();
+            break;
+        case MotorID::BackLeft:
+            return backLeft.getSpeed();
+            break;
+        case MotorID::BackRight:
+            return backRight.getSpeed();
+            break;
+    }
+    return -1;
+}
+
+long Drive::getTicks(MotorID motorID){
+    switch(motorID){
+        case MotorID::FrontLeft:
+            return frontLeft.getTicks();
+            break;
+        case MotorID::FrontRight:
+            return frontRight.getTicks();
+            break;
+        case MotorID::BackLeft:
+            return backLeft.getTicks();
+            break;
+        case MotorID::BackRight:
+            return backRight.getTicks();
+            break;
+    }
+    return -1;
+}
+
+void Drive::periodicIO(){
+    frontLeft.periodicIO();
+    frontRight.periodicIO();
+    backLeft.periodicIO();
+    backRight.periodicIO();
 }
