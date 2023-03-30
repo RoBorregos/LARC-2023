@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# USAGE
+# python3 Detection2d.py
+
 import rospy
 import cv2
 import easyocr
@@ -6,14 +9,16 @@ import numpy as np
 from sensor_msgs.msg import Image, CameraInfo
 from std_msgs.msg import String
 from cv_bridge import CvBridge, CvBridgeError
-#from vision.msg import objectDetection, objectDetectionArray
+from vision.msg import objectDetection, objectDetectionArray
+import pathlib
+from geometry_msgs.msg import Point, PoseArray, Pose
 
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
 
 import sys
-#sys.path.append(str(pathlib.Path(__file__).parent) + '/../include')
-#from vision_utils import *
+sys.path.append(str(pathlib.Path(__file__).parent) + '/../include')
+from vision_utils import *
 
 reader = easyocr.Reader(["en"],gpu=True)
 
@@ -21,7 +26,7 @@ class DetectorLetras:
     def __init__(self):
         self.bridge = CvBridge()
         self.pub = rospy.Publisher('/letras_out', Image, queue_size=10)
-        #self.pubData = rospy.Publisher('detections', objectDetectionArray, queue_size=5)
+        self.pubData = rospy.Publisher('detections', objectDetectionArray, queue_size=5)
         self.publetter = rospy.Publisher('letters', String, queue_size=10)
         self.sub = rospy.Subscriber('/zed2/zed_node/rgb/image_rect_color', Image, self.callback)
         self.subscriberDepth = rospy.Subscriber("/zed2/zed_node/depth/depth_registered", Image, self.depthImageRosCallback)
@@ -65,6 +70,9 @@ class DetectorLetras:
         x2_order = sorted(x2_order, key=lambda x2_order: x2_order[0])
 
         return [x1_order[0], x1_order[1],x2_order[0], x2_order[1]]
+    
+    def cleanup_text(text):
+        return "".join([c if ord(c) < 128 else "" for c in text]).strip()
 
     def lector(self):
         rospy.loginfo("lector")
@@ -90,17 +98,37 @@ class DetectorLetras:
             cv2.circle(frame, tuple(puntos[3]), 7, (255,255,0),2)
             pts1 = np.float32(puntos)
             pts2 = np.float32([[0,0],[270,0],[0,270],[270,270]])
-            M = cv2.getPerspectiveTransform(pts1,pts2)
+            M = cv2.getPerspectiveTransform(pts1,pts2)  
             dst = cv2.warpPerspective(gray,M,(270,310))
             cv2.imshow('dst',dst)
             cv2.waitKey(1)
             dst = cv2.cvtColor(dst, cv2.COLOR_GRAY2BGR)
     
             result = reader.readtext(dst)
-            for res in result:
+            # for res in result:
 
-                rospy.logwarn(res[1])
-                self.publetter.publish(res[1])
+            #     rospy.logwarn(res[1])
+            #     self.publetter.publish(res[1])
+
+            for bounding_box, text, prob in result:
+
+                text = self.cleanup_text(text)
+                if text >= "A" and text <= "I" or text >="a" and text <= "i":
+                    #print(f'{prob:0.4f} : {text}')
+
+                    
+                    rospy.logwarn(text)
+                    self.publetter.publish(text)
+                    # Llamas get_objects mandandole como atributo la lista de bounding boxes y la deteccion correspondiente en lista.
+
+                    tl = (int(tl[0]), int(tl[1]))
+                    tr = (int (tr[0]), int(tr[1]))
+                    br = (int (br[0]), int(br[1]))
+                    bl = (int (bl[0]), int(bl[1]))
+                    tl, tr, br, bl = bounding_box
+                    cv2.rectangle(dst, tl, br, (0, 255, 0), 2)
+                    cv2.putText(dst, text, (tl[0], tl[1] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+
         # frame = cv2.resize(frame, (0, 0), fx = 0.3, fy = 0.3)
         #cv2.imshow('Frame',frame)
         self.cv_image = frame
@@ -115,6 +143,42 @@ class DetectorLetras:
         resultado = reader.readtext(img_warp_colored)
         return resultado
 
+    # This function creates the output array of the detected objects with its 2D & 3D coordinates.
+    def get_objects(self, boxes, detections):
+        res = []
+
+        pa = PoseArray()
+        pa.header.frame_id = "camera_depth_frame"
+        pa.header.stamp = rospy.Time.now()
+
+        for index in range(len(boxes)):
+            if True: # scores[index] > ARGS["MIN_SCORE_THRESH"]:
+                point3D = Point()
+                point2D = get2DCentroid(boxes[index], self.depth_image)
+                
+                if len(self.depth_image) != 0:
+                    depth = get_depth(self.depth_image, point2D)
+                    point3D_ = deproject_pixel_to_point(self.camera_info, point2D, depth)
+                    point3D.x = point3D_[0]
+                    point3D.y = point3D_[1]
+                    point3D.z = point3D_[2]
+                    pa.poses.append(Pose(position=point3D))
+                res.append(
+                    objectDetection(
+                        label = int(label), # 1
+                        labelText = str(detections[index]), # "H"
+                        score = float(0.0),
+                        ymin = float(boxes[index][0]),
+                        xmin = float(boxes[index][1]),
+                        ymax = float(boxes[index][2]),
+                        xmax = float(boxes[index][3]),
+                        point3D = point3D
+                    )
+                )
+            self.posePublisher.publish(pa)
+
+        self.pubData.publish(objectDetectionArray(detections=res))                
+
     def main(self):
         rospy.logwarn("Starting listener")
         rospy.init_node('letter_reader', anonymous=True)
@@ -122,8 +186,7 @@ class DetectorLetras:
         try:
             while not rospy.is_shutdown():
                 
-                #self.pubData.publish(self.detections)
-                #self.pubmask.publish(self.bridge.cv2_to_imgmsg(self.mask))
+                self.pubmask.publish(self.bridge.cv2_to_imgmsg(self.mask))
                 rate.sleep()
         except KeyboardInterrupt:
             rospy.logwarn("Keyboard interrupt detected, stopping listener")
