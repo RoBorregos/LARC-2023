@@ -3,7 +3,6 @@
 import cv2
 import easyocr
 import numpy as np
-import time
 
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -48,10 +47,10 @@ while True:
             cv2.drawContours(frame, [approx], 0,(0,255,255),2)
             puntos = ordenar_puntos(approx)
 
-            cv2.circle(frame, tuple(puntos[0]), 7, (255,0,0),2)
-            cv2.circle(frame, tuple(puntos[1]), 7, (0,255,0),2)
-            cv2.circle(frame, tuple(puntos[2]), 7, (0,0,255),2)
-            cv2.circle(frame, tuple(puntos[3]), 7, (255,255,0),2)
+            # cv2.circle(frame, tuple(puntos[0]), 7, (255,0,0),2)
+            # cv2.circle(frame, tuple(puntos[1]), 7, (0,255,0),2)
+            # cv2.circle(frame, tuple(puntos[2]), 7, (0,0,255),2)
+            # cv2.circle(frame, tuple(puntos[3]), 7, (255,255,0),2)
             pts1 = np.float32(puntos)
             pts2 = np.float32([[0,0],[270,0],[0,270],[270,270]])
             M = cv2.getPerspectiveTransform(pts1,pts2)
@@ -67,7 +66,8 @@ while True:
 
                 text = cleanup_text(text)
                 if text >= "A" and text <= "I" or text >="a" and text <= "i":
-                    print(f'{prob:0.4f} : {text}')
+                    print(f'{prob:0.4f} : {text} {bounding_box}')
+                    
                     tl, tr, br, bl = bounding_box
                     tl = (int(tl[0]), int(tl[1]))
                     tr = (int (tr[0]), int(tr[1]))
