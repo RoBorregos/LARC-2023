@@ -81,7 +81,7 @@ class DetectorLetras:
         canny = cv2.Canny(gray,300,150)
         canny = cv2.dilate(canny,None, iterations=1)
         cnts = cv2.findContours(canny,cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
-        cnts = sorted(cnts, key = cv2.contourArea, reverse=True)[:1]
+        cnts = sorted(cnts, key = cv2.contourArea, reverse=True)[:5]
     
 
         for c in cnts:
@@ -100,9 +100,9 @@ class DetectorLetras:
             pts2 = np.float32([[0,0],[270,0],[0,270],[270,270]])
             M = cv2.getPerspectiveTransform(pts1,pts2)  
             dst = cv2.warpPerspective(gray,M,(270,310))
+            dst = cv2.cvtColor(dst, cv2.COLOR_GRAY2BGR)
             cv2.imshow('dst',dst)
             cv2.waitKey(1)
-            dst = cv2.cvtColor(dst, cv2.COLOR_GRAY2BGR)
     
             result = reader.readtext(dst)
             # for res in result:
@@ -119,13 +119,19 @@ class DetectorLetras:
                     
                     rospy.logwarn(text)
                     self.publetter.publish(text)
-                    # Llamas get_objects mandandole como atributo la lista de bounding boxes y la deteccion correspondiente en lista.
 
+                    tl, tr, br, bl = bounding_box
+                    # Llamas get_objects mandandole como atributo la lista de bounding boxes y la deteccion correspondiente en lista.
+                    # deteccion de texto "text"
+                    # deteccion de bounding box "bounding_box"
+                    # probabilidad de deteccion "prob"
                     tl = (int(tl[0]), int(tl[1]))
                     tr = (int (tr[0]), int(tr[1]))
                     br = (int (br[0]), int(br[1]))
                     bl = (int (bl[0]), int(bl[1]))
-                    tl, tr, br, bl = bounding_box
+                    cv2.circle(frame, tuple(puntos[0]), 7, (255,0,0),2)
+                    cv2.circle(frame, tuple(puntos[1]), 7, (0,255,0),2)
+                    result = reader.readtext(dst)
                     cv2.rectangle(dst, tl, br, (0, 255, 0), 2)
                     cv2.putText(dst, text, (tl[0], tl[1] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
 

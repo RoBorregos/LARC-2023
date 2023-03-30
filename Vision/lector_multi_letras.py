@@ -67,7 +67,7 @@ while True:
 
                 text = cleanup_text(text)
                 if text >= "A" and text <= "I" or text >="a" and text <= "i":
-                    print(f'{prob:0.4f} : {text}')
+                    print(f'{prob:0.4f} : {text}: bounding_box: {bounding_box}')
                     tl, tr, br, bl = bounding_box
                     tl = (int(tl[0]), int(tl[1]))
                     tr = (int (tr[0]), int(tr[1]))
@@ -77,7 +77,7 @@ while True:
                     cv2.circle(frame, tuple(puntos[1]), 7, (0,255,0),2)
 
 
-    frame = cv2.resize(frame, (0, 0), fx = 0.3, fy = 0.3)
+    #frame = cv2.resize(frame, (0, 0), fx = 0.3, fy = 0.3)
     cv2.imshow('Frame',frame)
     k = cv2.waitKey(1) & 0xFF
     if k==27:
