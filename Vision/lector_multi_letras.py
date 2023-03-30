@@ -38,7 +38,7 @@ while True:
     canny = cv2.dilate(canny,None, iterations=1)
     cv2.imshow("Canny", canny)
     cnts = cv2.findContours(canny,cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
-    cnts = sorted(cnts, key = cv2.contourArea, reverse=True)[:1]
+    cnts = sorted(cnts, key = cv2.contourArea, reverse=True)[:5]
 
     for c in cnts:
         epsilon = 0.01*cv2.arcLength(c,True)
@@ -75,11 +75,7 @@ while True:
                     bl = (int (bl[0]), int(bl[1]))
                     cv2.circle(frame, tuple(puntos[0]), 7, (255,0,0),2)
                     cv2.circle(frame, tuple(puntos[1]), 7, (0,255,0),2)
-                    cv2.circle(frame, tuple(puntos[2]), 7, (0,0,255),2)
-                    cv2.circle(frame, tuple(puntos[3]), 7, (255,255,0),2)
-                    cv2.rectangle(dst, tl, br, (0, 255, 0), 2)
-                    cv2.putText(dst, text, (tl[0], tl[1] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
-                    result = reader.readtext(dst)
+
 
     frame = cv2.resize(frame, (0, 0), fx = 0.3, fy = 0.3)
     cv2.imshow('Frame',frame)
