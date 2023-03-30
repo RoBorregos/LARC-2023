@@ -21,6 +21,59 @@ void Drive::setSpeed(float linearX, float linearY, float angularZ){
     backRight.setSpeed(backRightSpeed);
 }
 
+void Drive::encoderInterrupt(MotorID motorID){
+    switch(motorID){
+        case MotorID::FrontLeft:
+            frontLeft.encoderInterrupt();
+            break;
+        case MotorID::FrontRight:
+            frontRight.encoderInterrupt();
+            break;
+        case MotorID::BackLeft:
+            backLeft.encoderInterrupt();
+            break;
+        case MotorID::BackRight:
+            backRight.encoderInterrupt();
+            break;
+    }
+}
+
+float Drive::getSpeed(MotorID motorID){
+    switch(motorID){
+        case MotorID::FrontLeft:
+            return frontLeft.getSpeed();
+            break;
+        case MotorID::FrontRight:
+            return frontRight.getSpeed();
+            break;
+        case MotorID::BackLeft:
+            return backLeft.getSpeed();
+            break;
+        case MotorID::BackRight:
+            return backRight.getSpeed();
+            break;
+    }
+    return -1;
+}
+
+long Drive::getTicks(MotorID motorID){
+    switch(motorID){
+        case MotorID::FrontLeft:
+            return frontLeft.getTicks();
+            break;
+        case MotorID::FrontRight:
+            return frontRight.getTicks();
+            break;
+        case MotorID::BackLeft:
+            return backLeft.getTicks();
+            break;
+        case MotorID::BackRight:
+            return backRight.getTicks();
+            break;
+    }
+    return -1;
+}
+
 void Drive::periodicIO(){
     frontLeft.periodicIO();
     frontRight.periodicIO();

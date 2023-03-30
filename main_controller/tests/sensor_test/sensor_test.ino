@@ -1,8 +1,8 @@
 //encoder tests
 #define EN1 26
-#define EN2 23
+#define EN2 27
 #define EN3 12
-#define EN4 27
+#define EN4 23
 
 volatile long en1_count = 0;
 volatile long en2_count = 0;
@@ -46,10 +46,10 @@ void setup() {
     Serial.begin(9600);
 
     //attach interrupt to encoder pins
-    attachInterrupt(digitalPinToInterrupt(EN1), encoder1, RISING);
-    attachInterrupt(digitalPinToInterrupt(EN2), encoder2, RISING);
-    attachInterrupt(digitalPinToInterrupt(EN3), encoder3, RISING);
-    attachInterrupt(digitalPinToInterrupt(EN4), encoder4, RISING);
+    attachInterrupt(digitalPinToInterrupt(EN1), encoder1, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(EN2), encoder2, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(EN3), encoder3, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(EN4), encoder4, CHANGE);
 
     //multiplexor pinout
     /*pinMode(S0, OUTPUT);

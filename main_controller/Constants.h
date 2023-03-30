@@ -14,15 +14,15 @@ class Constants{
         
         //Motors (A: fwd, B: rev)
         static constexpr float kMotorsRPM = 380; //RPM
-        static constexpr float kMotorMinPWM = 150; //PWM (0-255)
+        static constexpr float kMotorMinPWM = 140; //PWM (0-255)
         static constexpr int kFrontLeftA = 6;
         static constexpr int kFrontLeftB = 7;
-        static constexpr int kFrontRightA = 0;
-        static constexpr int kFrontRightB = 1;
+        static constexpr int kFrontRightA = 4;
+        static constexpr int kFrontRightB = 5;
         static constexpr int kBackLeftA = 2;
         static constexpr int kBackLeftB = 3;
-        static constexpr int kBackRightA = 4;
-        static constexpr int kBackRightB = 5;
+        static constexpr int kBackRightA = 0;
+        static constexpr int kBackRightB = 1;
 
         //Encoders
         static constexpr float kEncoderTicksPerRevolution = 979.62;
@@ -31,12 +31,19 @@ class Constants{
         static constexpr int kBackLeftEncoder = 12;
         static constexpr int kBackRightEncoder = 27;
 
+        //PID
+        static constexpr float kP = 1.5;
+        static constexpr float kI = 0.0;
+        static constexpr float kD = 0.0;
+
         // Line sensor //
         static constexpr int kLineSensorS0 = 18;
         static constexpr int kLineSensorS1 = 19;
         static constexpr int kLineSensorS2 = 20;
         static constexpr int kLineSensorS3 = 21;
         static constexpr int kLineSensorSignal = 22;
+
+
 };
 
 #endif
