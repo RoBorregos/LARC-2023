@@ -1,8 +1,8 @@
 //encoder tests
 #define EN1 26
 #define EN2 27
-#define EN3 12
-#define EN4 23
+#define EN3 23
+#define EN4 12
 
 volatile long en1_count = 0;
 volatile long en2_count = 0;
@@ -57,6 +57,8 @@ void setup() {
     pinMode(S2, OUTPUT);
     pinMode(S3, OUTPUT);
     pinMode(SIG, INPUT);*/
+    
+       
 }
 
 void loop() {

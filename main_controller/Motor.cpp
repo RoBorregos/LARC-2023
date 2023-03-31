@@ -51,6 +51,7 @@ void Motor::setPWM(int pwm){
 }
 
 void Motor::stop(){
+    io.demand = 0;
     analogWrite(motorA, 0);
     analogWrite(motorB, 0);
 }

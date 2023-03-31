@@ -105,7 +105,7 @@ class serialPlot:
 
 def main():
     # portName = 'COM11'
-    portName = 'COM5'
+    portName = 'COM6'
     baudRate = 9600
     maxPlotLength = 100     # number of points in x-axis of real time plot
     dataNumBytes = 4        # number of bytes of 1 data point

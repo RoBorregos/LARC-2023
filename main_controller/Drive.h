@@ -18,9 +18,11 @@ class Drive{
         Motor frontRight;
         Motor backLeft;
         Motor backRight;
+        unsigned long current_time = 0;
     public:
         void init();
         void setSpeed(float linearX, float linearY, float angularZ);
+        void stop();
         void periodicIO();
         void encoderInterrupt(MotorID motorID);
         float getSpeed(MotorID motorID);

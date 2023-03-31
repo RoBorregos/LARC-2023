@@ -21,6 +21,13 @@ void Drive::setSpeed(float linearX, float linearY, float angularZ){
     backRight.setSpeed(backRightSpeed);
 }
 
+void Drive::stop(){
+    frontLeft.stop();
+    frontRight.stop();
+    backLeft.stop();
+    backRight.stop();
+}
+
 void Drive::encoderInterrupt(MotorID motorID){
     switch(motorID){
         case MotorID::FrontLeft:
@@ -75,6 +82,8 @@ long Drive::getTicks(MotorID motorID){
 }
 
 void Drive::periodicIO(){
+    if( millis() - current_time < 10) return;
+    current_time = millis();
     frontLeft.periodicIO();
     frontRight.periodicIO();
     backLeft.periodicIO();

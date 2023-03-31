@@ -15,21 +15,21 @@ class Constants{
         //Motors (A: fwd, B: rev)
         static constexpr float kMotorsRPM = 380; //RPM
         static constexpr float kMotorMinPWM = 140; //PWM (0-255)
-        static constexpr int kFrontLeftA = 3;
-        static constexpr int kFrontLeftB = 2;
+        static constexpr int kFrontLeftA = 6;
+        static constexpr int kFrontLeftB = 7;
         static constexpr int kFrontRightA = 4;
         static constexpr int kFrontRightB = 5;
-        static constexpr int kBackLeftA = 6;
-        static constexpr int kBackLeftB = 7;
-        static constexpr int kBackRightA = 0;
-        static constexpr int kBackRightB = 1;
+        static constexpr int kBackLeftA = 1;
+        static constexpr int kBackLeftB = 0;
+        static constexpr int kBackRightA = 3;
+        static constexpr int kBackRightB = 2;
 
         //Encoders
         static constexpr float kEncoderTicksPerRevolution = 979.62;
-        static constexpr int kFrontLeftEncoder = 12;
-        static constexpr int kFrontRightEncoder = 23;
-        static constexpr int kBackLeftEncoder = 26;
-        static constexpr int kBackRightEncoder = 27;
+        static constexpr int kFrontLeftEncoder = 26;
+        static constexpr int kFrontRightEncoder = 27;
+        static constexpr int kBackLeftEncoder = 23;
+        static constexpr int kBackRightEncoder = 12;
 
         //PID
         static constexpr float kP = 5;
@@ -50,6 +50,12 @@ class Constants{
         static constexpr int kIntakeMotor2B = 11;
         static constexpr int kIntakePickSpeed = 255;
         static constexpr int kIntakeDropSpeed = -255;
+
+        // Elevator //
+        static constexpr int kStepperSteps = 200;
+        static constexpr int kStepperDirectionPin = 28;
+        static constexpr int kStepperStepPin = 29;
+        static constexpr int kStepperSpeed = 2000; //max 4688 / > 1000 torque
 };
 
 #endif

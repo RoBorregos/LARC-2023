@@ -11,6 +11,7 @@ def dibujar(mask,color):
             x = int(M["m10"]/M["m00"])
             y = int(M['m01']/M["m00"])
             nuevoContorno = cv2.convexHull(c)
+            print (nuevoContorno)
             #cv2.circle(frame,(x,y),7,(0,255,0),-1)  
             #cv2.putText(frame,'{},{}'.format(x,y), (x+10,y), font, 0.75,(0,255,0),1,cv2.LINE_AA)
 
@@ -23,6 +24,8 @@ def dibujar(mask,color):
             if color == (0,255,255):
                 print('Amarillo')
             cv2.drawContours(frame,[nuevoContorno],0,color,3)
+
+            
 cap = cv2.VideoCapture(0)
 
 redBajo1 = np.array([0,150,45],np.uint8)

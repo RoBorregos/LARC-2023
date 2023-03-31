@@ -5,10 +5,10 @@
 #define FL2 7
 #define FR1 4
 #define FR2 5
-#define BL1 3
-#define BL2 2
-#define BR1 0
-#define BR2 1
+#define BL1 1
+#define BL2 0
+#define BR1 3
+#define BR2 2
 
 void setup() {
     // put your setup code here, to run once:
