@@ -3,10 +3,10 @@
 //motor pinout
 #define FL1 6
 #define FL2 7
-#define FR1 4
-#define FR2 5
-#define BL1 1
-#define BL2 0
+#define FR1 0
+#define FR2 1
+#define BL1 5
+#define BL2 4
 #define BR1 3
 #define BR2 2
 

@@ -17,18 +17,18 @@ class Constants{
         static constexpr float kMotorMinPWM = 140; //PWM (0-255)
         static constexpr int kFrontLeftA = 6;
         static constexpr int kFrontLeftB = 7;
-        static constexpr int kFrontRightA = 4;
-        static constexpr int kFrontRightB = 5;
-        static constexpr int kBackLeftA = 1;
-        static constexpr int kBackLeftB = 0;
+        static constexpr int kFrontRightA = 0;
+        static constexpr int kFrontRightB = 1;
+        static constexpr int kBackLeftA = 5;
+        static constexpr int kBackLeftB = 4;
         static constexpr int kBackRightA = 3;
         static constexpr int kBackRightB = 2;
 
         //Encoders
         static constexpr float kEncoderTicksPerRevolution = 979.62;
         static constexpr int kFrontLeftEncoder = 26;
-        static constexpr int kFrontRightEncoder = 27;
-        static constexpr int kBackLeftEncoder = 23;
+        static constexpr int kFrontRightEncoder = 23;
+        static constexpr int kBackLeftEncoder = 27;
         static constexpr int kBackRightEncoder = 12;
 
         //PID
