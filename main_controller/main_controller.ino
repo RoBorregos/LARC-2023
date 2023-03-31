@@ -1,3 +1,6 @@
+//#include <ros.h>
+//#include <geometry_msgs/Twist.h>
+
 #include "Constants.h"
 #include "Drive.h"
 #include "Motor.h"
@@ -8,31 +11,64 @@ Drive mDrive;
 Elevator mElevator;
 Intake mIntake;
 
-unsigned long debugTime = 0;
+unsigned long debug_time = 0;
 float targetSpeed = 0.8;
 int state = 0;
-unsigned long stateTime = 0;
+unsigned long state_time = 0;
+unsigned long loop_time = 0;
+
+float linear_x = 0;
+float linear_y = 0;
+float angular_z = 0;
+
+/*void teleop( const geometry_msgs::Twist& msg){
+    Serial.println("I heard: ");
+    Serial.println(msg.linear.x);
+    Serial.println(msg.linear.y);
+    Serial.println(msg.linear.z);
+    Serial.println(msg.angular.x);
+    Serial.println(msg.angular.y);
+    Serial.println(msg.angular.z);
+    linear_x = msg.linear.x;
+    linear_y = msg.linear.y;
+    angular_z = msg.angular.z;
+    digitalWrite(13, HIGH-digitalRead(13));
+}*/
+
+//ros::NodeHandle nh;
+//ros::Subscriber<geometry_msgs::Twist> sub("cmd_vel", &teleop );
 
 void setup(){
     mDrive.init();
-    mElevator.setSpeed(1000);
+    mElevator.setSpeed(2000);
     Serial.begin(9600);
     //Serial.write("<target>");
     attachInterrupt(digitalPinToInterrupt(Constants::kFrontLeftEncoder), interruptFL, CHANGE);
     attachInterrupt(digitalPinToInterrupt(Constants::kFrontRightEncoder), interruptFR, CHANGE);
     attachInterrupt(digitalPinToInterrupt(Constants::kBackLeftEncoder), interruptBL, CHANGE);
     attachInterrupt(digitalPinToInterrupt(Constants::kBackRightEncoder), interruptBR, CHANGE);
-    stateTime = millis();
+
+    state_time = millis();
+    loop_time = millis();
     mElevator.setPosition(ElevatorPosition::SecondWarehouse);
+
+    //nh.initNode();
+    //nh.subscribe(sub);
 }
 
 void loop(){
+    if( millis() - loop_time > 10 ){
+        //mDrive.periodicIO();
+        //nh.spinOnce();
+        loop_time = millis();
+    }
+
     switch( state ){
         case 0:
             //mDrive.setSpeed(0.8, 0, 0);
             //if( millis() - stateTime > 1000 ){
             if( mElevator.positionReached() ){
-                stateTime = millis();
+                state_time = millis();
                 mIntake.drop();
                 state = 1;
             }
@@ -41,20 +77,21 @@ void loop(){
             //mDrive.stop();
             break;  
     }
-    //mDrive.setSpeed(0.8, 0, 0);
+    
+    //mDrive.setSpeed(linear_x, linear_y, angular_z);
     //mDrive.periodicIO();
 
     //mElevator.setPosition(ElevatorPosition::SecondWarehouse);
-    mElevator.periodicIO();
 
     // Plot (TODO: make a library for this)
-    if( millis() - debugTime > 50 ){
+    if( millis() - debug_time > 50 ){
         //Serial.println(mDrive.getSpeed(MotorID::FrontLeft));
         //plotData(mDrive.getSpeed(MotorID::FrontLeft), mDrive.getSpeed(MotorID::FrontRight), mDrive.getSpeed(MotorID::BackLeft), mDrive.getSpeed(MotorID::BackRight), targetSpeed);
-        debugTime = millis();
+        debug_time = millis();
     }
     //delay(10);
 }
+
 
 void plotData(float data1, float data2, float data3, float data4, float data5){
     const byte *byteData1 = (byte *)(&data1);
