@@ -17,10 +17,12 @@ class DetectorColores:
     def __init__(self):
         self.bridge = CvBridge()
         self.pub = rospy.Publisher('/colores_out', Image, queue_size=10)
+        self.pubData = rospy.Publisher('color_detect', objectDetectionArray, queue_size=5)
         self.pubcolor = rospy.Publisher('colors', String, queue_size=10)
+        self.posePublisher = rospy.Publisher("/test/detectionposes", PoseArray, queue_size=5)
         self.sub = rospy.Subscriber('/zed2/zed_node/rgb/image_rect_color', Image, self.callback)
-        # self.subscriberDepth = rospy.Subscriber("/zed2/zed_node/depth/depth_registered", Image, self.depthImageRosCallback)
-        # self.subscriberInfo = rospy.Subscriber("/zed2/zed_node/depth/camera_info", CameraInfo, self.infoImageRosCallback)
+        self.subscriberDepth = rospy.Subscriber("/zed2/zed_node/depth/depth_registered", Image, self.depthImageRosCallback)
+        self.subscriberInfo = rospy.Subscriber("/zed2/zed_node/depth/camera_info", CameraInfo, self.infoImageRosCallback)
 
         self.pubmask = rospy.Publisher('/mask_colores', Image, queue_size=10)
         self.mask  = None
@@ -43,6 +45,10 @@ class DetectorColores:
     def dibujar(self,mask,color):
         frame= self.cv_image
         contornos,_ = cv2.findContours(mask, cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+       
+        bb = []
+        detections = []
+        tempo = []
         for c in contornos:
             area = cv2.contourArea(c)
             if area > 3000:
@@ -53,21 +59,34 @@ class DetectorColores:
                 nuevoContorno = cv2.convexHull(c)
                 #cv2.circle(frame,(x,y),7,(0,255,0),-1)  
                 #cv2.putText(frame,'{},{}'.format(x,y), (x+10,y), font, 0.75,(0,255,0),1,cv2.LINE_AA)
+                x, y, w, h = cv2.boundingRect(c)
+                xmenor = x
+                ymenor = y
+                xmayor = x + w
+                ymayor = y + h
+
+                tempo =  ymenor, xmenor, ymayor, xmayor
 
                 if color == (255,0,0):
                     print('azul')
-                    self.pubcolor.publish('azul')
+                    detections.append('azul')
+                    
                 if color == (0,255,0):
                     print('verde')
-                    self.pubcolor.publish('verde')
+                    detections.append('verde')
+
                 if color == (0,0,255):
                     print('rojo')   
-                    self.pubcolor.publish('rojo')
+                    detections.append('rojo')
+
                 if color == (0,255,255):
-                    print('Amarillo')
-                    self.pubcolor.publish('amarillo')
+                    print('amarillo')
+                    detections.append('amarillo')
 
                 cv2.drawContours(frame,[nuevoContorno],0,color,3)
+                bb.append(tempo)
+        self.get_objects(bb, detections)
+
 
     def callback(self, data):
         # rospy.loginfo(data.data)
@@ -82,12 +101,17 @@ class DetectorColores:
         pa = PoseArray()
         pa.header.frame_id = "camera_depth_frame"
         pa.header.stamp = rospy.Time.now()
-
         for index in range(len(boxes)):
-            if True: # scores[index] > ARGS["MIN_SCORE_THRESH"]:
+            if True:
                 point3D = Point()
-                point2D = get2DCentroid(boxes[index], self.depth_image)
-                
+                rospy.logwarn("---------------------------")
+
+
+                rospy.logwarn("pose")
+                point2D  = get2DCentroid(boxes[index])
+                rospy.logwarn(point2D)
+                # Dummy point2d
+
                 if len(self.depth_image) != 0:
                     depth = get_depth(self.depth_image, point2D)
                     point3D_ = deproject_pixel_to_point(self.camera_info, point2D, depth)
@@ -95,11 +119,12 @@ class DetectorColores:
                     point3D.y = point3D_[1]
                     point3D.z = point3D_[2]
                     pa.poses.append(Pose(position=point3D))
-                res.append(
+                    res.append(
                     objectDetection(
-                        label = int(label), # 1
+
+                        label = int(index), # 1
                         labelText = str(detections[index]), # "H"
-                        score = float(0.0),
+                        #score = float(0.0),
                         ymin = float(boxes[index][0]),
                         xmin = float(boxes[index][1]),
                         ymax = float(boxes[index][2]),
@@ -109,7 +134,6 @@ class DetectorColores:
                 )
             self.posePublisher.publish(pa)
 
-        rospy.loginfo(objectDetectionArray(detections=res))
         self.pubData.publish(objectDetectionArray(detections=res)) 
         
 

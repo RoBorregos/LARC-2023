@@ -11,7 +11,15 @@ def dibujar(mask,color):
             x = int(M["m10"]/M["m00"])
             y = int(M['m01']/M["m00"])
             nuevoContorno = cv2.convexHull(c)
-            print (nuevoContorno)
+            #print (nuevoContorno[0][1], nuevoContorno[1], nuevoContorno[2], nuevoContorno[3])
+
+            x, y, w, h = cv2.boundingRect(c)
+            xmin = x
+            ymin = y
+            xmax = x + w
+            ymax = y + h
+            print('xmin:', xmin, 'ymin:', ymin, 'xmax:', xmax, 'ymax:', ymax)
+            print ("acabeeeeeeeeee")
             #cv2.circle(frame,(x,y),7,(0,255,0),-1)  
             #cv2.putText(frame,'{},{}'.format(x,y), (x+10,y), font, 0.75,(0,255,0),1,cv2.LINE_AA)
 
@@ -25,7 +33,7 @@ def dibujar(mask,color):
                 print('Amarillo')
             cv2.drawContours(frame,[nuevoContorno],0,color,3)
 
-            
+
 cap = cv2.VideoCapture(0)
 
 redBajo1 = np.array([0,150,45],np.uint8)

@@ -209,14 +209,14 @@ class DetectorLetras:
 
 
     # This function creates the output array of the detected objects with its 2D & 3D coordinates.
-    def get_objects(self, boxes, detections, confidence):
+    def get_objects(self, boxes, detections, scores):
         res = []
 
         pa = PoseArray()
         pa.header.frame_id = "camera_depth_frame"
         pa.header.stamp = rospy.Time.now()
         for index in range(len(boxes)):
-            if True: # scores[index] > ARGS["MIN_SCORE_THRESH"]:
+            if scores[index] > 0.8:
                 point3D = Point()
                 rospy.logwarn("---------------------------")
 
@@ -235,9 +235,10 @@ class DetectorLetras:
                     pa.poses.append(Pose(position=point3D))
                     res.append(
                     objectDetection(
-                        label = int(1), # 1
+
+                        label = int(index), # 1
                         labelText = str(detections[index]), # "H"
-                        score = float(0.0),
+                        score = float(scores[index]), # 0.9
                         ymin = float(boxes[index][0]),
                         xmin = float(boxes[index][1]),
                         ymax = float(boxes[index][2]),

@@ -20,8 +20,9 @@ class DetectorAruco:
     def __init__(self):
         self.bridge = CvBridge()
         self.pub = rospy.Publisher('/aruco_out', Image, queue_size=10)
-        self.pubData = rospy.Publisher('detections', objectDetectionArray, queue_size=5)
+        self.pubData = rospy.Publisher('detect_markers', objectDetectionArray, queue_size=5)
         self.pubmarker = rospy.Publisher('markers', Int32, queue_size=10)
+        self.posePublisher = rospy.Publisher("/test/detectionposes", PoseArray, queue_size=5)
         self.sub = rospy.Subscriber('/zed2/zed_node/rgb/image_rect_color', Image, self.callback)
         self.subscriberDepth = rospy.Subscriber("/zed2/zed_node/depth/depth_registered", Image, self.depthImageRosCallback)
         self.subscriberInfo = rospy.Subscriber("/zed2/zed_node/depth/camera_info", CameraInfo, self.infoImageRosCallback)
@@ -70,9 +71,9 @@ class DetectorAruco:
                     ymenor = np.amin(corner[:, 1])
 
                     #print(f"Xmayor: {xmayor:.2f}, Xmenor: {xmenor:.2f}, Ymayor: {ymayor:.2f}, Ymenor: {ymenor:.2f}")    
-                    tempo =  [ymenor, xmenor, ymayor, xmayor]
+                    tempo =  ymenor, xmenor, ymayor, xmayor
                     bb.append(tempo)
-                    detections.append(id)
+                    detections.append(ids[i])
                     #ids[i][j] Es el id del aruco
                     #corners Es la bounding box del aruco
             self.get_objects(bb, detections)
@@ -93,12 +94,17 @@ class DetectorAruco:
         pa = PoseArray()
         pa.header.frame_id = "camera_depth_frame"
         pa.header.stamp = rospy.Time.now()
-
         for index in range(len(boxes)):
-            if True: # scores[index] > ARGS["MIN_SCORE_THRESH"]:
+            if True:
                 point3D = Point()
-                point2D = get2DCentroid(boxes[index], self.depth_image)
-                
+                rospy.logwarn("---------------------------")
+
+
+                rospy.logwarn("pose")
+                point2D  = get2DCentroid(boxes[index])
+                rospy.logwarn(point2D)
+                # Dummy point2d
+
                 if len(self.depth_image) != 0:
                     depth = get_depth(self.depth_image, point2D)
                     point3D_ = deproject_pixel_to_point(self.camera_info, point2D, depth)
@@ -106,11 +112,12 @@ class DetectorAruco:
                     point3D.y = point3D_[1]
                     point3D.z = point3D_[2]
                     pa.poses.append(Pose(position=point3D))
-                res.append(
+                    res.append(
                     objectDetection(
-                        label = int(label), # 1
+
+                        label = int(index), # 1
                         labelText = str(detections[index]), # "H"
-                        score = float(0.0),
+                        #score = float(0.0),
                         ymin = float(boxes[index][0]),
                         xmin = float(boxes[index][1]),
                         ymax = float(boxes[index][2]),
@@ -120,8 +127,8 @@ class DetectorAruco:
                 )
             self.posePublisher.publish(pa)
 
-        rospy.loginfo(objectDetectionArray(detections=res))
-        self.pubData.publish(objectDetectionArray(detections=res)) 
+        self.pubData.publish(objectDetectionArray(detections=res))                
+
         
     
     def main(self):
