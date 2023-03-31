@@ -1,6 +1,7 @@
 import cv2
 import cv2.aruco as aruco
 from vision_utils import *
+import numpy as np
 
 dictionary = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_50)
 
@@ -18,7 +19,19 @@ while True:
     # Detect ArUco markers
     corners, ids, rejectedImgPoints = cv2.aruco.detectMarkers(gray, dictionary, parameters=parameters)
 
+        # Print list of detected ArUco markers and their corners
     print(ids)
+
+    if corners:
+        for i, marker_corners in enumerate(corners):
+            print(ids[i])
+            corner = corners[0][0]
+            xmayor = np.amax(corner[:, 0])
+            ymayor = np.amax(corner[:, 1])
+            xmenor = np.amin(corner[:, 0])
+            ymenor = np.amin(corner[:, 1])
+
+            print(f"Xmayor: {xmayor:.2f}, Xmenor: {xmenor:.2f}, Ymayor: {ymayor:.2f}, Ymenor: {ymenor:.2f}")    
     # Draw detected markers on frame
     frame_with_markers = cv2.aruco.drawDetectedMarkers(frame, corners, ids)
 
