@@ -56,6 +56,7 @@ class CamaraProcessing:
             self.detect_fn = tf.saved_model.load(ARGS["MODELS_PATH"])
             self.category_index = label_map_util.create_category_index_from_labelmap(ARGS["LABELS_PATH"], use_display_name=True)
 
+
         loadTfModel()
         print("[INFO] Model Loaded")
         

@@ -5,7 +5,7 @@
 import rospy
 import cv2
 import easyocr
-import numpy as np
+import numpy as np  
 from sensor_msgs.msg import Image, CameraInfo
 from std_msgs.msg import String
 from cv_bridge import CvBridge, CvBridgeError
@@ -28,6 +28,7 @@ class DetectorLetras:
         self.pub = rospy.Publisher('/letras_out', Image, queue_size=10)
         self.pubData = rospy.Publisher('detections', objectDetectionArray, queue_size=5)
         self.publetter = rospy.Publisher('letters', String, queue_size=10)
+        self.posePublisher = rospy.Publisher("/test/detectionposes", PoseArray, queue_size=5)
         self.sub = rospy.Subscriber('/zed2/zed_node/rgb/image_rect_color', Image, self.callback)
         self.subscriberDepth = rospy.Subscriber("/zed2/zed_node/depth/depth_registered", Image, self.depthImageRosCallback)
         self.subscriberInfo = rospy.Subscriber("/zed2/zed_node/depth/camera_info", CameraInfo, self.infoImageRosCallback)
@@ -71,8 +72,10 @@ class DetectorLetras:
 
         return [x1_order[0], x1_order[1],x2_order[0], x2_order[1]]
     
-    def cleanup_text(text):
+
+    def cleanup_text(self, text):
         return "".join([c if ord(c) < 128 else "" for c in text]).strip()
+
 
     def lector(self):
         rospy.loginfo("lector")
@@ -88,56 +91,79 @@ class DetectorLetras:
             epsilon = 0.01*cv2.arcLength(c,True)
             approx = cv2.approxPolyDP(c,epsilon,True)
 
-        if len(approx)==4:
-            cv2.drawContours(frame, [approx], 0,(0,255,255),2)
-            puntos = self.ordenar_puntos(approx)
-            rospy.logwarn("Something detected")
-            cv2.circle(frame, tuple(puntos[0]), 7, (255,0,0),2)
-            cv2.circle(frame, tuple(puntos[1]), 7, (0,255,0),2)
-            cv2.circle(frame, tuple(puntos[2]), 7, (0,0,255),2)
-            cv2.circle(frame, tuple(puntos[3]), 7, (255,255,0),2)
-            pts1 = np.float32(puntos)
-            pts2 = np.float32([[0,0],[270,0],[0,270],[270,270]])
-            M = cv2.getPerspectiveTransform(pts1,pts2)  
-            dst = cv2.warpPerspective(gray,M,(270,310))
-            dst = cv2.cvtColor(dst, cv2.COLOR_GRAY2BGR)
-            cv2.imshow('dst',dst)
-            cv2.waitKey(1)
-    
-            result = reader.readtext(dst)
-            # for res in result:
+            if len(approx)==4:
+                cv2.drawContours(frame, [approx], 0,(0,255,255),2)
+                puntos = self.ordenar_puntos(approx)
+                rospy.logwarn("Something detected")
+                cv2.circle(frame, tuple(puntos[0]), 7, (255,0,0),2)
+                cv2.circle(frame, tuple(puntos[1]), 7, (0,255,0),2)
+                cv2.circle(frame, tuple(puntos[2]), 7, (0,0,255),2)
+                cv2.circle(frame, tuple(puntos[3]), 7, (255,255,0),2)
+                pts1 = np.float32(puntos)
+                pts2 = np.float32([[0,0],[270,0],[0,270],[270,270]])
+                M = cv2.getPerspectiveTransform(pts1,pts2)  
+                dst = cv2.warpPerspective(gray,M,(270,310))
+                dst = cv2.cvtColor(dst, cv2.COLOR_GRAY2BGR)
+                cv2.imshow('dst',dst)
+                cv2.waitKey(1)
+        
+                result = reader.readtext(dst)
+                # for res in result:
 
-            #     rospy.logwarn(res[1])
-            #     self.publetter.publish(res[1])
+                #     rospy.logwarn(res[1])
+                #     self.publetter.publish(res[1])
+                
+                bb = []
+                detections = []
+                conf = []
+                for bounding_box, text, prob in result:
 
-            for bounding_box, text, prob in result:
+                    text = self.cleanup_text(text)
+                    if text >= "A" and text <= "I" or text >="a" and text <= "i":
+                        #print(f'{prob:0.4f} : {text}')
 
-                text = self.cleanup_text(text)
-                if text >= "A" and text <= "I" or text >="a" and text <= "i":
-                    #print(f'{prob:0.4f} : {text}')
+                        
+                        rospy.logwarn(text)
+                        #self.publetter.publish(text)
 
-                    
-                    rospy.logwarn(text)
-                    self.publetter.publish(text)
+                        #rospy.logwarn(bounding_box)
+                        tl, tr, br, bl = bounding_box
+                        
+                        # Llamas get_objects mandandole como atributo la lista de bounding boxes y la deteccion correspondiente en lista.
+                        # deteccion de texto "text"
+                        # deteccion de bounding box "bounding_box"
+                        # probabilidad de deteccion "prob"
+                        tl = (int(tl[0]), int(tl[1]))
+                        tr = (int (tr[0]), int(tr[1]))
+                        br = (int (br[0]), int(br[1]))
+                        bl = (int (bl[0]), int(bl[1]))
+                        xmayor = max(tl[0], tr[0], br[0], bl[0])
+                        ymayor = max(tl[1], tr[1], br[1], bl[1])
+                        xmenor = min(tl[0], tr[0], br[0], bl[0])
+                        ymenor = min(tl[1], tr[1], br[1], bl[1])
 
-                    tl, tr, br, bl = bounding_box
-                    # Llamas get_objects mandandole como atributo la lista de bounding boxes y la deteccion correspondiente en lista.
-                    # deteccion de texto "text"
-                    # deteccion de bounding box "bounding_box"
-                    # probabilidad de deteccion "prob"
-                    tl = (int(tl[0]), int(tl[1]))
-                    tr = (int (tr[0]), int(tr[1]))
-                    br = (int (br[0]), int(br[1]))
-                    bl = (int (bl[0]), int(bl[1]))
-                    cv2.circle(frame, tuple(puntos[0]), 7, (255,0,0),2)
-                    cv2.circle(frame, tuple(puntos[1]), 7, (0,255,0),2)
-                    result = reader.readtext(dst)
-                    cv2.rectangle(dst, tl, br, (0, 255, 0), 2)
-                    cv2.putText(dst, text, (tl[0], tl[1] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+                        tempo = ymenor, xmenor, ymayor, xmayor
+                        rospy.logwarn(tempo)
+                        cv2.circle(frame, tuple(puntos[0]), 7, (255,0,0),2)
+                        cv2.circle(frame, tuple(puntos[1]), 7, (0,255,0),2)
+                        result = reader.readtext(dst)
+                        cv2.rectangle(dst, tl, br, (0, 255, 0), 2)
+                        cv2.putText(dst, text, (tl[0], tl[1] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+
+                        #añadir a la lista de objetos
+                        bb.append(tempo)
+                        rospy.logwarn(bb)
+                        detections.append(text)
+                        conf.append(prob)
+
+            #mandar los pkgs
+                self.get_objects(bb, detections, conf)
 
         # frame = cv2.resize(frame, (0, 0), fx = 0.3, fy = 0.3)
         #cv2.imshow('Frame',frame)
         self.cv_image = frame
+        
+
 
     def obtener_texto(self, puntos, frame):
         puntos = self.ordenar_puntos(puntos)
@@ -148,20 +174,58 @@ class DetectorLetras:
         img_warp_colored = cv2.cvtColor(img_warp_colored, cv2.COLOR_BGR2RGB)
         resultado = reader.readtext(img_warp_colored)
         return resultado
+    
+    def my_get2dCentroid(self, box):
+        # box = [ymin, xmin, ymax, xmax]
+        # centroid = [(xmin+xmax)/2, (ymin+ymax)/2]
+        centroid = [(box[1]+box[3])/2, (box[0]+box[2])/2]
+        return centroid
+
+    
+    def my_get_2d_centroid(self, image, bbox, depth_map):
+        # Get coordinates of bounding box
+        x1, y1, x2, y2 = bbox
+
+        # Crop image and depth map to bounding box
+        cropped_image = image[y1:y2, x1:x2]
+        cropped_depth = depth_map[y1:y2, x1:x2]
+
+        # Calculate centroid of cropped image
+        M = cv2.moments(cropped_image)
+        if M["m00"] != 0:
+            cX = int(M["m10"] / M["m00"])
+            cY = int(M["m01"] / M["m00"])
+        else:
+            cX, cY = 0, 0
+
+        # Get depth value at centroid
+        depth_value = cropped_depth[cY, cX]
+
+        # Return centroid coordinates and depth value
+        return (x1 + cX, y1 + cY), depth_value
+
+
+    
+
 
     # This function creates the output array of the detected objects with its 2D & 3D coordinates.
-    def get_objects(self, boxes, detections):
+    def get_objects(self, boxes, detections, confidence):
         res = []
 
         pa = PoseArray()
         pa.header.frame_id = "camera_depth_frame"
         pa.header.stamp = rospy.Time.now()
-
         for index in range(len(boxes)):
             if True: # scores[index] > ARGS["MIN_SCORE_THRESH"]:
                 point3D = Point()
-                point2D = get2DCentroid(boxes[index], self.depth_image)
-                
+                rospy.logwarn("---------------------------")
+
+
+                rospy.logwarn("pose")
+                point2D  = get2DCentroid(boxes[index])
+                rospy.logwarn(point2D)
+                # Dummy point2d
+
                 if len(self.depth_image) != 0:
                     depth = get_depth(self.depth_image, point2D)
                     point3D_ = deproject_pixel_to_point(self.camera_info, point2D, depth)
@@ -169,9 +233,9 @@ class DetectorLetras:
                     point3D.y = point3D_[1]
                     point3D.z = point3D_[2]
                     pa.poses.append(Pose(position=point3D))
-                res.append(
+                    res.append(
                     objectDetection(
-                        label = int(label), # 1
+                        label = int(1), # 1
                         labelText = str(detections[index]), # "H"
                         score = float(0.0),
                         ymin = float(boxes[index][0]),
@@ -185,6 +249,7 @@ class DetectorLetras:
 
         self.pubData.publish(objectDetectionArray(detections=res))                
 
+
     def main(self):
         rospy.logwarn("Starting listener")
         rospy.init_node('letter_reader', anonymous=True)
@@ -192,7 +257,6 @@ class DetectorLetras:
         try:
             while not rospy.is_shutdown():
                 
-                self.pubmask.publish(self.bridge.cv2_to_imgmsg(self.mask))
                 rate.sleep()
         except KeyboardInterrupt:
             rospy.logwarn("Keyboard interrupt detected, stopping listener")

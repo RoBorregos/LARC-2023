@@ -2,9 +2,16 @@
 import rospy
 import cv2
 import numpy as np
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import Image, CameraInfo
 from std_msgs.msg import String
-from cv_bridge import CvBridge
+from cv_bridge import CvBridge, CvBridgeError
+from vision.msg import objectDetection, objectDetectionArray
+import pathlib
+from geometry_msgs.msg import Point, PoseArray, Pose
+
+import sys
+sys.path.append(str(pathlib.Path(__file__).parent) + '/../include')
+from vision_utils import *
 
 class DetectorColores:
     def __init__(self):
@@ -21,6 +28,18 @@ class DetectorColores:
         rospy.loginfo("Subscribed to image")
         self.main()
     
+    def depthImageRosCallback(self, data):
+        try:
+            self.depth_image = self.bridge.imgmsg_to_cv2(data, "32FC1")
+        except CvBridgeError as e:
+            print(e)
+
+
+    # Function to handle a ROS camera info input.
+    def infoImageRosCallback(self, data):
+        self.camera_info = data
+        self.subscriberInfo.unregister()
+
     def dibujar(self,mask,color):
         frame= self.cv_image
         contornos,_ = cv2.findContours(mask, cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
@@ -56,6 +75,43 @@ class DetectorColores:
         self.cv_image = self.bridge.imgmsg_to_cv2(data,desired_encoding="bgr8")
         self.detectar_colores()
         self.pub.publish(self.bridge.cv2_to_imgmsg(self.cv_image, encoding="bgr8"))
+
+    def get_objects(self, boxes, detections):
+        res = []
+
+        pa = PoseArray()
+        pa.header.frame_id = "camera_depth_frame"
+        pa.header.stamp = rospy.Time.now()
+
+        for index in range(len(boxes)):
+            if True: # scores[index] > ARGS["MIN_SCORE_THRESH"]:
+                point3D = Point()
+                point2D = get2DCentroid(boxes[index], self.depth_image)
+                
+                if len(self.depth_image) != 0:
+                    depth = get_depth(self.depth_image, point2D)
+                    point3D_ = deproject_pixel_to_point(self.camera_info, point2D, depth)
+                    point3D.x = point3D_[0]
+                    point3D.y = point3D_[1]
+                    point3D.z = point3D_[2]
+                    pa.poses.append(Pose(position=point3D))
+                res.append(
+                    objectDetection(
+                        label = int(label), # 1
+                        labelText = str(detections[index]), # "H"
+                        score = float(0.0),
+                        ymin = float(boxes[index][0]),
+                        xmin = float(boxes[index][1]),
+                        ymax = float(boxes[index][2]),
+                        xmax = float(boxes[index][3]),
+                        point3D = point3D
+                    )
+                )
+            self.posePublisher.publish(pa)
+
+        rospy.loginfo(objectDetectionArray(detections=res))
+        self.pubData.publish(objectDetectionArray(detections=res)) 
+        
 
     def detectar_colores(self):
         frame = self.cv_image

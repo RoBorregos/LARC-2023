@@ -8,11 +8,11 @@ FLT_EPSILON = sys.float_info.epsilon
 def map(x, in_min, in_max, out_min, out_max):
     return int((x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min)
 
-def get2DCentroid(box, frame):
-    ymin = float(box[0]) * frame.shape[0]
-    xmin = float(box[1]) * frame.shape[1]
-    ymax = float(box[2]) * frame.shape[0]
-    xmax = float(box[3]) * frame.shape[1]
+def get2DCentroid(box):
+    ymin = float(box[0]) 
+    xmin = float(box[1]) 
+    ymax = float(box[2])
+    xmax = float(box[3]) 
     width = xmax - xmin
     height = ymax - ymin
     return (int(xmin + width / 2), int(ymin + height / 2))
