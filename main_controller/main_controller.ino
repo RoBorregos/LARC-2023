@@ -12,10 +12,11 @@ unsigned long debugTime = 0;
 float targetSpeed = 0.8;
 int state = 0;
 unsigned long stateTime = 0;
+unsigned long loop_time = 0;
 
 void setup(){
     mDrive.init();
-    mElevator.setSpeed(1000);
+    mElevator.setSpeed(1500);
     Serial.begin(9600);
     //Serial.write("<target>");
     attachInterrupt(digitalPinToInterrupt(Constants::kFrontLeftEncoder), interruptFL, CHANGE);
@@ -23,23 +24,62 @@ void setup(){
     attachInterrupt(digitalPinToInterrupt(Constants::kBackLeftEncoder), interruptBL, CHANGE);
     attachInterrupt(digitalPinToInterrupt(Constants::kBackRightEncoder), interruptBR, CHANGE);
     stateTime = millis();
-    mElevator.setPosition(ElevatorPosition::SecondWarehouse);
 }
 
 void loop(){
+    if( millis() - loop_time > 10 ){
+        mDrive.periodicIO();
+        //nh.spinOnce();
+        loop_time = millis();
+    }
+
     switch( state ){
         case 0:
-            //mDrive.setSpeed(0.8, 0, 0);
-            //if( millis() - stateTime > 1000 ){
-            if( mElevator.positionReached() ){
+            mDrive.setSpeed(0.5, 0, 0);
+            mIntake.pick();
+            if( millis() - stateTime > 600 ){
                 stateTime = millis();
-                mIntake.drop();
+                mDrive.stop();
                 state = 1;
             }
             break;
         case 1:
-            //mDrive.stop();
-            break;  
+            if( millis() - stateTime > 1000 ){
+                stateTime = millis();
+                mIntake.stop();
+                mDrive.stop();
+                state = 2;
+            }
+            break;
+        case 2:
+            if( millis() - stateTime > 600 ){
+                stateTime = millis();
+                mElevator.setPosition(ElevatorPosition::SecondWarehouse);
+                state = 3;
+            }
+            break;
+        case 3:
+            if( mElevator.positionReached() ){
+                stateTime = millis();
+                state = 4;
+            }
+            break;
+        case 4:
+            mDrive.setSpeed(0.5, 0, 0);
+            if( millis() - stateTime > 600 ){
+                stateTime = millis();
+                mDrive.stop();
+                mIntake.drop();
+                state = 5;
+            }
+            break;
+        case 5:
+            if( millis() - stateTime > 1500 ){
+                stateTime = millis();
+                mIntake.stop();
+                state = 6;
+            }
+            break;
     }
     //mDrive.setSpeed(0.8, 0, 0);
     //mDrive.periodicIO();

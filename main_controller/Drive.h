@@ -18,7 +18,6 @@ class Drive{
         Motor frontRight;
         Motor backLeft;
         Motor backRight;
-        unsigned long current_time = 0;
     public:
         void init();
         void setSpeed(float linearX, float linearY, float angularZ);

@@ -7,7 +7,7 @@
 enum ElevatorPosition{
     Pick = 0,
     FirstWarehouse = 10000,
-    SecondWarehouse = 17000,
+    SecondWarehouse = 22500,
     ThirdWarehouse = 24000,
     FirstShelf = 5000,
     SecondShelf = 17500,

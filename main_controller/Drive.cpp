@@ -82,8 +82,6 @@ long Drive::getTicks(MotorID motorID){
 }
 
 void Drive::periodicIO(){
-    if( millis() - current_time < 10) return;
-    current_time = millis();
     frontLeft.periodicIO();
     frontRight.periodicIO();
     backLeft.periodicIO();

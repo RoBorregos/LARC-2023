@@ -38,6 +38,10 @@ void Motor::periodicIO(){
 
 // Set the speed of the motor in m/s
 void Motor::setSpeed(float speed){
+    if( abs(speed) < 0.1 ){
+        stop();
+        return;
+    }
     io.target_speed = speed;
     float current_speed = io.speed + pidController.calculate(speed, io.speed, io.delta_time);
     float pwm = current_speed / getMaxVelocity() * 255;
