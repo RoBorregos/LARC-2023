@@ -11,6 +11,7 @@ class Intake{
         Intake();
         void pick();
         void drop();
+        void stop();
 };
 
 #endif
