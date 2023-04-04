@@ -20,10 +20,16 @@ class DetectorColores:
         self.pubData = rospy.Publisher('color_detect', objectDetectionArray, queue_size=5)
         self.pubcolor = rospy.Publisher('colors', String, queue_size=10)
         self.posePublisher = rospy.Publisher("/test/detectionposes", PoseArray, queue_size=5)
-        self.sub = rospy.Subscriber('/zed2/zed_node/rgb/image_rect_color', Image, self.callback)
-        self.subscriberDepth = rospy.Subscriber("/zed2/zed_node/depth/depth_registered", Image, self.depthImageRosCallback)
-        self.subscriberInfo = rospy.Subscriber("/zed2/zed_node/depth/camera_info", CameraInfo, self.infoImageRosCallback)
 
+        #Suscriber topics changed for simulation
+        #self.sub = rospy.Subscriber('/zed2/zed_node/rgb/image_rect_color', Image, self.callback)
+        #self.subscriberDepth = rospy.Subscriber("/zed2/zed_node/depth/depth_registered", Image, self.depthImageRosCallback)
+        #self.subscriberInfo = rospy.Subscriber("/zed2/zed_node/depth/camera_info", CameraInfo, self.infoImageRosCallback)
+
+        self.sub = rospy.Subscriber('/camera/rgb/image_raw', Image, self.callback)
+        self.subscriberDepth = rospy.Subscriber("/camera/depth/image_raw", Image, self.depthImageRosCallback)
+        self.subscriberInfo = rospy.Subscriber("/camera/depth/camera_info", CameraInfo, self.infoImageRosCallback)
+        
         self.pubmask = rospy.Publisher('/mask_colores', Image, queue_size=10)
         self.mask  = None
         self.cv_image = np.array([])
