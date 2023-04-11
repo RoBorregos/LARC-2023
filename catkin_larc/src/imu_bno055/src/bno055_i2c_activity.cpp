@@ -94,6 +94,7 @@ bool BNO055I2CActivity::reset() {
 bool BNO055I2CActivity::start() {
     ROS_INFO("starting");
 
+    if(!pub_imu_rpy) pub_imu_rpy = nh.advertise<geometry_msgs::Vector3>("imu_rpy", 1);
     if(!pub_data) pub_data = nh.advertise<sensor_msgs::Imu>("data", 1);
     if(!pub_raw) pub_raw = nh.advertise<sensor_msgs::Imu>("raw", 1);
     if(!pub_mag) pub_mag = nh.advertise<sensor_msgs::MagneticField>("mag", 1);
@@ -205,6 +206,10 @@ bool BNO055I2CActivity::spinOnce() {
     msg_temp.header.seq = seq;
     msg_temp.temperature = (double)record.temperature;
 
+    geometry_msgs::Vector3 msg_rpy;
+    msg_rpy = quaternion_to_rpy(msg_data.orientation);
+
+    pub_imu_rpy.publish(msg_rpy);
     pub_data.publish(msg_data);
     pub_raw.publish(msg_raw);
     pub_mag.publish(msg_mag);
@@ -237,6 +242,19 @@ bool BNO055I2CActivity::stop() {
 
     return true;
 }
+
+geometry_msgs::Vector3 BNO055I2CActivity::quaternion_to_rpy( const geometry_msgs::Quaternion& q ) {
+    tf2::Quaternion tf_quaternion(q.x, q.y, q.z, q.w);
+    double roll, pitch, yaw;
+    tf2::Matrix3x3(tf_quaternion).getRPY(roll, pitch, yaw);
+
+    geometry_msgs::Vector3 euler_angles;
+    euler_angles.x = roll * RAD2DEG;
+    euler_angles.y = pitch * RAD2DEG;
+    euler_angles.z = yaw * RAD2DEG;
+    return euler_angles;
+}
+
 
 bool BNO055I2CActivity::onServiceReset(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res) {
     if(!reset()) {

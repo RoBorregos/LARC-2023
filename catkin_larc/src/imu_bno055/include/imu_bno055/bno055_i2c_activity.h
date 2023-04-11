@@ -17,6 +17,10 @@
 #include <diagnostic_msgs/DiagnosticArray.h>
 #include <diagnostic_msgs/KeyValue.h>
 
+#include <geometry_msgs/Vector3.h>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2/LinearMath/Matrix3x3.h>
+
 #include <linux/i2c-dev.h>
 #include <smbus_functions.h>
 
@@ -242,8 +246,12 @@ class BNO055I2CActivity {
     bool onServiceReset(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
     bool onServiceCalibrate(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
 
+    geometry_msgs::Vector3 quaternion_to_rpy(const geometry_msgs::Quaternion &q);
+
   private:
     bool reset();
+
+    const float RAD2DEG = 57.2958;
 
     // class variables
     uint32_t seq = 0;
@@ -260,6 +268,7 @@ class BNO055I2CActivity {
     ros::NodeHandle nh_priv;
 
     // ROS publishers
+    ros::Publisher pub_imu_rpy;
     ros::Publisher pub_data;
     ros::Publisher pub_raw;
     ros::Publisher pub_mag;

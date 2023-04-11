@@ -4,6 +4,8 @@
  * Instantiates a BNO055I2C Activity class, as well as
  * a Watchdog that causes this node to die if things aren't
  * working.
+ * 
+ * https://github.com/ToyotaResearchInstitute/Outdoor_imu_bno055
  */
 
 #include <imu_bno055/bno055_i2c_activity.h>
