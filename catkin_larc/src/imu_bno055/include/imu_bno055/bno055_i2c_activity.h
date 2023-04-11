@@ -252,6 +252,7 @@ class BNO055I2CActivity {
     bool reset();
 
     const float RAD2DEG = 57.2958;
+    double roll, pitch, yaw;
 
     // class variables
     uint32_t seq = 0;

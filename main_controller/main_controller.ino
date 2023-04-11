@@ -1,3 +1,7 @@
+#include <ros.h>
+#include <geometry_msgs/Twist.h>
+#include <geometry_msgs/Vector3.h>
+
 #include "Constants.h"
 #include "Drive.h"
 #include "Motor.h"
@@ -8,11 +12,38 @@ Drive mDrive;
 Elevator mElevator;
 Intake mIntake;
 
-unsigned long debugTime = 0;
+unsigned long debug_time = 0;
 float targetSpeed = 0.8;
 int state = 0;
-unsigned long stateTime = 0;
+unsigned long state_time = 0;
 unsigned long loop_time = 0;
+
+float linear_x = 0;
+float linear_y = 0;
+float angular_z = 0;
+float theta_error = 0;
+
+void teleop( const geometry_msgs::Twist& msg){
+    Serial.println("I heard: ");
+    Serial.println(msg.linear.x);
+    Serial.println(msg.linear.y);
+    Serial.println(msg.linear.z);
+    Serial.println(msg.angular.x);
+    Serial.println(msg.angular.y);
+    Serial.println(msg.angular.z);
+    linear_x = msg.linear.x;
+    linear_y = msg.linear.y;
+    angular_z = msg.angular.z;
+    digitalWrite(13, HIGH-digitalRead(13));
+}
+
+void imu_read( const geometry_msgs::Vector3& msg){
+    theta_error = msg.z;
+    digitalWrite(13, HIGH-digitalRead(13));
+}
+
+ros::NodeHandle nh;
+ros::Subscriber<geometry_msgs::Twist> sub("cmd_vel", &teleop );
 
 void setup(){
     mDrive.init();
@@ -23,13 +54,20 @@ void setup(){
     attachInterrupt(digitalPinToInterrupt(Constants::kFrontRightEncoder), interruptFR, CHANGE);
     attachInterrupt(digitalPinToInterrupt(Constants::kBackLeftEncoder), interruptBL, CHANGE);
     attachInterrupt(digitalPinToInterrupt(Constants::kBackRightEncoder), interruptBR, CHANGE);
-    stateTime = millis();
+
+    state_time = millis();
+    loop_time = millis();
+    debug_time = millis();
+    //mElevator.setPosition(ElevatorPosition::SecondWarehouse);
+
+    nh.initNode();
+    nh.subscribe(sub);
 }
 
 void loop(){
     if( millis() - loop_time > 10 ){
         mDrive.periodicIO();
-        //nh.spinOnce();
+        nh.spinOnce();
         loop_time = millis();
     }
 
@@ -37,61 +75,61 @@ void loop(){
         case 0:
             mDrive.setSpeed(0.5, 0, 0);
             mIntake.pick();
-            if( millis() - stateTime > 600 ){
-                stateTime = millis();
+            if( millis() - state_time > 600 ){
+                state_time = millis();
                 mDrive.stop();
                 state = 1;
             }
             break;
         case 1:
-            if( millis() - stateTime > 1000 ){
-                stateTime = millis();
+            if( millis() - state_time > 1000 ){
+                state_time = millis();
                 mIntake.stop();
                 mDrive.stop();
                 state = 2;
             }
             break;
         case 2:
-            if( millis() - stateTime > 600 ){
-                stateTime = millis();
+            if( millis() - state_time > 600 ){
+                state_time = millis();
                 mElevator.setPosition(ElevatorPosition::SecondWarehouse);
                 state = 3;
             }
             break;
         case 3:
             if( mElevator.positionReached() ){
-                stateTime = millis();
+                state_time = millis();
                 state = 4;
             }
             break;
         case 4:
             mDrive.setSpeed(0.5, 0, 0);
-            if( millis() - stateTime > 600 ){
-                stateTime = millis();
+            if( millis() - state_time > 600 ){
+                state_time = millis();
                 mDrive.stop();
                 mIntake.drop();
                 state = 5;
             }
             break;
         case 5:
-            if( millis() - stateTime > 1500 ){
-                stateTime = millis();
+            if( millis() - state_time > 1500 ){
+                state_time = millis();
                 mIntake.stop();
                 state = 6;
             }
             break;
     }
-    //mDrive.setSpeed(0.8, 0, 0);
+    //mDrive.setSpeed(linear_x, linear_y, linear_z);
     //mDrive.periodicIO();
 
     //mElevator.setPosition(ElevatorPosition::SecondWarehouse);
     mElevator.periodicIO();
 
     // Plot (TODO: make a library for this)
-    if( millis() - debugTime > 50 ){
+    if( millis() - debug_time > 50 ){
         //Serial.println(mDrive.getSpeed(MotorID::FrontLeft));
         //plotData(mDrive.getSpeed(MotorID::FrontLeft), mDrive.getSpeed(MotorID::FrontRight), mDrive.getSpeed(MotorID::BackLeft), mDrive.getSpeed(MotorID::BackRight), targetSpeed);
-        debugTime = millis();
+        debug_time = millis();
     }
     //delay(10);
 }

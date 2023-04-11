@@ -245,7 +245,6 @@ bool BNO055I2CActivity::stop() {
 
 geometry_msgs::Vector3 BNO055I2CActivity::quaternion_to_rpy( const geometry_msgs::Quaternion& q ) {
     tf2::Quaternion tf_quaternion(q.x, q.y, q.z, q.w);
-    double roll, pitch, yaw;
     tf2::Matrix3x3(tf_quaternion).getRPY(roll, pitch, yaw);
 
     geometry_msgs::Vector3 euler_angles;
