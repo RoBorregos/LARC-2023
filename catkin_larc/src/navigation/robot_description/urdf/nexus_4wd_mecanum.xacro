@@ -388,6 +388,77 @@
     </inertial>
   </link>
 
+  <!-- Camera -->
+  <link name="camera">
+    <inertial>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <mass
+        value="0.0447520630064878" />
+      <inertia
+        ixx="2.72774898672935E-05"
+        ixy="2.4435672012364E-07"
+        ixz="-1.38631264252966E-09"
+        iyy="3.94471446072863E-06"
+        iyz="-2.1932086349915E-09"
+        izz="2.73620409048763E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://robot_description/meshes/nexus/Camara.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://robot_description/meshes/nexus/Camara.STL" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="camera_joint" type="fixed">
+    <origin
+      xyz="0.02 0 0.2"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="camera" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+
+  <!-- Camera Rgb Frame -->
+  <link name="camera_rgb_frame">
+  </link>
+  <joint name="camera_optical_joint" type="fixed">
+    <origin xyz="0 0 0" rpy="-1.5707 0 -1.5707"/>
+    <parent link="camera"/>
+    <child link="camera_rgb_frame"/>
+  </joint>
+
+  <!-- Camera Depth Frame -->
+  <link name="camera_depth_frame">
+  </link>
+  <joint name="camera_depth_joint" type="fixed">
+    <origin xyz="0 0 0" rpy="-1.5707 0 -1.5707"/>
+    <parent link="camera"/>
+    <child link="camera_depth_frame"/>
+  </joint>
+
   <!-- Include controller plugin for Gazebo -->
   <xacro:include filename="$(find robot_description)/urdf/nexus_4wd_mecanum.gazebo.xacro" />
 
