@@ -19,6 +19,7 @@ class DetectorCubos:
     def __init__(self):
         self.bridge = CvBridge()
         self.pub = rospy.Publisher('/cubos_out', Image, queue_size=10)
+        self.posePublisher = rospy.Publisher("/test/detectionposes", PoseArray, queue_size=5)        
         self.pubData = rospy.Publisher('detect_cube', objectDetectionArray, queue_size=5)
         self.sub = rospy.Subscriber('/zed2/zed_node/rgb/image_rect_color', Image, self.callback)
         self.subscriberDepth = rospy.Subscriber("/zed2/zed_node/depth/depth_registered", Image, self.depthImageRosCallback)
@@ -51,111 +52,92 @@ class DetectorCubos:
         (contornos,_) = cv2.findContours(canny, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
         # Dibujar los contornos en la imagen original
+        bb = []
+        detections = []
+        tempo = []
         for c in contornos:
             area = cv2.contourArea(c)
             #x,y,w,h = cv2.boundingRect(c)
             epsilon = 0.09*cv2.arcLength(c,True)
             approx = cv2.approxPolyDP(c,epsilon,True)
-            if (len(approx)==6) and area > 1000:
-                print("aprox",approx)
-                print("Area:", area)
-                cv2.drawContours(frame, [c], 0,(0,255,0),2)
-                #print("Contornos:", c)
-                tl, tr, br, bl,cr,cl = approx
-                print("tl", tl[0][0],tl[0][1])
-                print("tr", tr[0][0],tr[0][1])
-                print("br", br[0][0],br[0][1])
-                print("bl", bl[0][0],bl[0][1])
-                print("cr", cr[0][0],cr[0][1])
-                print("cl", cl[0][0],cl[0][1])
-                tl = (int(tl[0][0]), int(tl[0][1]))
-                tr = (int (tr[0][0]), int(tr[0][1]))
-                br = (int (br[0][0]), int(br[0][1]))
-                bl = (int (bl[0][0]), int(bl[0][1]))
-                cr = (int (cr[0][0]), int(cr[0][1]))
-                cl = (int (cl[0][0]), int(cl[0][1]))
-                xmayor = max(tl[0], tr[0], br[0], bl[0], cr[0], cl[0])
-                ymayor = max(tl[1], tr[1], br[1], bl[1], cr[1], cl[1])
-                xmenor = min(tl[0], tr[0], br[0], bl[0], cr[0], cl[0])
-                ymenor = min(tl[1], tr[1], br[1], bl[1], cr[1], cl[1])
-                
-                cubo = frame[ymenor:ymayor,xmenor:xmayor]
-                cv2.imshow("Cubo", cubo)
-                # cubo = frame[y:y+h,x:x+w]
-                # cv2.imshow("Cubo", cubo)
-            if (len(approx)==4) and area > 9000:
-                print("aprox",approx)
-                print("Area:", area)
-                cv2.drawContours(frame, [c], 0,(0,255,0),2)
-                #print("Contornos:", c)
-                tl, tr, br, bl = approx
-                print("tl", tl[0][0],tl[0][1])
-                print("tr", tr[0][0],tr[0][1])
-                print("br", br[0][0],br[0][1])
-                print("bl", bl[0][0],bl[0][1])
-                tl = (int(tl[0][0]), int(tl[0][1]))
-                tr = (int (tr[0][0]), int(tr[0][1]))
-                br = (int (br[0][0]), int(br[0][1]))
-                bl = (int (bl[0][0]), int(bl[0][1]))
+            if(len(approx)==6 or len(approx)==4):
+                if (len(approx)==6) and area > 300:
+                    print("aprox",approx)
+                    print("Area:", area)
+                    cv2.drawContours(frame, [c], 0,(0,255,0),2)
+                    #print("Contornos:", c)
+                    tl, tr, br, bl,cr,cl = approx
+                    print("tl", tl[0][0],tl[0][1])
+                    print("tr", tr[0][0],tr[0][1])
+                    print("br", br[0][0],br[0][1])
+                    print("bl", bl[0][0],bl[0][1])
+                    print("cr", cr[0][0],cr[0][1])
+                    print("cl", cl[0][0],cl[0][1])
+                    tl = (int(tl[0][0]), int(tl[0][1]))
+                    tr = (int (tr[0][0]), int(tr[0][1]))
+                    br = (int (br[0][0]), int(br[0][1]))
+                    bl = (int (bl[0][0]), int(bl[0][1]))
+                    cr = (int (cr[0][0]), int(cr[0][1]))
+                    cl = (int (cl[0][0]), int(cl[0][1]))
+                    xmayor = max(tl[0], tr[0], br[0], bl[0], cr[0], cl[0])
+                    ymayor = max(tl[1], tr[1], br[1], bl[1], cr[1], cl[1])
+                    xmenor = min(tl[0], tr[0], br[0], bl[0], cr[0], cl[0])
+                    ymenor = min(tl[1], tr[1], br[1], bl[1], cr[1], cl[1])
+                    
+                    tempo =  ymenor, xmenor, ymayor, xmayor  
+                    bb.append(tempo)
+                        
+                    cubo = frame[ymenor:ymayor,xmenor:xmayor]
+                    detections.append(cubo)
+                    
+                    cubo = frame[ymenor:ymayor,xmenor:xmayor]
+                    cv2.imshow("Cubo", cubo)
+                    rospy.logwarn("es de 4")
+                    # cubo = frame[y:y+h,x:x+w]
+                    # cv2.imshow("Cubo", cubo)
+                if (len(approx)==4) and area > 300 and area < 400:
+                    print("aprox",approx)
+                    print("Area:", area)
+                    cv2.drawContours(frame, [c], 0,(0,255,0),2)
+                    #print("Contornos:", c)
+                    tl, tr, br, bl = approx
+                    print("tl", tl[0][0],tl[0][1])
+                    print("tr", tr[0][0],tr[0][1])
+                    print("br", br[0][0],br[0][1])
+                    print("bl", bl[0][0],bl[0][1])
+                    tl = (int(tl[0][0]), int(tl[0][1]))
+                    tr = (int (tr[0][0]), int(tr[0][1]))
+                    br = (int (br[0][0]), int(br[0][1]))
+                    bl = (int (bl[0][0]), int(bl[0][1]))
 
-                xmayor = max(tl[0], tr[0], br[0], bl[0])
-                ymayor = max(tl[1], tr[1], br[1], bl[1])
-                xmenor = min(tl[0], tr[0], br[0], bl[0])
-                ymenor = min(tl[1], tr[1], br[1], bl[1])
+                    xmayor = max(tl[0], tr[0], br[0], bl[0])
+                    ymayor = max(tl[1], tr[1], br[1], bl[1])
+                    xmenor = min(tl[0], tr[0], br[0], bl[0])
+                    ymenor = min(tl[1], tr[1], br[1], bl[1])
+                    
+                    tempo =  ymenor, xmenor, ymayor, xmayor
+                    bb.append(tempo)
+                        
+                    cubo = frame[ymenor:ymayor,xmenor:xmayor]
+                    detections.append(cubo)
+                    
+                    cv2.imshow("Cubo", cubo)
+                    rospy.logwarn("es de 4")
+                self.get_objects(bb, detections)
                 
-                cubo = frame[ymenor:ymayor,xmenor:xmayor]
-                cv2.imshow("Cubo", cubo)
+            self.pub.publish(self.bridge.cv2_to_imgmsg(self.cv_image, encoding="bgr8"))
+
                 # cubo = frame[y:y+h,x:x+w]
                 # cv2.imshow("Cubo", cubo)    
 
         # Mostrar el resultado en una ventana
         #frame = cv2.resize(frame, (0, 0), fx = 0.3, fy  = 0.3)
-        cv2.imshow('webcam', frame)
+        
         
     def callback(self, data):
 
         self.cv_image = self.bridge.imgmsg_to_cv2(data,desired_encoding="bgr8")
-        self.detectar_cubos
-      
-    def detectar_arucos(self):
-        frame = self.cv_image
-        dictionary = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_50)
-        parameters = cv2.aruco.DetectorParameters_create()
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        corners, ids, rejectedImgPoints = cv2.aruco.detectMarkers(gray, dictionary, parameters=parameters)
-        frame_with_markers = cv2.aruco.drawDetectedMarkers(frame, corners, ids)
-        self.cv_image = frame_with_markers
-
-        bb = []
-        detections = []
-        tempo = []
-        if ids is not None:
-            if corners:
-                for i, marker_corners in enumerate(corners):
-                    print(ids[i])
-                    corner = corners[0][0]
-                    xmayor = np.amax(corner[:, 0])
-                    ymayor = np.amax(corner[:, 1])
-                    xmenor = np.amin(corner[:, 0])
-                    ymenor = np.amin(corner[:, 1])
-
-                    #print(f"Xmayor: {xmayor:.2f}, Xmenor: {xmenor:.2f}, Ymayor: {ymayor:.2f}, Ymenor: {ymenor:.2f}")    
-                    tempo =  ymenor, xmenor, ymayor, xmayor
-                    bb.append(tempo)
-                    detections.append(ids[i])
-                    #ids[i][j] Es el id del aruco
-                    #corners Es la bounding box del aruco
-            self.get_objects(bb, detections)
-
-
-        self.pub.publish(self.bridge.cv2_to_imgmsg(self.cv_image, encoding="bgr8"))
-
-
-    def callback(self, data):
-
-        self.cv_image = self.bridge.imgmsg_to_cv2(data,desired_encoding="bgr8")
-        self.detectar_arucos()
-
+        self.detectar_cubos()
 
     def get_objects(self, boxes, detections):
         res = []
@@ -193,7 +175,7 @@ class DetectorCubos:
                         xmax = float(boxes[index][3]),
                         point3D = point3D
                     )
-                )
+                )      
             self.posePublisher.publish(pa)
 
         self.pubData.publish(objectDetectionArray(detections=res))
