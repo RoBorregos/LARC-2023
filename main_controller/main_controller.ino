@@ -7,6 +7,7 @@
 #include "Motor.h"
 #include "Intake.h"
 #include "Elevator.h"
+#include "LineSensor.h"
 
 Drive mDrive;
 Elevator mElevator;
@@ -43,10 +44,11 @@ void imu_read( const geometry_msgs::Vector3& msg){
 }
 
 ros::NodeHandle nh;
-ros::Subscriber<geometry_msgs::Twist> sub("cmd_vel", &teleop );
+ros::Subscriber<geometry_msgs::Twist> sub_drive("cmd_vel", &teleop );
+ros::Subscriber<geometry_msgs::Vector3> sub_imu("imu_rpy", &imu_read );
 
 void setup(){
-    mDrive.init();
+    mDrive.init(&theta_error);
     mElevator.setSpeed(1500);
     Serial.begin(9600);
     //Serial.write("<target>");
@@ -61,7 +63,8 @@ void setup(){
     //mElevator.setPosition(ElevatorPosition::SecondWarehouse);
 
     nh.initNode();
-    nh.subscribe(sub);
+    nh.subscribe(sub_drive);
+    nh.subscribe(sub_imu);
 }
 
 void loop(){

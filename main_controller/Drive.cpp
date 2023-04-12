@@ -1,13 +1,15 @@
 #include "Drive.h"
 
-void Drive::init(){
+void Drive::init(float* theta){
     frontLeft.init(Constants::kFrontLeftA, Constants::kFrontLeftB, Constants::kFrontLeftEncoder);
     frontRight.init(Constants::kFrontRightA, Constants::kFrontRightB, Constants::kFrontRightEncoder);
     backLeft.init(Constants::kBackLeftA, Constants::kBackLeftB, Constants::kBackLeftEncoder);
     backRight.init(Constants::kBackRightA, Constants::kBackRightB, Constants::kBackRightEncoder);
+    imu_ptr = theta;
 }
 
-void Drive::setSpeed(float linearX, float linearY, float angularZ, float error){
+void Drive::setSpeed(float linearX, float linearY, float angularZ){
+    float error = angle * Constants::kDriveKP;
     float wheelPosX = Constants::kWheelBase/2;
     float wheelPosY = Constants::kWheelTrack/2; 
     float frontLeftSpeed = linearX - linearY - angularZ*(wheelPosX + wheelPosY) - error;
@@ -82,6 +84,7 @@ long Drive::getTicks(MotorID motorID){
 }
 
 void Drive::periodicIO(){
+    angle = *imu_ptr;
     frontLeft.periodicIO();
     frontRight.periodicIO();
     backLeft.periodicIO();

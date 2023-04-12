@@ -8,9 +8,9 @@ class PID{
     private:
         float last_error = 0;
         float integral = 0;
-        float kP = Constants::kP;
-        float kI = Constants::kI;
-        float kD = Constants::kD;
+        float kP = Constants::kMotorKP;
+        float kI = Constants::kMotorKI;
+        float kD = Constants::kMotorKD;
     public:
         PID();
         float calculate(float setpoint, float input, float dt);

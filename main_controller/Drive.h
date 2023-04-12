@@ -18,8 +18,10 @@ class Drive{
         Motor frontRight;
         Motor backLeft;
         Motor backRight;
+        float angle;
+        float* imu_ptr;
     public:
-        void init();
+        void init(float* theta);
         void setSpeed(float linearX, float linearY, float angularZ);
         void stop();
         void periodicIO();

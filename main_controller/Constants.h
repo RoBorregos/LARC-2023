@@ -11,6 +11,7 @@ class Constants{
         static constexpr float kWheelDiameter = 0.054; //meters
         static constexpr float kWheelTrack = 0.23; //meters
         static constexpr float kWheelBase = 0.155; //meters
+        static constexpr float kDriveKP = 0.1;
         
         //Motors (A: fwd, B: rev)
         static constexpr float kMotorsRPM = 380; //RPM
@@ -32,9 +33,9 @@ class Constants{
         static constexpr int kBackRightEncoder = 12;
 
         //PID
-        static constexpr float kP = 5;
-        static constexpr float kI = 0.0;
-        static constexpr float kD = 0.0;
+        static constexpr float kMotorKP = 5;
+        static constexpr float kMotorKI = 0.0;
+        static constexpr float kMotorKD = 0.0;
 
         // Line sensor //
         static constexpr int kLineSensorS0 = 18;
@@ -42,6 +43,7 @@ class Constants{
         static constexpr int kLineSensorS2 = 20;
         static constexpr int kLineSensorS3 = 21;
         static constexpr int kLineSensorSignal = 22;
+        static constexpr int kLineSensorValue = 500;
 
         // Intake //
         static constexpr int kIntakeMotor1A = 8;
