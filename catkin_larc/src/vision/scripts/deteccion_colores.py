@@ -145,8 +145,8 @@ class DetectorColores:
 
     def detectar_colores(self):
         frame = self.cv_image
-        redBajo1 = np.array([0,150,45],np.uint8)
-        redAlto1 = np.array([5,255,200],np.uint8)
+        redBajo1 = np.array([0,165,115],np.uint8)
+        redAlto1 = np.array([10,245,235],np.uint8)
 
         redBajo2 = np.array([170,100,45],np.uint8)
         redAlto2 = np.array([179,255,255],np.uint8)

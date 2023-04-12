@@ -8,11 +8,14 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   rospy
   std_msgs
-  std_srvs
+  vision
 )
 
 
 catkin_package(
+  #INCLUDE_DIRS include
+  CATKIN_DEPENDS roscpp rospy std_msgs vision
+  DEPENDS system_lib
 )
 
 include_directories(
@@ -20,6 +23,8 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
+add_executable(main_engine src/main_engine.cpp)
+target_link_libraries(main_engine ${catkin_LIBRARIES})
 
 # install(PROGRAMS
 #        scripts/main_engine.py

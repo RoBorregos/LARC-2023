@@ -7,9 +7,12 @@ def nothing(x):
     pass
 
 # Initializing the webcam feed.
-cap = cv2.VideoCapture(0)
-cap.set(3,1280)
-cap.set(4,720)
+#cap = cv2.VideoCapture(0)
+
+# Cambiar a video capture para calibrar #
+cap = cv2.imread('rojo.png')
+#cap.set(3,1280)
+#cap.set(4,720)
 
 # Create a window named trackbars.
 cv2.namedWindow("Trackbars")
@@ -28,11 +31,12 @@ cv2.createTrackbar("U - V", "Trackbars", 255, 255, nothing)
 while True:
     
     # Start reading the webcam feed frame by frame.
-    ret, frame = cap.read()
-    if not ret:
-        break
+ #   ret, frame = cap.read()
+    frame = cap
+ #   if not ret:
+ #       break
     # Flip the frame horizontally (Not required)
-    frame = cv2.flip( frame, 1 ) 
+#    frame = cv2.flip( frame, 1 ) 
     
     # Convert the BGR image to HSV image.
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
