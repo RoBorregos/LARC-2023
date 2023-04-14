@@ -13,7 +13,7 @@ import sys
 sys.path.append(str(pathlib.Path(__file__).parent) + '/../include')
 from vision_utils import *
 
-cap = cv2.VideoCapture(0)
+#cap = cv2.VideoCapture(0)
 
 class DetectorCubos:
     def __init__(self):
@@ -61,7 +61,7 @@ class DetectorCubos:
             epsilon = 0.09*cv2.arcLength(c,True)
             approx = cv2.approxPolyDP(c,epsilon,True)
             if(len(approx)==6 or len(approx)==4):
-                if (len(approx)==6) and area > 300:
+                if (len(approx)==6) and area > 1000:
                     print("aprox",approx)
                     print("Area:", area)
                     cv2.drawContours(frame, [c], 0,(0,255,0),2)
@@ -95,7 +95,7 @@ class DetectorCubos:
                     rospy.logwarn("es de 4")
                     # cubo = frame[y:y+h,x:x+w]
                     # cv2.imshow("Cubo", cubo)
-                if (len(approx)==4) and area > 300 and area < 400:
+                if (len(approx)==4) and area > 9000:
                     print("aprox",approx)
                     print("Area:", area)
                     cv2.drawContours(frame, [c], 0,(0,255,0),2)
