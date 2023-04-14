@@ -1,6 +1,7 @@
 #include <ros.h>
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/Vector3.h>
+#include <nav_msgs/Odometry.h>
 
 #include "Constants.h"
 #include "Drive.h"
