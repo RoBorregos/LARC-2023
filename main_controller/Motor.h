@@ -34,7 +34,7 @@ class Motor{
         void setSpeed(float speed);
         void setPWM(int pwm);
         void stop();
-        void periodicIO();
+        void periodicIO(unsigned long current_time);
         float getMaxVelocity();
         void encoderInterrupt();
         long getTicks();

@@ -1,34 +1,170 @@
-/*#include "Adafruit_VL53L0X.h"
+/*
+ * This code was developed from the example code obtained via the Arduino IDE for the
+ * Grove Time-of-Flight Distance Sensor VL53L0X.
+ * 
+ ***************************************************************************************
+ ** WARNING: Some versions of the Arduino IDE software will issue error messages the  **
+ **          first time that you compile this code. However, these errors messages    **
+ **          disappear on the second and subsequent attempts to compile.              **
+ ***************************************************************************************
+ * 
+ * Wiring:
+ *   If you are connecting the distance-sensor directly to an Arduino Uno board, then:
+ *     Connect all sensors' GND wires to a GND pin on the Arduino board
+ *     Connect all sensors' VCC wires to a 5V pin.
+ *     Connect all sensors' SDA wires (Serial DAta line) to analog pin #4 ('A4').
+ *     Connect all sensors' SCL wire (Serial CLock line) to analog pin #5 ('A5').
+ *     Connect each sensor's XSHUT wire (shut-down line) to a different digital pin
+ *             on the Arduino board.
+ *   
+ *   Alternatively, the sensors' SDA and SCL wires may be connected to the unlabeled
+ *   pins beside the AREF pin on the Arduino Uno board. The sensors' SDA wires connect
+ *   to the pin immediately beside the AREF pin. The sensors' SCL wires connect to the
+ *   next pin, at the edge of the connector.
+ *   
+ *   If you are wiring the distance-sensors to a Motor Shield board, then follow the
+ *   same instructions as the above. (Note that the SDA and SCL pins have better labels
+ *   on the Motor Shield board than on the Arduino Uno board.)
+*/
 
-Adafruit_VL53L0X lox = Adafruit_VL53L0X();
+// Include the 'Wire.h' libary to allow the Arduino to communicate with the time-of-flight sensors of the 'IIC' bus
+#include <Wire.h>  
 
-void setup(){
-    Serial.begin(9600);
+// Include the 'Adafruit_VL53L0X' libary for the VL53L0X time-of-flight distance sensors
+#include <Adafruit_VL53L0X.h>  
 
-    // Iniciar sensor
-    Serial.println("VL53L0X test");
-    if (!lox.begin()){
-        Serial.println(F("Error al iniciar VL53L0X"));
-        while(1);
+// Create a 'Adafruit_VL53L0X' object for each sensor:
+Adafruit_VL53L0X sensor1;
+Adafruit_VL53L0X sensor2;
+
+//====================================================================
+// Define global variables for the sensors:
+//====================================================================
+typedef struct {
+  Adafruit_VL53L0X *psensor; // pointer to object
+  TwoWire *pwire;
+  int id;            // IIC id number for the sensor
+  int shutdown_pin;  // which pin for shutdown;
+  int interrupt_pin; // which pin to use for interrupts.
+  Adafruit_VL53L0X::VL53L0X_Sense_config_t sensor_config;     // options for how to use the sensor
+  uint16_t range;        // range value used in continuous mode stuff.
+  uint8_t sensor_status; // status from last ranging in continuous.
+} sensorList_t;
+
+// Setup for 2 sensors by defining information for each sensor in a 'sensors' array. Include
+// a separate line of information for each sensor
+sensorList_t sensors[] = {
+  // For 'sensor1', define the IIC accress as hexadecimal value 0x30. Assign digital pin #4 to this 
+  // sensor's XSHUT pin (shut-down pin). Assign digital pin #5 to the sensor's INTERRUPT pin.
+  {&sensor1, &Wire1, 0x30, 8, 0, Adafruit_VL53L0X::VL53L0X_SENSE_DEFAULT, 0, 0},
+
+  // For 'sensor2', define the IIC accress as hexadecimal value 0x31. Assign digital pin #6 to this 
+  // sensor's XSHUT pin (shut-down pin). Assign digital pin #7 to the sensor's INTERRUPT pin.
+  {&sensor2, &Wire1, 0x31, 9, 0, Adafruit_VL53L0X::VL53L0X_SENSE_DEFAULT, 0, 0}
+};
+
+// Calculate the number of sensors by checking the size of the above 'sensors' array:
+const int COUNT_SENSORS = sizeof(sensors) / sizeof(sensors[0]);
+
+// Create array-variable for the sensors' range (in mm):
+uint16_t ranges_mm[COUNT_SENSORS];
+
+//====================================================================
+// The 'Initialize_sensors' function:
+//====================================================================
+/*
+    Reset all sensors by setting all of their XSHUT pins low for delay(10), then
+    set all XSHUT high to bring out of reset. Keep sensor #1 awake by keeping XSHUT
+    pin high. Put all other sensors into shutdown by pulling XSHUT pins low.
+    Initialize sensor #1 with lox.begin(new_i2c_address). Pick any number except
+    0x29 and it must be under 0x7F. Going with 0x30 to 0x3F is probably OK.
+    Keep sensor #1 awake, and now bring sensor #2 out of reset by setting its
+    XSHUT pin high. Initialize sensor #2 with lox.begin(new_i2c_address) Pick any
+    number but 0x29 and whatever you set the first sensor to.
+*/
+void Initialize_sensors() {
+  bool found_any_sensors = false;
+  // Set all shutdown pins low to shutdown sensors
+  for (int i = 0; i < COUNT_SENSORS; i++)
+    digitalWrite(sensors[i].shutdown_pin, LOW);
+  delay(10);
+
+  for (int i = 0; i < COUNT_SENSORS; i++) {
+    // one by one enable sensors and set their ID
+    digitalWrite(sensors[i].shutdown_pin, HIGH);
+    delay(10); // give time to wake up.
+    if (sensors[i].psensor->begin(sensors[i].id, false, sensors[i].pwire,
+                                  sensors[i].sensor_config)) {
+      found_any_sensors = true;
+    } else {
+      Serial.print(i, DEC);
+      Serial.print(F(": c to start\n"));
     }
-}
+  }
+  if (!found_any_sensors) {
+    Serial.println("No valid sensors found");
+    while (1)
+      ;
+  }
+}  // End of function 'Initialize_sensors'
 
-void loop(){
-    VL53L0X_RangingMeasurementData_t measure;
+//====================================================================
+// The 'setup' function:
+//====================================================================
+void setup() {
+  // Start the serial monitor at 9600 baud rate:
+  Serial.begin(9600);
 
-    Serial.print("Leyendo sensor... ");
-    lox.rangingTest(&measure, false); // si se pasa true como parametro, muestra por puerto serie datos de debug
+  // Start the IIC bus:
+  Wire.begin();
 
-    if (measure.RangeStatus != 4){
-        Serial.print("Distancia (mm): ");
-        Serial.println(measure.RangeMilliMeter);
-    }
-    else{
-        Serial.println("  Fuera de rango ");
-    }
+  // Wait until serial port opens ... For 5 seconds max
+  while (!Serial && (millis() < 5000))
+    ;
 
-    delay(100);
-}*/
+  // Initialize all of the pins.
+  Serial.println(F("VL53LOX_multi start, initialize IO pins"));
+  for (int i = 0; i < COUNT_SENSORS; i++) {
+    pinMode(sensors[i].shutdown_pin, OUTPUT);
+    digitalWrite(sensors[i].shutdown_pin, LOW);
+
+    if (sensors[i].interrupt_pin >= 0)
+      pinMode(sensors[i].interrupt_pin, INPUT_PULLUP);
+  }
+  Serial.println(F("Starting..."));
+  Initialize_sensors();
+}  // End of function 'setup'
+
+//====================================================================
+// The 'loop' function:
+//====================================================================
+void loop() {
+
+  // Read the data from the sensors using a 'for' loop:
+  for (int i = 0; i < COUNT_SENSORS; i++) {
+    ranges_mm[i] = sensors[i].psensor->readRange();  // This is where the sensor's data is captured
+  }
+  
+  // Print out the distances to the serial monitor, again using a 'for' loop:
+  for (int i = 0; i < COUNT_SENSORS; i++) {
+    Serial.print("Sensor #");
+    Serial.print(i, DEC);
+    Serial.print(" at IIC address 0x");
+    Serial.print(sensors[i].id, HEX);
+    Serial.print(": ");
+    Serial.print(ranges_mm[i], DEC);
+    Serial.print(" mm       ");
+  }
+  Serial.println();
+
+  // Delay until the next reading:
+  delay(200);  // Argument is in milliseconds
+  
+}  // End of function 'loop'
+//====================================================================
+
+
+
 // --------------------------------------
 // i2c_scanner
 // http://playground.arduino.cc/Main/I2cScanner
@@ -58,14 +194,14 @@ void loop(){
 // This sketch tests the standard 7-bit addresses
 // Devices with higher bit address might not be seen properly.
 //
-
+/*
 #include <Wire.h>
 
 
 void setup() {
   // uncomment these to use alternate pins
-  //Wire.setSCL(24);
-  //Wire.setSDA(25);
+  //Wire.setSCL(16);
+  //Wire.setSDA(17);
   Wire.begin();
   Serial.begin(9600);
   while (!Serial);        // Leonardo: wait for serial monitor
@@ -207,3 +343,4 @@ void printKnownChips(byte address)
     default: Serial.print(F("unknown chip"));
   }
 }
+*/
