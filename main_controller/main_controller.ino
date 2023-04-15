@@ -48,6 +48,8 @@ ros::NodeHandle nh;
 ros::Subscriber<geometry_msgs::Twist> sub_drive("cmd_vel", &teleop );
 ros::Subscriber<geometry_msgs::Vector3> sub_imu("imu_rpy", &imu_read );
 
+unsigned long current_time = 0;
+
 void setup(){
     mDrive.init(&theta_error);
     mElevator.setSpeed(1500);
@@ -58,9 +60,10 @@ void setup(){
     attachInterrupt(digitalPinToInterrupt(Constants::kBackLeftEncoder), interruptBL, CHANGE);
     attachInterrupt(digitalPinToInterrupt(Constants::kBackRightEncoder), interruptBR, CHANGE);
 
-    state_time = millis();
-    loop_time = millis();
-    debug_time = millis();
+    current_time = millis();
+    state_time = current_time;
+    loop_time = current_time;
+    debug_time = current_time;
     //mElevator.setPosition(ElevatorPosition::SecondWarehouse);
 
     nh.initNode();
@@ -69,55 +72,57 @@ void setup(){
 }
 
 void loop(){
-    if( millis() - loop_time > 10 ){
-        mDrive.periodicIO();
+    current_time = millis();
+
+    if( current_time - loop_time > 10 ){
+        mDrive.periodicIO(current_time);
         nh.spinOnce();
-        loop_time = millis();
+        loop_time = current_time;
     }
 
     switch( state ){
         case 0:
             mDrive.setSpeed(0.5, 0, 0);
             mIntake.pick();
-            if( millis() - state_time > 600 ){
-                state_time = millis();
+            if( current_time - state_time > 600 ){
+                state_time = current_time;
                 mDrive.stop();
                 state = 1;
             }
             break;
         case 1:
-            if( millis() - state_time > 1000 ){
-                state_time = millis();
+            if( current_time - state_time > 1000 ){
+                state_time = current_time;
                 mIntake.stop();
                 mDrive.stop();
                 state = 2;
             }
             break;
         case 2:
-            if( millis() - state_time > 600 ){
-                state_time = millis();
+            if( current_time - state_time > 600 ){
+                state_time = current_time;
                 mElevator.setPosition(ElevatorPosition::SecondWarehouse);
                 state = 3;
             }
             break;
         case 3:
             if( mElevator.positionReached() ){
-                state_time = millis();
+                state_time = current_time;
                 state = 4;
             }
             break;
         case 4:
             mDrive.setSpeed(0.5, 0, 0);
-            if( millis() - state_time > 600 ){
-                state_time = millis();
+            if( current_time - state_time > 600 ){
+                state_time = current_time;
                 mDrive.stop();
                 mIntake.drop();
                 state = 5;
             }
             break;
         case 5:
-            if( millis() - state_time > 1500 ){
-                state_time = millis();
+            if( current_time - state_time > 1500 ){
+                state_time = current_time;
                 mIntake.stop();
                 state = 6;
             }
@@ -130,10 +135,10 @@ void loop(){
     mElevator.periodicIO();
 
     // Plot (TODO: make a library for this)
-    if( millis() - debug_time > 50 ){
+    if( current_time - debug_time > 50 ){
         //Serial.println(mDrive.getSpeed(MotorID::FrontLeft));
         //plotData(mDrive.getSpeed(MotorID::FrontLeft), mDrive.getSpeed(MotorID::FrontRight), mDrive.getSpeed(MotorID::BackLeft), mDrive.getSpeed(MotorID::BackRight), targetSpeed);
-        debug_time = millis();
+        debug_time = current_time;
     }
     //delay(10);
 }

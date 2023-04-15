@@ -83,10 +83,29 @@ long Drive::getTicks(MotorID motorID){
     return -1;
 }
 
-void Drive::periodicIO(){
+Pose2d Drive::getChassisSpeeds(){
+    return velocity;
+}
+
+Pose2d Drive::getPosition(){
+    return position;
+}
+
+void Drive::periodicIO(unsigned long current_time){
     angle = *imu_ptr;
-    frontLeft.periodicIO();
-    frontRight.periodicIO();
-    backLeft.periodicIO();
-    backRight.periodicIO();
+    frontLeft.periodicIO(current_time);
+    frontRight.periodicIO(current_time);
+    backLeft.periodicIO(current_time);
+    backRight.periodicIO(current_time);
+
+    velocity.x = (frontLeft.getSpeed() + frontRight.getSpeed() + backLeft.getSpeed() + backRight.getSpeed())/4;
+    velocity.y = (frontLeft.getSpeed() - frontRight.getSpeed() + backLeft.getSpeed() - backRight.getSpeed())/4;
+    velocity.theta = (frontLeft.getSpeed() - frontRight.getSpeed() - backLeft.getSpeed() + backRight.getSpeed())/(4*Constants::kWheelTrack);
+
+    unsigned long delta_time = current_time - last_time;
+    position.x += velocity.x * delta_time;
+    position.y += velocity.y * delta_time;
+    position.theta += velocity.theta * delta_time;
+
+    last_time = current_time;
 }

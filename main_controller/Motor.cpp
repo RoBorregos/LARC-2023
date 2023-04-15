@@ -23,14 +23,13 @@ void Motor::encoderInterrupt(){
         io.ticks--;
 }
 
-void Motor::periodicIO(){
+void Motor::periodicIO(unsigned long current_time){
     analogWrite(motorA, io.direction? io.demand : 0);
     analogWrite(motorB, io.direction? 0 : io.demand);
 
-    unsigned long current_time = millis();
     io.delta_time = (current_time - io.last_time) / 1000.0;
     io.delta_ticks = io.ticks - io.last_ticks;
-    io.speed = (io.delta_ticks / io.delta_time) * (2 * Constants::kWheelDiameter * PI / Constants::kEncoderTicksPerRevolution);
+    io.speed = (io.delta_ticks / io.delta_time) * (Constants::kWheelDiameter * PI / (Constants::kEncoderTicksPerRevolution/2) );
 
     io.last_ticks = io.ticks;
     io.last_time = current_time;
