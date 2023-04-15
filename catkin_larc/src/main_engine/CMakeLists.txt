@@ -24,6 +24,7 @@ include_directories(
 )
 
 add_executable(main_engine src/main_engine.cpp)
+add_dependencies(main_engine vision_generate_messages_cpp)
 target_link_libraries(main_engine ${catkin_LIBRARIES})
 
 # install(PROGRAMS

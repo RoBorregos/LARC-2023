@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(vision)
 
+
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
 
@@ -16,7 +17,19 @@ find_package(catkin REQUIRED COMPONENTS
   #opencv2
   cv_bridge
   message_generation
+  pcl_ros
+  pcl_conversions
+  std_msgs
+  std_srvs
+  tf
+  tf2
+  tf2_ros
+  tf2_eigen
+  tf2_geometry_msgs
+
+  #gpd_ros
 )
+
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -53,6 +66,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 ## Generate messages in the 'msg' folder
 add_message_files(
+  DIRECTORY msg
   FILES
   objectDetection.msg
   objectDetectionArray.msg
@@ -75,9 +89,9 @@ add_message_files(
 ## Generate added messages and services with any dependencies listed here
 generate_messages(
   DEPENDENCIES
+  vision
   std_msgs
   geometry_msgs
-  vision
 )
 
 ################################################
@@ -126,6 +140,9 @@ catkin_package(
 include_directories(
 # include
   ${catkin_INCLUDE_DIRS}
+  include_directories(${PCL_INCLUDE_DIRS})
+  link_directories(${PCL_LIBRARY_DIRS})
+  add_definitions(${PCL_DEFINITIONS})
 )
 
 ## Declare a C++ library
@@ -138,10 +155,18 @@ include_directories(
 ## either from message generation or dynamic reconfigure
 # add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
+
+
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 # add_executable(${PROJECT_NAME}_node src/vision_node.cpp)
+
+add_executable(detector_cubos_3D src/detector_cubos_3D.cpp)
+target_link_libraries(detector_cubos_3D ${catkin_LIBRARIES})
+#add_dependencies(detector_cubos_3D vision)
+
+add_dependencies(detector_cubos_3D vision_generate_messages_cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
