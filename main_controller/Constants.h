@@ -58,6 +58,18 @@ class Constants{
         static constexpr int kStepperDirectionPin = 28;
         static constexpr int kStepperStepPin = 29;
         static constexpr int kStepperSpeed = 2000; //max 4688 / > 1000 torque
+        static constexpr int kElevatorVLXxshut = 34;
+
+        // Warehouse //
+        static constexpr int kWarehouseUpperMotorA = 37;
+        static constexpr int kWarehouseUpperMotorB = 38;
+        static constexpr int kWarehouseMidMotorA = 35;
+        static constexpr int kWarehouseMidMotorB = 36;
+        static constexpr int kWarehouseLowerMotorA = 14;
+        static constexpr int kWarehouseLowerMotorB = 15;
+        static constexpr int kWarehouseVLXxshutUpper = 31;
+        static constexpr int kWarehouseVLXxshutMid = 32;
+        static constexpr int kWarehouseVLXxshutLower = 33;
 };
 
 #endif

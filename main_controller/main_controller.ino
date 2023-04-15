@@ -3,12 +3,16 @@
 #include <geometry_msgs/Vector3.h>
 #include <nav_msgs/Odometry.h>
 
+#include <Wire.h>
+#include <Adafruit_VL53L0X.h>
+
 #include "Constants.h"
 #include "Drive.h"
 #include "Motor.h"
 #include "Intake.h"
 #include "Elevator.h"
 #include "LineSensor.h"
+#include "Warehouse.h"
 
 Drive mDrive;
 Elevator mElevator;
