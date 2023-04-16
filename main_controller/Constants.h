@@ -46,11 +46,14 @@ class Constants{
         static constexpr int kLineSensorValue = 500;
 
         // Intake //
-        static constexpr int kIntakeMotor1A = 8;
-        static constexpr int kIntakeMotor1B = 9;
-        static constexpr int kIntakeMotor2A = 10;
-        static constexpr int kIntakeMotor2B = 11;
-        static constexpr int kIntakePickSpeed = 255;
+        static constexpr int kIntakeMotor1A = 10;
+        static constexpr int kIntakeMotor1B = 11;
+        static constexpr int kIntakeMotor2A = 8;
+        static constexpr int kIntakeMotor2B = 9;
+        static constexpr int kIntakePresencePin = 30;
+        static constexpr int kIntakePickSpeed = 180;
+        static constexpr int kIntakeInSpeed = 255;
+        static constexpr int kIntakeOutSpeed = -160;
         static constexpr int kIntakeDropSpeed = -255;
 
         // Elevator //

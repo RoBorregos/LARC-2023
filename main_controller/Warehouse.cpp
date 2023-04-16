@@ -1,30 +1,33 @@
 #include "Warehouse.h"
 
-void Warehouse::init(Adafruit_VL53L0X* tof1){//, Adafruit_VL53L0X* tof2, Adafruit_VL53L0X* tof3){
+void Warehouse::init(unsigned long current_time, Adafruit_VL53L0X* tof1){//, Adafruit_VL53L0X* tof2, Adafruit_VL53L0X* tof3){
     upper.fwdPin = Constants::kWarehouseUpperMotorA;
     upper.revPin = Constants::kWarehouseUpperMotorB;
-    upper.speed = 0;
-    upper.kP = Constants::kWarehouseUpperKP;
+    upper.speed = Constants::kWarehouseUpperSpeed;
+    upper.demand = 0;
     //upper.tof = tof1;
-    upper.distance = (int)CubePosition::Empty;
-    upper.cubeState = CubePosition::Empty;
+    upper.distance = 0;
+    upper.cube_state = CubePosition::Four;
+    upper.state_time = current_time;
 
     mid.fwdPin = Constants::kWarehouseMidMotorA;
     mid.revPin = Constants::kWarehouseMidMotorB;
-    mid.speed = 0;
-    mid.kP = Constants::kWarehouseMidKP;
+    mid.speed = Constants::kWarehouseMidSpeed;
+    mid.demand = 0;
 //    mid.tof = tof2;
     mid.tof = tof1;
-    mid.distance = (int)CubePosition::Empty;
-    mid.cubeState = CubePosition::Empty;
+    mid.distance = 0;
+    mid.cube_state = CubePosition::Four;
+    mid.state_time = current_time;
 
     lower.fwdPin = Constants::kWarehouseLowerMotorA;
     lower.revPin = Constants::kWarehouseLowerMotorB;
-    lower.speed = 0;
-    lower.kP = Constants::kWarehouseLowerKP;
+    lower.speed = Constants::kWarehouseLowerSpeed;
+    lower.demand = 0;
     //lower.tof = tof3;
-    lower.distance = (int)CubePosition::Empty;
-    lower.cubeState = CubePosition::Empty;
+    lower.distance = 0;
+    lower.cube_state = CubePosition::Four;
+    lower.state_time = current_time;
 
     levels[0] = &upper;
     levels[1] = &mid;
@@ -38,60 +41,24 @@ void Warehouse::init(Adafruit_VL53L0X* tof1){//, Adafruit_VL53L0X* tof2, Adafrui
     pinMode(lower.revPin, OUTPUT);
 }
 
-void Warehouse::cubeIn(String level){
-    Level* lvl;
-    if( level == "upper" )
-        lvl = &upper;
-    else if( level == "mid" )
-        lvl = &mid;
-    else if( level == "lower" )
-        lvl = &lower;
-    else
-        return;
+void Warehouse::cubeOut(LevelPosition pos, unsigned long current_time){
+    Level* lvl = levels[pos];
+    lvl->state_time = current_time;
 
-    switch( lvl->cubeState ){
-        case CubePosition::Empty:
-            lvl->cubeState = CubePosition::One;
-            break;
-        case CubePosition::One:
-            lvl->cubeState = CubePosition::Two;
-            break;
-        case CubePosition::Two:
-            lvl->cubeState = CubePosition::Three;
-            break;
-        case CubePosition::Three:
-            lvl->cubeState = CubePosition::Four;
-            break;
-        case CubePosition::Four:
-            break;
-    }
-}
-
-void Warehouse::cubeOut(String level){
-    Level* lvl;
-    if( level == "upper" )
-        lvl = &upper;
-    else if( level == "mid" )
-        lvl = &mid;
-    else if( level == "lower" )
-        lvl = &lower;
-    else
-        return;
-
-    switch( lvl->cubeState ){
+    switch( lvl->cube_state ){
         case CubePosition::Empty:
             break;
         case CubePosition::One:
-            lvl->cubeState = CubePosition::Empty;
+            lvl->cube_state = CubePosition::Empty;
             break;
         case CubePosition::Two:
-            lvl->cubeState = CubePosition::One;
+            lvl->cube_state = CubePosition::One;
             break;
         case CubePosition::Three:
-            lvl->cubeState = CubePosition::Two;
+            lvl->cube_state = CubePosition::Two;
             break;
         case CubePosition::Four:
-            lvl->cubeState = CubePosition::Three;
+            lvl->cube_state = CubePosition::Three;
             break;
     }
 }
@@ -107,26 +74,32 @@ CubePosition Warehouse::getCubeState(String level){
     else
         return CubePosition::Empty;
 
-    return lvl->cubeState;
+    return lvl->cube_state;
 }
 
 void Warehouse::periodicIO(unsigned long current_time){
     //upper.distance = upper.tof->readRange();
     mid.distance = mid.tof->readRange();
-    Serial.print(mid.distance);
-    Serial.print(" ");
+    Serial.println(mid.distance);
     //lower.distance = lower.tof->readRange();
 
     Level* lvl = &mid;
     //for(auto lvl : levels){
-        float speed = -lvl->kP*(lvl->distance - (int)lvl->cubeState);
-        Serial.println(speed);
-        if( (lvl->distance > (int)CubePosition::Empty && speed>0) || (lvl->distance < (int)CubePosition::Four && speed<0 ) ){
-            lvl->speed = setSpeed(lvl->fwdPin, lvl->revPin, 0);
+        int error = - (lvl->distance - (int)lvl->cube_state);
+        if( lvl->cube_state == CubePosition::Four && error < -5 ){
+            lvl->demand = -lvl->speed;
+        } else if( error > 5){
+            lvl->demand = lvl->speed;
+        } else {
+            lvl->demand = 0;
         }
-        else{
-            lvl->speed = setSpeed(lvl->fwdPin, lvl->revPin, -lvl->kP*(lvl->distance - lvl->cubeState));
-        }
+
+        if( current_time - lvl->state_time > 5000 )
+            lvl->demand = 0;
+
+        analogWrite(lvl->fwdPin, lvl->demand>0? abs(lvl->demand) : 0);
+        analogWrite(lvl->revPin, lvl->demand<0? abs(lvl->demand) : 0);
+
     //}
 }
 

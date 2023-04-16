@@ -7,11 +7,17 @@
 #include "Adafruit_VL53L0X.h"
 
 enum CubePosition{
-    Empty = 250,
-    One = 215,
-    Two = 155,
-    Three = 95,
-    Four = 35
+    Empty = 265,
+    One = 230,
+    Two = 170,
+    Three = 110,
+    Four = 55
+};
+
+enum LevelPosition{
+    Upper = 0,
+    Mid = 1,
+    Lower = 2
 };
 
 struct Level{
@@ -19,10 +25,10 @@ struct Level{
     int revPin;
     int speed;
     int demand;
-    bool dir;
     Adafruit_VL53L0X* tof;
     uint16_t distance;
-    CubePosition cubeState;
+    CubePosition cube_state;
+    unsigned long state_time;
 };
 
 class Warehouse{
@@ -32,8 +38,8 @@ class Warehouse{
         Level lower;
         Level* levels[3];
     public:
-        void init(Adafruit_VL53L0X* tof1);//, Adafruit_VL53L0X* tof2, Adafruit_VL53L0X* tof3);
-        void cubeOut(String level);
+        void init(unsigned long current_time, Adafruit_VL53L0X* tof1);//, Adafruit_VL53L0X* tof2, Adafruit_VL53L0X* tof3);
+        void cubeOut(LevelPosition pos, unsigned long current_time);
         CubePosition getCubeState(String level);
         void periodicIO(unsigned long current_time);
         int setSpeed(int a, int b, float speed);
