@@ -17,6 +17,7 @@
 Drive mDrive;
 Elevator mElevator;
 Intake mIntake;
+Warehouse mWarehouse;
 
 unsigned long debug_time = 0;
 float targetSpeed = 0.8;
@@ -28,6 +29,9 @@ float linear_x = 0;
 float linear_y = 0;
 float angular_z = 0;
 float theta_error = 0;
+
+Adafruit_VL53L0X sensor1;
+Adafruit_VL53L0X sensor2;
 
 void teleop( const geometry_msgs::Twist& msg){
     Serial.println("I heard: ");
@@ -55,9 +59,17 @@ ros::Subscriber<geometry_msgs::Vector3> sub_imu("imu_rpy", &imu_read );
 unsigned long current_time = 0;
 
 void setup(){
+    Wire1.begin();
+    Wire2.begin();
+    
+    sensor1.begin(0x29, false, &Wire1, Adafruit_VL53L0X::VL53L0X_SENSE_DEFAULT);
+    sensor2.begin(0x29, false, &Wire2, Adafruit_VL53L0X::VL53L0X_SENSE_DEFAULT);
+
     mDrive.init(&theta_error);
+    mWarehouse.init(&sensor2);
     mElevator.setSpeed(1500);
     Serial.begin(9600);
+
     //Serial.write("<target>");
     attachInterrupt(digitalPinToInterrupt(Constants::kFrontLeftEncoder), interruptFL, CHANGE);
     attachInterrupt(digitalPinToInterrupt(Constants::kFrontRightEncoder), interruptFR, CHANGE);
@@ -76,6 +88,7 @@ void setup(){
 }
 
 void loop(){
+
     current_time = millis();
 
     if( current_time - loop_time > 10 ){
@@ -85,6 +98,66 @@ void loop(){
     }
 
     switch( state ){
+        case 0:
+            if( current_time - state_time > 1000 ){
+                mWarehouse.cubeIn("mid");
+                state_time = current_time;
+                state = 1;
+            }
+            break;
+        case 1:
+            if( current_time - state_time > 5000 ){
+                mWarehouse.cubeIn("mid");
+                state_time = current_time;
+                state = 2;
+                Serial.println("state 2");
+            }
+            break;
+        case 2:
+            if( current_time - state_time > 5000 ){
+                mWarehouse.cubeIn("mid");
+                state_time = current_time;
+                state = 3;
+            }
+            break;
+        case 3:
+            if( current_time - state_time > 5000 ){
+                mWarehouse.cubeIn("mid");
+                state_time = current_time;
+                state = 4;
+            }
+            break;
+        case 4:
+            if( current_time - state_time > 5000 ){
+                mWarehouse.cubeOut("mid");
+                state_time = current_time;
+                state = 5;
+            }
+            break;
+        case 5:
+            if( current_time - state_time > 5000 ){
+                mWarehouse.cubeOut("mid");
+                state_time = current_time;
+                state = 6;
+            }
+            break;
+        case 6:
+            if( current_time - state_time > 5000 ){
+                mWarehouse.cubeOut("mid");
+                state_time = current_time;
+                state = 7;
+            }
+            break;
+        case 7:
+            if( current_time - state_time > 5000 ){
+                mWarehouse.cubeOut("mid");
+                state_time = current_time;
+                state = 8;
+            }
+            break;
+    }    
+
+    /*switch( state ){
         case 0:
             mDrive.setSpeed(0.5, 0, 0);
             mIntake.pick();
@@ -131,7 +204,7 @@ void loop(){
                 state = 6;
             }
             break;
-    }
+    }*/
     //mDrive.setSpeed(linear_x, linear_y, linear_z);
     //mDrive.periodicIO();
 
@@ -140,6 +213,7 @@ void loop(){
 
     // Plot (TODO: make a library for this)
     if( current_time - debug_time > 50 ){
+        mWarehouse.periodicIO(current_time);
         //Serial.println(mDrive.getSpeed(MotorID::FrontLeft));
         //plotData(mDrive.getSpeed(MotorID::FrontLeft), mDrive.getSpeed(MotorID::FrontRight), mDrive.getSpeed(MotorID::BackLeft), mDrive.getSpeed(MotorID::BackRight), targetSpeed);
         debug_time = current_time;

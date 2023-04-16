@@ -60,7 +60,7 @@ void Motor::stop(){
 }
 
 float Motor::getMaxVelocity(){
-    return Constants::kWheelDiameter * Constants::kMotorsRPM * PI / 60;
+    return Constants::kWheelDiameter * PI * Constants::kMotorsRPM / 60;
 }
 
 long Motor::getTicks(){
