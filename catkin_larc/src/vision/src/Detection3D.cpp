@@ -612,7 +612,8 @@ public:
       ROS_INFO_STREAM("File saved: " << "pcl_object_"+std::to_string(i)+".pcd");
       tmp.file_id = i;
       pcl::io::savePCDFile("pcl_object_"+std::to_string(i)+".pcd", *clusters[i]);
-      if (tmp.isValid) {
+      if (tmp.isValid) 
+      {
         objects.push_back(tmp);
       }
     }
@@ -626,6 +627,7 @@ public:
     if (objects.size() < 1) {
       return;
     }
+    
     ObjectParams selectedObject = objects[0];
 
     ROS_INFO_STREAM("STARTED - Building Grasping Info");

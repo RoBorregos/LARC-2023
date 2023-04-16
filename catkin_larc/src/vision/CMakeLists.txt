@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   sensor_msgs
   #opencv2
+
   cv_bridge
   message_generation
   pcl_ros
@@ -92,6 +93,7 @@ generate_messages(
   vision
   std_msgs
   geometry_msgs
+  sensor_msgs
 )
 
 ################################################
@@ -145,6 +147,7 @@ include_directories(
   add_definitions(${PCL_DEFINITIONS})
 )
 
+
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
 #   src/${PROJECT_NAME}/vision.cpp
@@ -163,10 +166,9 @@ include_directories(
 # add_executable(${PROJECT_NAME}_node src/vision_node.cpp)
 
 add_executable(detector_cubos_3D src/detector_cubos_3D.cpp)
-target_link_libraries(detector_cubos_3D ${catkin_LIBRARIES})
+
 #add_dependencies(detector_cubos_3D vision)
 
-add_dependencies(detector_cubos_3D vision_generate_messages_cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -174,9 +176,15 @@ add_dependencies(detector_cubos_3D vision_generate_messages_cpp)
 ## e.g. "rosrun someones_pkg node" instead of "rosrun someones_pkg someones_pkg_node"
 # set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME node PREFIX "")
 
+target_link_libraries(detector_cubos_3D ${catkin_LIBRARIES})
+target_link_libraries(detector_cubos_3D ${OpenCV_LIBRARIES})
+
+
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+add_dependencies(detector_cubos_3D vision_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
 # target_link_libraries(${PROJECT_NAME}_node

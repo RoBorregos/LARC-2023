@@ -24,7 +24,14 @@
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/opencv.hpp>
 
+
+#include <pcl/filters/project_inliers.h>
 #include <vision/objectDetectionArray.h>
+
+#include <sensor_msgs/image_encodings.h>
+#include <opencv2/core/core.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/highgui/highgui.hpp>
 
 // #include <gpd_ros/CloudSamples.h>
 // #include <gpd_ros/CloudSources.h>
@@ -48,8 +55,12 @@
 
 #include <octomap/octomap.h>
 #include <octomap/OcTree.h>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/opencv.hpp>
 
-#define CAMERA_FRAME "head_rgbd_sensor_depth_frame"
+
+
+#define CAMERA_FRAME "zed2/zed_node/rgb/image_rect_color"
 
 using namespace octomap;
 
@@ -97,7 +108,7 @@ class CubeDetect3D
     ros::Publisher pc_pub_1_;
     ros::Publisher pc_pub_2_;
     ros::Publisher pc_pub_3_;
-    ros::Subscriber sub_;
+    ros::Publisher pc_pub_img;
 public: 
   CubeDetect3D() :
     listener_(buffer_)
@@ -109,6 +120,8 @@ public:
       pc_pub_1_ = nh_.advertise<sensor_msgs::PointCloud2>("/test_pc_1", 10);
       pc_pub_2_ = nh_.advertise<sensor_msgs::PointCloud2>("/test_pc_2", 10);
       pc_pub_3_ = nh_.advertise<sensor_msgs::Image>("/test_pc_3", 10);
+
+      pc_pub_img = nh_.advertise<sensor_msgs::Image>("/img", 10);
 
       while(true && ros::ok())
       {
@@ -174,17 +187,17 @@ public:
   /** \brief Given the pointcloud and pointer cloud_normals compute the point normals and store in cloud_normals.
     @param cloud - Pointcloud.
     @param cloud_normals - The point normals once computer will be stored in this. */
-  void computeNormals(const pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud,
-                      const pcl::PointCloud<pcl::Normal>::Ptr& cloud_normals)
-  {
-    pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZ>());
-    pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> ne;
-    ne.setSearchMethod(tree);
-    ne.setInputCloud(cloud);
-    // Set the number of k nearest neighbors to use for the feature estimation.
-    ne.setKSearch(50);
-    ne.compute(*cloud_normals);
-  }
+  // void computeNormals(const pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud,
+  //                     const pcl::PointCloud<pcl::Normal>::Ptr& cloud_normals)
+  // {
+  //   pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZ>());
+  //   pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> ne;
+  //   ne.setSearchMethod(tree);
+  //   ne.setInputCloud(cloud);
+  //   // Set the number of k nearest neighbors to use for the feature estimation.
+  //   ne.setKSearch(50);
+  //   ne.compute(*cloud_normals);
+  // }
 
   /** \brief Given the point normals and point indices, extract the normals for the indices.
       @param cloud_normals - Point normals.
@@ -197,6 +210,17 @@ public:
     extract_normals.setInputCloud(cloud_normals);
     extract_normals.setIndices(inliers);
     extract_normals.filter(*cloud_normals);
+  }
+  void computeNormals(const pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud,
+                      const pcl::PointCloud<pcl::Normal>::Ptr& cloud_normals)
+  {
+    pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZ>());
+    pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> ne;
+    ne.setSearchMethod(tree);
+    ne.setInputCloud(cloud);
+    // Set the number of k nearest neighbors to use for the feature estimation.
+    ne.setKSearch(50);
+    ne.compute(*cloud_normals);
   }
   
    /** \brief Given the pointcloud containing just the object,
@@ -226,9 +250,14 @@ public:
     object_found.min_x = min_x_;
     object_found.max_y = max_y_;
     object_found.min_y = min_y_;
+    ROS_WARN_STREAM("Max Z " << max_z_ << " Min Z " << min_z_);
+    ROS_WARN_STREAM("Max X " << max_x_ << " Min X " << min_x_);
+    ROS_WARN_STREAM("Max Y " << max_y_ << " Min Y " << min_y_);
 
     pcl::PointXYZ centroid;
     pcl::computeCentroid(*cloud, centroid);
+    //ROS_WARN_STREAM("me iria mejor en el bote ");
+
 
     // Store the object centroid.
     object_found.center.header.frame_id = "map";
@@ -241,9 +270,9 @@ public:
     object_found.center.pose.orientation.w = 1.0;
 
     // Store the object centroid referenced to the camera frame.
-    geometry_msgs::TransformStamped tf_to_cam;
-    tf_to_cam = buffer_.lookupTransform(CAMERA_FRAME, "map", ros::Time(0), ros::Duration(1.0));
-    tf2::doTransform(object_found.center, object_found.center_cam, tf_to_cam);
+    // geometry_msgs::TransformStamped tf_to_cam;
+    // tf_to_cam = buffer_.lookupTransform(CAMERA_FRAME, "map", ros::Time(0), ros::Duration(1.0));
+    // tf2::doTransform(object_found.center, object_found.center_cam, tf_to_cam);
 
     if (isCluster) {
       object_found.isValid = true;
@@ -323,7 +352,20 @@ public:
     return cloud->size() > 0;
   }
 
+  //  void computeNormals(const pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud,
+  //                     const pcl::PointCloud<pcl::Normal>::Ptr& cloud_normals)
+  // {
+  //   pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZ>());
+  //   pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> ne;
+  //   ne.setSearchMethod(tree);
+  //   ne.setInputCloud(cloud);
+  //   // Set the number of k nearest neighbors to use for the feature estimation.
+  //   ne.setKSearch(50);
+  //   ne.compute(*cloud_normals);
+  // }
+
   /** \brief PointCloud callback. */
+
   void cloudCB(const sensor_msgs::PointCloud2& input)
   {
     // Get cloud ready
@@ -343,7 +385,6 @@ public:
 
     passThroughFilter(cloud);
 
-
     pcl::toROSMsg(*cloud, tmp);
     tmp.header.frame_id = input.header.frame_id;
     tmp.header.stamp = input.header.stamp;
@@ -354,8 +395,11 @@ public:
 
     // Detect and Remove the table on which the object is resting.
     ObjectParams table_params;
-    removeBiggestPlane(cloud, inliers_plane, table_params);
-    extractNormals(cloud_normals, inliers_plane);
+      removeBiggestPlane(cloud, inliers_plane, table_params);
+      extractNormals(cloud_normals, inliers_plane);
+
+    //removeBiggestPlane(cloud, inliers_plane, table_params);
+    //extractNormals(cloud_normals, inliers_plane);
 
     if (cloud->points.empty()) {
       return;
@@ -366,20 +410,47 @@ public:
     getClusters(cloud, clusters);
     int clustersFound = clusters.size();
 
+
+
     ROS_INFO_STREAM("Clusters Found: " << clustersFound);
 
     if (clustersFound == 0) {
       return;
     }
 
+    std::vector<ObjectParams> objects;
+    for(int i=0;i < clustersFound; i++)
+    {
+      ObjectParams tmp;
+      tmp.mesh.reset(new shape_msgs::Mesh);
+      extractObjectDetails(clusters[i], tmp, table_params);
+      ROS_INFO_STREAM("File saved: " << "pcl_object_"+std::to_string(i)+".pcd");
+      tmp.file_id = i;
+      pcl::io::savePCDFile("pcl_object_"+std::to_string(i)+".pcd", *clusters[i]);
+      if (tmp.isValid) 
+      {
+        objects.push_back(tmp);
+      }
+    }
+
+    if (objects.size() < 1) 
+    {
+      return;
+    }
+
+    ObjectParams selectedObject = objects[0];
+
     // Convert PointCloud2 message to PointCloud object
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_rgb(new pcl::PointCloud<pcl::PointXYZRGB>);
     pcl::fromROSMsg(input, *cloud_rgb);
 
-    for (int a = 0; a < clustersFound; a++) {
-      // Extract RGB values and create sensor_msgs Image
+    //Extract RGB values and create sensor_msgs Image
+    cv_bridge::CvImagePtr cv_ptr;
+
+    for (int a = 0; a < clustersFound; a++) 
+    {
       sensor_msgs::Image image_msg;
-      image_msg.header = input->header;
+      image_msg.header = input.header;
       image_msg.height = cloud_rgb->height;
       image_msg.width = cloud_rgb->width;
       image_msg.encoding = "rgb8";
@@ -387,19 +458,36 @@ public:
       image_msg.step = cloud_rgb->width * 3;
       size_t data_size = cloud_rgb->width * cloud_rgb->height * 3;
       image_msg.data.resize(data_size);
-
+      
       int k = 0;
+      
       for(int i = 0; i < cloud_rgb->height; i++)
       {
           for(int j = 0; j < cloud_rgb->width; j++)
           {
-              image_msg.data[k++] = cloud_rgb->points[k].r;
-              image_msg.data[k++] = cloud_rgb->points[k].g;
-              image_msg.data[k++] = cloud_rgb->points[k].b;
+            // Get the RGB values of the current point
+              pcl::PointXYZRGB point = cloud_rgb->at(j, i);
+              uint8_t r = point.r;
+              uint8_t g = point.g;
+              uint8_t b = point.b;
+              //ROS_WARN("aqui mame %d", point.rgb);
+            //ROS_WARN("aqui mame ");
+            //ROS_WARN("aqui mame %d", k);
+               // Store the RGB values in the image message data
+              image_msg.data[k++] = r;
+              image_msg.data[k++] = g;
+              image_msg.data[k++] = b;
+              // ROS_WARN("aqui mame r %d", r);
+              // ROS_WARN("aqui mame g %d", g);
+              // ROS_WARN("aqui mame b %d", b);
           }
-      }
+      } 
+          ROS_WARN("termine una");
+        // cv_ptr = cv_bridge::toCvCopy(image_msg, sensor_msgs::image_encodings::RGB8);
+        // pc_pub_img.publish(cv_ptr->image);
 
-      pc_pub_3_.publish(image_msg);
+
+          
     }
 
     // Save all clusters to a file.
