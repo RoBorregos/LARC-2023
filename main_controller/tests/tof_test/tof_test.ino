@@ -36,6 +36,8 @@
 // Create a 'Adafruit_VL53L0X' object for each sensor:
 Adafruit_VL53L0X sensor1;
 Adafruit_VL53L0X sensor2;
+Adafruit_VL53L0X sensor3;
+Adafruit_VL53L0X sensor4;
 
 //====================================================================
 // Define global variables for the sensors:

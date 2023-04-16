@@ -24,11 +24,19 @@ void loop(){
     
     //pin 1 adelante, pin 2 atras
     analogWrite(14, 0); //abajo
-    analogWrite(15, 200);
-    //analogWrite(35, 0);     //medio
-    //analogWrite(36, 150); 
-    //analogWrite(37, 0);  //arriba
-    //analogWrite(38, 220);
+    analogWrite(15, 180);
+    delay(1000);
+    analogWrite(14, 180); //abajo
+    analogWrite(15, 0);
+    delay(1000);
+    //analogWrite(35, 150);     //medio
+    //analogWrite(36, 0); 
+    /*delay(1000);
+    analogWrite(35, 0);     //medio
+    analogWrite(36, 150);
+    delay(1000);*/
+    //analogWrite(37, 180);  //arriba
+    //analogWrite(38, 0);
 
     Serial.print(digitalRead(27));
     Serial.print(" ");
