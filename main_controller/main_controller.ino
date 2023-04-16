@@ -59,6 +59,8 @@ ros::Subscriber<geometry_msgs::Vector3> sub_imu("imu_rpy", &imu_read );
 unsigned long current_time = 0;
 
 void setup(){
+    current_time = millis();
+
     Wire1.begin();
     Wire2.begin();
     
@@ -66,7 +68,7 @@ void setup(){
     sensor2.begin(0x29, false, &Wire2, Adafruit_VL53L0X::VL53L0X_SENSE_DEFAULT);
 
     mDrive.init(&theta_error);
-    mWarehouse.init(&sensor2);
+    mWarehouse.init(current_time, &sensor2);
     mElevator.setSpeed(1500);
     Serial.begin(9600);
 
@@ -76,7 +78,6 @@ void setup(){
     attachInterrupt(digitalPinToInterrupt(Constants::kBackLeftEncoder), interruptBL, CHANGE);
     attachInterrupt(digitalPinToInterrupt(Constants::kBackRightEncoder), interruptBR, CHANGE);
 
-    current_time = millis();
     state_time = current_time;
     loop_time = current_time;
     debug_time = current_time;
@@ -93,21 +94,26 @@ void loop(){
 
     if( current_time - loop_time > 10 ){
         mDrive.periodicIO(current_time);
+        mIntake.periodicIO(current_time);
         nh.spinOnce();
         loop_time = current_time;
     }
 
     switch( state ){
         case 0:
-            if( current_time - state_time > 1000 ){
-                mWarehouse.cubeIn("mid");
+            mIntake.pick();
+            if( current_time - state_time > 5000 ){
+                mWarehouse.cubeOut(LevelPosition::Mid, current_time);
                 state_time = current_time;
                 state = 1;
+                Serial.println("state 1");
             }
             break;
         case 1:
+            mIntake.in();
             if( current_time - state_time > 5000 ){
-                mWarehouse.cubeIn("mid");
+                mWarehouse.cubeOut(LevelPosition::Mid, current_time);
+                mWarehouse.cubeOut(LevelPosition::Mid, current_time);
                 state_time = current_time;
                 state = 2;
                 Serial.println("state 2");
@@ -115,44 +121,25 @@ void loop(){
             break;
         case 2:
             if( current_time - state_time > 5000 ){
-                mWarehouse.cubeIn("mid");
+                mWarehouse.cubeOut(LevelPosition::Mid, current_time);
                 state_time = current_time;
                 state = 3;
             }
             break;
         case 3:
+            mIntake.out(current_time);
             if( current_time - state_time > 5000 ){
-                mWarehouse.cubeIn("mid");
+                mWarehouse.cubeOut(LevelPosition::Mid, current_time);
                 state_time = current_time;
                 state = 4;
             }
             break;
         case 4:
+            mIntake.drop();
             if( current_time - state_time > 5000 ){
-                mWarehouse.cubeOut("mid");
+                mWarehouse.cubeOut(LevelPosition::Mid, current_time);
                 state_time = current_time;
                 state = 5;
-            }
-            break;
-        case 5:
-            if( current_time - state_time > 5000 ){
-                mWarehouse.cubeOut("mid");
-                state_time = current_time;
-                state = 6;
-            }
-            break;
-        case 6:
-            if( current_time - state_time > 5000 ){
-                mWarehouse.cubeOut("mid");
-                state_time = current_time;
-                state = 7;
-            }
-            break;
-        case 7:
-            if( current_time - state_time > 5000 ){
-                mWarehouse.cubeOut("mid");
-                state_time = current_time;
-                state = 8;
             }
             break;
     }    
