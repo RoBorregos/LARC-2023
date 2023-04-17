@@ -47,14 +47,14 @@ void teleop( const geometry_msgs::Twist& msg){
     digitalWrite(13, HIGH-digitalRead(13));
 }
 
-void imu_read( const geometry_msgs::Vector3& msg){
-    theta_error = msg.z;
-    digitalWrite(13, HIGH-digitalRead(13));
+void imu_read( const geometry_msgs::Vector3& msg2){
+    theta_error = msg2.z;
+    //digitalWrite(13, HIGH-digitalRead(13));
 }
 
 ros::NodeHandle nh;
 ros::Subscriber<geometry_msgs::Twist> sub_drive("cmd_vel", &teleop );
-ros::Subscriber<geometry_msgs::Vector3> sub_imu("imu_rpy", &imu_read );
+//ros::Subscriber<geometry_msgs::Vector3> sub_imu("imu_rpy", &imu_read );
 
 unsigned long current_time = 0;
 
@@ -85,7 +85,7 @@ void setup(){
 
     nh.initNode();
     nh.subscribe(sub_drive);
-    nh.subscribe(sub_imu);
+    //nh.subscribe(sub_imu);
 }
 
 void loop(){
@@ -200,12 +200,12 @@ void loop(){
     //mDrive.periodicIO();
 
     //mElevator.setPosition(ElevatorPosition::SecondWarehouse);
-    mElevator.periodicIO();
+    //mElevator.periodicIO();
 
     // Plot (TODO: make a library for this)
     if( current_time - debug_time > 50 ){
         //mWarehouse.periodicIO(current_time);
-        Serial.println(mDrive.getSpeed(MotorID::FrontLeft));
+        //Serial.println(mDrive.getSpeed(MotorID::FrontLeft));
         //plotData(mDrive.getSpeed(MotorID::FrontLeft), mDrive.getSpeed(MotorID::FrontRight), mDrive.getSpeed(MotorID::BackLeft), mDrive.getSpeed(MotorID::BackRight), targetSpeed);
         debug_time = current_time;
     }
