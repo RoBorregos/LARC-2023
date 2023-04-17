@@ -1,14 +1,14 @@
 //motor tests
 
 //motor pinout
-#define FL1 1
-#define FL2 0
-#define FR1 3
-#define FR2 2
+#define FL1 6
+#define FL2 7
+#define FR1 0
+#define FR2 1
 #define BL1 5
 #define BL2 4
-#define BR1 7
-#define BR2 6
+#define BR1 3
+#define BR2 2
 
 void setup() {
     // put your setup code here, to run once:
@@ -55,16 +55,5 @@ void loop() {
     delay(1000);
     analogWrite(BR1, 0);
     analogWrite(BR2, 0);
-
-    //fwd
-    analogWrite(FL1, 255);
-    analogWrite(FL2, 0);
-    analogWrite(FR1, 255);
-    analogWrite(FR2, 0);
-    analogWrite(BL1, 255);
-    analogWrite(BL2, 0);
-    analogWrite(BR1, 255);
-    analogWrite(BR2, 0);
-    delay(1000);
 
 }

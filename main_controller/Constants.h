@@ -16,22 +16,21 @@ class Constants{
         //Motors (A: fwd, B: rev)
         static constexpr float kMotorsRPM = 380; //RPM
         static constexpr float kMotorMinPWM = 140; //PWM (0-255)
-        static constexpr float kMotorRampRate = 0.1; //m/s
-        static constexpr int kFrontLeftA = 1;
-        static constexpr int kFrontLeftB = 0;
-        static constexpr int kFrontRightA = 3;
-        static constexpr int kFrontRightB = 2;
+        static constexpr int kFrontLeftA = 6;
+        static constexpr int kFrontLeftB = 7;
+        static constexpr int kFrontRightA = 0;
+        static constexpr int kFrontRightB = 1;
         static constexpr int kBackLeftA = 5;
         static constexpr int kBackLeftB = 4;
-        static constexpr int kBackRightA = 7;
-        static constexpr int kBackRightB = 6;
+        static constexpr int kBackRightA = 3;
+        static constexpr int kBackRightB = 2;
 
         //Encoders
         static constexpr float kEncoderTicksPerRevolution = 979.62;
-        static constexpr int kFrontLeftEncoder = 23;
-        static constexpr int kFrontRightEncoder = 12;
+        static constexpr int kFrontLeftEncoder = 26;
+        static constexpr int kFrontRightEncoder = 23;
         static constexpr int kBackLeftEncoder = 27;
-        static constexpr int kBackRightEncoder = 26;
+        static constexpr int kBackRightEncoder = 12;
 
         //PID
         static constexpr float kMotorKP = 5;

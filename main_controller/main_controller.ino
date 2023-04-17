@@ -99,7 +99,6 @@ void loop(){
         loop_time = current_time;
     }
 
-    /*
     switch( state ){
         case 0:
             mIntake.pick();
@@ -143,13 +142,12 @@ void loop(){
                 state = 5;
             }
             break;
-    }
-    */
-   /*
-    switch( state ){
+    }    
+
+    /*switch( state ){
         case 0:
-            mDrive.setSpeed(0.8, 0, 0);
-            //mIntake.pick();
+            mDrive.setSpeed(0.5, 0, 0);
+            mIntake.pick();
             if( current_time - state_time > 600 ){
                 state_time = current_time;
                 mDrive.stop();
@@ -157,10 +155,9 @@ void loop(){
             }
             break;
         case 1:
-            mDrive.setSpeed(0, 0.8, 0);
             if( current_time - state_time > 1000 ){
                 state_time = current_time;
-                //mIntake.stop();
+                mIntake.stop();
                 mDrive.stop();
                 state = 2;
             }
@@ -168,7 +165,7 @@ void loop(){
         case 2:
             if( current_time - state_time > 600 ){
                 state_time = current_time;
-                //mElevator.setPosition(ElevatorPosition::SecondWarehouse);
+                mElevator.setPosition(ElevatorPosition::SecondWarehouse);
                 state = 3;
             }
             break;
@@ -183,20 +180,19 @@ void loop(){
             if( current_time - state_time > 600 ){
                 state_time = current_time;
                 mDrive.stop();
-                //mIntake.drop();
+                mIntake.drop();
                 state = 5;
             }
             break;
         case 5:
             if( current_time - state_time > 1500 ){
                 state_time = current_time;
-                //mIntake.stop();
+                mIntake.stop();
                 state = 6;
             }
             break;
     }*/
-    mDrive.setSpeed(linear_x, linear_y, angular_z);
-    //mDrive.setSpeed(0.5, 0, 0);
+    //mDrive.setSpeed(linear_x, linear_y, linear_z);
     //mDrive.periodicIO();
 
     //mElevator.setPosition(ElevatorPosition::SecondWarehouse);
@@ -204,8 +200,8 @@ void loop(){
 
     // Plot (TODO: make a library for this)
     if( current_time - debug_time > 50 ){
-        //mWarehouse.periodicIO(current_time);
-        Serial.println(mDrive.getSpeed(MotorID::FrontLeft));
+        mWarehouse.periodicIO(current_time);
+        //Serial.println(mDrive.getSpeed(MotorID::FrontLeft));
         //plotData(mDrive.getSpeed(MotorID::FrontLeft), mDrive.getSpeed(MotorID::FrontRight), mDrive.getSpeed(MotorID::BackLeft), mDrive.getSpeed(MotorID::BackRight), targetSpeed);
         debug_time = current_time;
     }
