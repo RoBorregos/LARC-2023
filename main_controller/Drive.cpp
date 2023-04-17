@@ -103,8 +103,8 @@ void Drive::periodicIO(unsigned long current_time){
     velocity.theta = (frontLeft.getSpeed() - frontRight.getSpeed() - backLeft.getSpeed() + backRight.getSpeed())/(4*Constants::kWheelTrack);
 
     unsigned long delta_time = current_time - last_time;
-    position.x += velocity.x * delta_time;
-    position.y += velocity.y * delta_time;
+    position.x += velocity.x * cos(angle) * (delta_time * 0.001);
+    position.y += velocity.y * cos(angle) * (delta_time * 0.001);
     position.theta += velocity.theta * delta_time;
 
     last_time = current_time;
