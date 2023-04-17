@@ -11,7 +11,7 @@ class Constants{
         static constexpr float kWheelDiameter = 0.054; //meters
         static constexpr float kWheelTrack = 0.23; //meters
         static constexpr float kWheelBase = 0.155; //meters
-        static constexpr float kDriveKP = 0.1;
+        static constexpr float kDriveKP = 0.05;
         
         //Motors (A: fwd, B: rev)
         static constexpr float kMotorsRPM = 380; //RPM

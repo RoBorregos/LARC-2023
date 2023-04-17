@@ -47,14 +47,14 @@ void teleop( const geometry_msgs::Twist& msg){
     digitalWrite(13, HIGH-digitalRead(13));
 }
 
-void imu_read( const geometry_msgs::Vector3& msg){
-    theta_error = msg.z;
-    digitalWrite(13, HIGH-digitalRead(13));
+void imu_read( const geometry_msgs::Vector3& msg2){
+    theta_error = msg2.z;
+    //digitalWrite(13, HIGH-digitalRead(13));
 }
 
-ros::NodeHandle nh;
-ros::Subscriber<geometry_msgs::Twist> sub_drive("cmd_vel", &teleop );
-ros::Subscriber<geometry_msgs::Vector3> sub_imu("imu_rpy", &imu_read );
+//ros::NodeHandle nh;
+//ros::Subscriber<geometry_msgs::Twist> sub_drive("cmd_vel", &teleop );
+//ros::Subscriber<geometry_msgs::Vector3> sub_imu("imu_rpy", &imu_read );
 
 unsigned long current_time = 0;
 
@@ -83,9 +83,9 @@ void setup(){
     debug_time = current_time;
     //mElevator.setPosition(ElevatorPosition::SecondWarehouse);
 
-    nh.initNode();
-    nh.subscribe(sub_drive);
-    nh.subscribe(sub_imu);
+    //nh.initNode();
+    //nh.subscribe(sub_drive);
+    //nh.subscribe(sub_imu);
 }
 
 void loop(){
@@ -95,10 +95,11 @@ void loop(){
     if( current_time - loop_time > 10 ){
         mDrive.periodicIO(current_time);
         mIntake.periodicIO(current_time);
-        nh.spinOnce();
+        //nh.spinOnce();
         loop_time = current_time;
     }
 
+<<<<<<< HEAD
     switch( state ){
         case 0:
             mIntake.pick();
@@ -193,16 +194,30 @@ void loop(){
             break;
     }*/
     //mDrive.setSpeed(linear_x, linear_y, linear_z);
+=======
+    mDrive.setSpeed(linear_x, linear_y, angular_z);
+    //mDrive.setSpeed(0.5, 0, 0);
+>>>>>>> a1933235a7d8a1422ea5a9a6d7dedff7a2acd0ac
     //mDrive.periodicIO();
 
     //mElevator.setPosition(ElevatorPosition::SecondWarehouse);
-    mElevator.periodicIO();
+    //mElevator.periodicIO();
 
     // Plot (TODO: make a library for this)
     if( current_time - debug_time > 50 ){
+<<<<<<< HEAD
         mWarehouse.periodicIO(current_time);
+=======
+        //mWarehouse.periodicIO(current_time);
+>>>>>>> a1933235a7d8a1422ea5a9a6d7dedff7a2acd0ac
         //Serial.println(mDrive.getSpeed(MotorID::FrontLeft));
         //plotData(mDrive.getSpeed(MotorID::FrontLeft), mDrive.getSpeed(MotorID::FrontRight), mDrive.getSpeed(MotorID::BackLeft), mDrive.getSpeed(MotorID::BackRight), targetSpeed);
+        Pose2d pose = mDrive.getPosition();
+        Serial.print(pose.x);
+        Serial.print(" ");
+        Serial.print(pose.y);
+        Serial.print(" ");
+        Serial.println(pose.theta);
         debug_time = current_time;
     }
     //delay(10);
