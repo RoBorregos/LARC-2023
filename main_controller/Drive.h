@@ -24,6 +24,7 @@ struct Pose2d{
 
 class Drive{
     private:
+        constexpr static float loop_time = 10;
         Motor frontLeft;
         Motor frontRight;
         Motor backLeft;
@@ -34,8 +35,9 @@ class Drive{
         float* imu_ptr;
         unsigned long last_time = 0;
     public:
-        void init(float* theta);
+        void init();
         void setSpeed(float linearX, float linearY, float angularZ);
+        void setAngle(float angle);
         void stop();
         void periodicIO(unsigned long current_time);
         void encoderInterrupt(MotorID motorID);

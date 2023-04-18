@@ -10,7 +10,10 @@ class RosBridge{
 
         //////////////////////////////////Velocity Suscriber//////////////////////////////////////
         // Receives velocity commands.
-        void velocityCallback(double linearx, double lineary, double angularz);
+        void velocityCallback(float linearx, float lineary, float angularz);
+
+        // Receives imu angle
+        void imuCallback(float angle);
 
         ////////////////////////////////Odometry Publisher///////////////////
         void getOdometry();
@@ -31,9 +34,10 @@ class RosBridge{
         unsigned long watchdog_timer_ = 0;
 
         // CMD Velocity.
-        double linearX_ = 0;
-        double linearY_ = 0;
-        double angularZ_ = 0;
+        float linearX_ = 0;
+        float linearY_ = 0;
+        float angularZ_ = 0;
+        float angle_ = 0;
 
         void executeCommand(uint8_t packet_size, uint8_t command, uint8_t* buffer);
         void writeSerial(bool success, uint8_t* payload, int elements);

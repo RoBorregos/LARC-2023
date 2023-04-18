@@ -54,11 +54,15 @@ void RosBridge::readSerial() {
 }
 
 //////////////////////////////////Velocity Suscriber//////////////////////////////////////
-void RosBridge::velocityCallback(double linearx, double lineary, double angularz) {
+void RosBridge::velocityCallback(float linearx, float lineary, float angularz) {
     linearX_ = linearx;
     linearY_ = lineary;
     angularZ_ = angularz;
     watchdog_timer_ = millis();
+}
+
+void RosBridge::imuCallback(float angle) {
+    angle_ = angle;
 }
 
 ////////////////////////////////Odometry Publisher//////////////////////////////////////
@@ -100,33 +104,17 @@ void RosBridge::executeCommand(uint8_t packet_size, uint8_t command, uint8_t* bu
         case 0x02: // Get Odometry
         if (packet_size == 1) { // Check packet size
             getOdometry();
-            int data[] = {velX, velY, velTheta, posX, posY};
+            float data[] = {velX, velY, velTheta, posX, posY};
             writeSerial(true, (uint8_t*)data, sizeof(data));
-        }
-        break;
-        case 0x41: // Reset IMU
-        if (packet_size == 1) { // Check packet size
-            writeSerial(true, nullptr, 0);
-            bno_->reset();
         }
         break;
         case 0x05: // Send IMU
         if (packet_size == 4) { // Check packet size
-            float data[] = {bno_->getYaw(), bno_->getYawVel(), bno_-> getXAccel(), bno_->getYAccel(), bno_->getZAccel()};
+            float angle;
+            memcpy(&angle, buffer, sizeof(angle));
+            imuCallback(angle);
+            float data[] = {angle};
             writeSerial(true, (uint8_t*)data, sizeof(data));
-        }
-        break;
-        case 0x15: // Get Emergency Button
-        if (packet_size == 1) { // Check packet size
-            uint8_t status[] = {digitalRead(emergency_btn_pin)}; // Read the button status
-            writeSerial(true, (uint8_t*)status, sizeof(status));
-        }
-        break;
-        case 0x03: // Reset Encoders
-        if (packet_size == 1) { // Check packet size
-            move_all_->left_motor_.setOdomTicks(0);
-            move_all_->right_motor_.setOdomTicks(0);
-            writeSerial(true, nullptr, 0);
         }
         break;
         default:
@@ -153,4 +141,12 @@ void RosBridge::writeSerial(bool success, uint8_t* payload, int elements) {
 
 void RosBridge::spin(unsigned long current_time){
     readSerial();
+    if((millis() - watchdog_timer_) > kWatchdogPeriod) {
+        linearX_ = 0.0;
+        linearY_ = 0.0;
+        angularZ_ = 0.0;        
+        watchdog_timer_ = millis();
+    }
+    _drive->setSpeed(linearX_, linearY_, angularZ_);
+    _drive->setAngle(angle_);
 }

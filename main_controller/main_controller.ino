@@ -1,12 +1,8 @@
-#include <ros.h>
-#include <geometry_msgs/Twist.h>
-#include <geometry_msgs/Vector3.h>
-#include <nav_msgs/Odometry.h>
-
 #include <Wire.h>
 #include <Adafruit_VL53L0X.h>
 
 #include "Constants.h"
+#include "RosBridge.h"
 #include "Drive.h"
 #include "Motor.h"
 #include "Intake.h"
@@ -17,7 +13,8 @@
 Drive mDrive;
 Elevator mElevator;
 Intake mIntake;
-Warehouse mWarehouse;
+//Warehouse mWarehouse;
+RosBridge ros;
 
 unsigned long debug_time = 0;
 float targetSpeed = 0.8;
@@ -33,29 +30,6 @@ float theta_error = 0;
 Adafruit_VL53L0X sensor1;
 Adafruit_VL53L0X sensor2;
 
-void teleop( const geometry_msgs::Twist& msg){
-    Serial.println("I heard: ");
-    Serial.println(msg.linear.x);
-    Serial.println(msg.linear.y);
-    Serial.println(msg.linear.z);
-    Serial.println(msg.angular.x);
-    Serial.println(msg.angular.y);
-    Serial.println(msg.angular.z);
-    linear_x = msg.linear.x;
-    linear_y = msg.linear.y;
-    angular_z = msg.angular.z;
-    digitalWrite(13, HIGH-digitalRead(13));
-}
-
-void imu_read( const geometry_msgs::Vector3& msg2){
-    theta_error = msg2.z;
-    //digitalWrite(13, HIGH-digitalRead(13));
-}
-
-ros::NodeHandle nh;
-ros::Subscriber<geometry_msgs::Twist> sub_drive("cmd_vel", &teleop );
-//ros::Subscriber<geometry_msgs::Vector3> sub_imu("imu_rpy", &imu_read );
-
 unsigned long current_time = 0;
 
 void setup(){
@@ -67,8 +41,8 @@ void setup(){
     sensor1.begin(0x29, false, &Wire1, Adafruit_VL53L0X::VL53L0X_SENSE_DEFAULT);
     sensor2.begin(0x29, false, &Wire2, Adafruit_VL53L0X::VL53L0X_SENSE_DEFAULT);
 
-    mDrive.init(&theta_error);
-    mWarehouse.init(current_time, &sensor2);
+    mDrive.init();
+    //mWarehouse.init(current_time, &sensor2);
     mElevator.setSpeed(1500);
     Serial.begin(57600);
 
@@ -83,23 +57,21 @@ void setup(){
     debug_time = current_time;
     //mElevator.setPosition(ElevatorPosition::SecondWarehouse);
 
-    nh.initNode();
-    nh.subscribe(sub_drive);
-    //nh.subscribe(sub_imu);
+    ros.init(&mDrive);
 }
 
 void loop(){
 
     current_time = millis();
+    ros.spin(current_time);
+    mDrive.periodicIO(current_time);
 
     if( current_time - loop_time > 10 ){
-        mDrive.periodicIO(current_time);
-        mIntake.periodicIO(current_time);
-        nh.spinOnce();
+        //mIntake.periodicIO(current_time);
         loop_time = current_time;
     }
 
-    mDrive.setSpeed(linear_x, linear_y, angular_z);
+    //mDrive.setSpeed(linear_x, linear_y, angular_z);
     //mDrive.setSpeed(0.5, 0, 0);
     //mDrive.periodicIO();
 
