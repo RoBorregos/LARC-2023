@@ -12,8 +12,7 @@ class RosBridge{
         // Receives velocity commands.
         void velocityCallback(double linearx, double lineary, double angularz);
 
-
-        ////////////////////////////////Odometry Publishe///////////////////
+        ////////////////////////////////Odometry Publisher///////////////////
         void getOdometry();
 
         //Serial

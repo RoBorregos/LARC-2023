@@ -34,7 +34,7 @@ void RosBridge::readSerial() {
         }
         
         // Check if the entire packet has been received
-        if (index == 3 + (packet_size) + 1) {
+        if (index == 4 + (packet_size) + 1) {
             check_sum = buffer[index - 1];
             if (check_sum != command + 1) {
                 // Checksum error
@@ -76,11 +76,11 @@ void RosBridge::getOdometry() {
 void RosBridge::executeCommand(uint8_t packet_size, uint8_t command, uint8_t* buffer) {
     switch (command) {
         case 0x04: // Velocity command
-        if (packet_size == 9) { // Check packet size
+        if (packet_size == 12) { // Check packet size
             float x, y, angular;
             memcpy(&x, buffer, sizeof(x));
-            y = 0.0;
-            memcpy(&angular, buffer + sizeof(x), sizeof(angular));
+            memcpy(&y, buffer + sizeof(x), sizeof(y));
+            memcpy(&angular, buffer + sizeof(x) + sizeof(y), sizeof(angular));
             velocityCallback(x, y, angular);
             writeSerial(true, nullptr, 0);
         }
@@ -110,8 +110,8 @@ void RosBridge::executeCommand(uint8_t packet_size, uint8_t command, uint8_t* bu
             bno_->reset();
         }
         break;
-        case 0x05: // Get IMU
-        if (packet_size == 1) { // Check packet size
+        case 0x05: // Send IMU
+        if (packet_size == 4) { // Check packet size
             float data[] = {bno_->getYaw(), bno_->getYawVel(), bno_-> getXAccel(), bno_->getYAccel(), bno_->getZAccel()};
             writeSerial(true, (uint8_t*)data, sizeof(data));
         }

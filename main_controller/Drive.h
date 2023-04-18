@@ -1,3 +1,7 @@
+/*
+https://research.ijcaonline.org/volume113/number3/pxc3901586.pdf
+*/
+
 #ifndef Drive_h
 #define Drive_h
 
@@ -20,7 +24,6 @@ struct Pose2d{
 
 class Drive{
     private:
-        constexpr int loop_time = 10;
         Motor frontLeft;
         Motor frontRight;
         Motor backLeft;
@@ -28,11 +31,11 @@ class Drive{
         Pose2d velocity;
         Pose2d position;
         float angle;
+        float* imu_ptr;
         unsigned long last_time = 0;
     public:
-        void init();
+        void init(float* theta);
         void setSpeed(float linearX, float linearY, float angularZ);
-        void setAngle(float angle);
         void stop();
         void periodicIO(unsigned long current_time);
         void encoderInterrupt(MotorID motorID);
