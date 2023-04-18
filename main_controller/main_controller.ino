@@ -52,8 +52,8 @@ void imu_read( const geometry_msgs::Vector3& msg2){
     //digitalWrite(13, HIGH-digitalRead(13));
 }
 
-//ros::NodeHandle nh;
-//ros::Subscriber<geometry_msgs::Twist> sub_drive("cmd_vel", &teleop );
+ros::NodeHandle nh;
+ros::Subscriber<geometry_msgs::Twist> sub_drive("cmd_vel", &teleop );
 //ros::Subscriber<geometry_msgs::Vector3> sub_imu("imu_rpy", &imu_read );
 
 unsigned long current_time = 0;
@@ -83,8 +83,8 @@ void setup(){
     debug_time = current_time;
     //mElevator.setPosition(ElevatorPosition::SecondWarehouse);
 
-    //nh.initNode();
-    //nh.subscribe(sub_drive);
+    nh.initNode();
+    nh.subscribe(sub_drive);
     //nh.subscribe(sub_imu);
 }
 
@@ -95,109 +95,12 @@ void loop(){
     if( current_time - loop_time > 10 ){
         mDrive.periodicIO(current_time);
         mIntake.periodicIO(current_time);
-        //nh.spinOnce();
+        nh.spinOnce();
         loop_time = current_time;
     }
 
-<<<<<<< HEAD
-    switch( state ){
-        case 0:
-            mIntake.pick();
-            if( current_time - state_time > 5000 ){
-                mWarehouse.cubeOut(LevelPosition::Mid, current_time);
-                state_time = current_time;
-                state = 1;
-                Serial.println("state 1");
-            }
-            break;
-        case 1:
-            mIntake.in();
-            if( current_time - state_time > 5000 ){
-                mWarehouse.cubeOut(LevelPosition::Mid, current_time);
-                mWarehouse.cubeOut(LevelPosition::Mid, current_time);
-                state_time = current_time;
-                state = 2;
-                Serial.println("state 2");
-            }
-            break;
-        case 2:
-            if( current_time - state_time > 5000 ){
-                mWarehouse.cubeOut(LevelPosition::Mid, current_time);
-                state_time = current_time;
-                state = 3;
-            }
-            break;
-        case 3:
-            mIntake.out(current_time);
-            if( current_time - state_time > 5000 ){
-                mWarehouse.cubeOut(LevelPosition::Mid, current_time);
-                state_time = current_time;
-                state = 4;
-            }
-            break;
-        case 4:
-            mIntake.drop();
-            if( current_time - state_time > 5000 ){
-                mWarehouse.cubeOut(LevelPosition::Mid, current_time);
-                state_time = current_time;
-                state = 5;
-            }
-            break;
-    }    
-
-    /*switch( state ){
-        case 0:
-            mDrive.setSpeed(0.5, 0, 0);
-            mIntake.pick();
-            if( current_time - state_time > 600 ){
-                state_time = current_time;
-                mDrive.stop();
-                state = 1;
-            }
-            break;
-        case 1:
-            if( current_time - state_time > 1000 ){
-                state_time = current_time;
-                mIntake.stop();
-                mDrive.stop();
-                state = 2;
-            }
-            break;
-        case 2:
-            if( current_time - state_time > 600 ){
-                state_time = current_time;
-                mElevator.setPosition(ElevatorPosition::SecondWarehouse);
-                state = 3;
-            }
-            break;
-        case 3:
-            if( mElevator.positionReached() ){
-                state_time = current_time;
-                state = 4;
-            }
-            break;
-        case 4:
-            mDrive.setSpeed(0.5, 0, 0);
-            if( current_time - state_time > 600 ){
-                state_time = current_time;
-                mDrive.stop();
-                mIntake.drop();
-                state = 5;
-            }
-            break;
-        case 5:
-            if( current_time - state_time > 1500 ){
-                state_time = current_time;
-                mIntake.stop();
-                state = 6;
-            }
-            break;
-    }*/
-    //mDrive.setSpeed(linear_x, linear_y, linear_z);
-=======
     mDrive.setSpeed(linear_x, linear_y, angular_z);
     //mDrive.setSpeed(0.5, 0, 0);
->>>>>>> a1933235a7d8a1422ea5a9a6d7dedff7a2acd0ac
     //mDrive.periodicIO();
 
     //mElevator.setPosition(ElevatorPosition::SecondWarehouse);
@@ -205,11 +108,7 @@ void loop(){
 
     // Plot (TODO: make a library for this)
     if( current_time - debug_time > 50 ){
-<<<<<<< HEAD
-        mWarehouse.periodicIO(current_time);
-=======
         //mWarehouse.periodicIO(current_time);
->>>>>>> a1933235a7d8a1422ea5a9a6d7dedff7a2acd0ac
         //Serial.println(mDrive.getSpeed(MotorID::FrontLeft));
         //plotData(mDrive.getSpeed(MotorID::FrontLeft), mDrive.getSpeed(MotorID::FrontRight), mDrive.getSpeed(MotorID::BackLeft), mDrive.getSpeed(MotorID::BackRight), targetSpeed);
         Pose2d pose = mDrive.getPosition();

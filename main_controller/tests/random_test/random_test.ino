@@ -23,11 +23,19 @@ void loop(){
     analogWrite(11, 255);*/
     
     //pin 1 adelante, pin 2 atras
-    analogWrite(14, 0); //abajo
-    analogWrite(15, 180);
-    delay(1000);
-    analogWrite(14, 180); //abajo
+    analogWrite(14, 200); //abajo
     analogWrite(15, 0);
+    analogWrite(35, 180);     //medio
+    analogWrite(36, 0); 
+    analogWrite(37, 200);  //arriba
+    analogWrite(38, 0);
+    delay(1000);
+    analogWrite(14, 0); //abajo
+    analogWrite(15, 200);
+    analogWrite(35, 0);     //medio
+    analogWrite(36, 180);
+    analogWrite(37, 0);  //arriba
+    analogWrite(38, 200);
     delay(1000);
     //analogWrite(35, 150);     //medio
     //analogWrite(36, 0); 
