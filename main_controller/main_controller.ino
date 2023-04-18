@@ -70,7 +70,7 @@ void setup(){
     mDrive.init(&theta_error);
     mWarehouse.init(current_time, &sensor2);
     mElevator.setSpeed(1500);
-    Serial.begin(9600);
+    Serial.begin(57600);
 
     //Serial.write("<target>");
     attachInterrupt(digitalPinToInterrupt(Constants::kFrontLeftEncoder), interruptFL, CHANGE);

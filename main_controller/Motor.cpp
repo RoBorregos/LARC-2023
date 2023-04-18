@@ -27,6 +27,11 @@ void Motor::periodicIO(unsigned long current_time){
     analogWrite(motorA, io.direction? io.demand : 0);
     analogWrite(motorB, io.direction? 0 : io.demand);
 
+    //overflow
+    if( abs(io.ticks) > 2147483647){
+        io.ticks = 0;
+        io.last_ticks = 0;
+    }
     io.delta_time = (current_time - io.last_time) / 1000.0;
     io.delta_ticks = io.ticks - io.last_ticks;
     io.speed = (io.delta_ticks / io.delta_time) * (Constants::kWheelDiameter * PI / (Constants::kEncoderTicksPerRevolution/2) );

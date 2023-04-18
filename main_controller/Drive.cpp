@@ -1,11 +1,10 @@
 #include "Drive.h"
 
-void Drive::init(float* theta){
+void Drive::init(){
     frontLeft.init(Constants::kFrontLeftA, Constants::kFrontLeftB, Constants::kFrontLeftEncoder);
     frontRight.init(Constants::kFrontRightA, Constants::kFrontRightB, Constants::kFrontRightEncoder);
     backLeft.init(Constants::kBackLeftA, Constants::kBackLeftB, Constants::kBackLeftEncoder);
     backRight.init(Constants::kBackRightA, Constants::kBackRightB, Constants::kBackRightEncoder);
-    imu_ptr = theta;
 }
 
 void Drive::setSpeed(float linearX, float linearY, float angularZ){
@@ -21,6 +20,10 @@ void Drive::setSpeed(float linearX, float linearY, float angularZ){
     frontRight.setSpeed(frontRightSpeed);
     backLeft.setSpeed(backLeftSpeed);
     backRight.setSpeed(backRightSpeed);
+}
+
+void Drive::setAngle(float angle){
+    this->angle = angle;
 }
 
 void Drive::stop(){
@@ -92,20 +95,22 @@ Pose2d Drive::getPosition(){
 }
 
 void Drive::periodicIO(unsigned long current_time){
-    angle = *imu_ptr;
+    if( current_time - last_time < loop_time)
+        return;
+
     frontLeft.periodicIO(current_time);
     frontRight.periodicIO(current_time);
     backLeft.periodicIO(current_time);
     backRight.periodicIO(current_time);
 
     velocity.x = (frontLeft.getSpeed() + frontRight.getSpeed() + backLeft.getSpeed() + backRight.getSpeed())/4;
-    velocity.y = (frontLeft.getSpeed() - frontRight.getSpeed() + backLeft.getSpeed() - backRight.getSpeed())/4;
-    velocity.theta = (frontLeft.getSpeed() - frontRight.getSpeed() - backLeft.getSpeed() + backRight.getSpeed())/(4*Constants::kWheelTrack);
+    velocity.y = (-frontLeft.getSpeed() + frontRight.getSpeed() + backLeft.getSpeed() - backRight.getSpeed())/4;
+    velocity.theta = (-frontLeft.getSpeed() + frontRight.getSpeed() - backLeft.getSpeed() + backRight.getSpeed())/(4* (Constants::kWheelBase/2 + Constants::kWheelTrack/2));
 
     unsigned long delta_time = current_time - last_time;
     position.x += velocity.x * cos(angle) * (delta_time * 0.001);
     position.y += velocity.y * cos(angle) * (delta_time * 0.001);
-    position.theta += velocity.theta * delta_time;
+    position.theta = angle;
 
     last_time = current_time;
 }
