@@ -11,10 +11,10 @@ void Drive::setSpeed(float linearX, float linearY, float angularZ){
     float error = angle * Constants::kDriveKP;
     float wheelPosX = Constants::kWheelBase/2;
     float wheelPosY = Constants::kWheelTrack/2; 
-    float frontLeftSpeed = linearX - linearY - angularZ*(wheelPosX + wheelPosY) + error;
-    float frontRightSpeed = linearX + linearY + angularZ*(wheelPosX + wheelPosY) - error;
-    float backLeftSpeed = linearX + linearY - angularZ*(wheelPosX + wheelPosY) + error;
-    float backRightSpeed = linearX - linearY + angularZ*(wheelPosX + wheelPosY) - error;
+    float frontLeftSpeed = linearX - linearY - angularZ*(wheelPosX + wheelPosY) - error;
+    float frontRightSpeed = linearX + linearY + angularZ*(wheelPosX + wheelPosY) + error;
+    float backLeftSpeed = linearX + linearY - angularZ*(wheelPosX + wheelPosY) - error;
+    float backRightSpeed = linearX - linearY + angularZ*(wheelPosX + wheelPosY) + error;
 
     frontLeft.setSpeed(frontLeftSpeed);
     frontRight.setSpeed(frontRightSpeed);

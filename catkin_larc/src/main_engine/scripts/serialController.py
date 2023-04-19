@@ -491,6 +491,7 @@ class BaseController:
 
     def imuRPYCallback(self, req):
         #TODO - implement rosservice call to reset if value is nan
+        #NOTE - when calling /reset service, speeds dies
         self.angle = -req.z
 
 class MicroControllerROS():
