@@ -72,7 +72,7 @@ void RosBridge::executeCommand(uint8_t packet_size, uint8_t command, uint8_t* bu
       break;
     case 0x00: // Baud
       if (packet_size == 1) { // Check packet size
-        uint32_t baud[] = {57600};
+        uint32_t baud[] = {115200};
         writeSerial(true, (uint8_t*)baud, sizeof(baud));
       }
       break;

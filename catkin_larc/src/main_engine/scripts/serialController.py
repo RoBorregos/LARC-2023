@@ -3,6 +3,7 @@
 
 import rospy
 from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Vector3
 import os, time
 import _thread
 
@@ -322,7 +323,7 @@ class BaseController:
         self.rate = float(rospy.get_param("~base_controller_rate", 10))
         self.timeout = rospy.get_param("~base_controller_timeout", 1.0)
         self.stopped = False
-        self.useImu = rospy.get_param("~useImu", False)
+        self.useImu = rospy.get_param("~useImu", True)
         
         self.wheel_diameter = rospy.get_param("~wheel_diameter", 0.1518)
         self.wheel_track = rospy.get_param("~wheel_track", 0.375)
@@ -366,18 +367,22 @@ class BaseController:
         self.v_th = 0
         self.last_cmd_vel = now
 
+        self.angle = 0
+        self.quaternion = Quaternion()
+
         # Subscriptions
-        rospy.Subscriber("smoother_cmd_vel", Twist, self.cmdVelCallback)
-        self.robot_cmd_vel_pub = rospy.Publisher('robot_cmd_vel', Twist, queue_size=5)
+        rospy.Subscriber("cmd_vel", Twist, self.cmdVelCallback)
         
         # Clear any old odometry info
-        self.Microcontroller.reset_encoders()
-        self.Microcontroller.reset_IMU()
+        #self.Microcontroller.reset_encoders()
+        #self.Microcontroller.reset_IMU()
 
         self.imu_frame_id = rospy.get_param('imu_frame_id', 'imu_base')
         self.imu_offset = rospy.get_param('imu_offset', 1.01)
-        self.imuPub = rospy.Publisher('imu', Imu, queue_size=5)
-        self.imuAnglePub = rospy.Publisher('imu_angle', Float32, queue_size=5)
+        rospy.Subscriber("imu_rpy", Vector3, self.imuRPYCallback)
+        rospy.Subscriber("imu_data", Imu, self.imuDataCallback)
+        #self.imuPub = rospy.Publisher('imu', Imu, queue_size=5)
+        #self.imuAnglePub = rospy.Publisher('imu_angle', Float32, queue_size=5)
         # Set up the odometry broadcaster
         self.odomPub = rospy.Publisher('odom', Odometry, queue_size=5)
         self.odomBroadcaster = TransformBroadcaster()
@@ -385,27 +390,9 @@ class BaseController:
         rospy.loginfo("Started base controller for a base of " + str(self.wheel_track) + "m wide with " + str(self.encoder_resolution) + " ticks per rev")
         rospy.loginfo("Publishing odometry data at: " + str(self.rate) + " Hz using " + str(self.base_frame) + " as base frame")
 
-        self.lEncoderPub = rospy.Publisher('Lencoder', UInt16, queue_size=5)
-        self.rEncoderPub = rospy.Publisher('Rencoder', UInt16, queue_size=5)
-
         self.SUCCESS = 0
         self.FAIL = -1
    
-        self.emergencybt_val = 0
-        self.emergencybt_pub = rospy.Publisher('emergencybt_status', Int16, queue_size=5)
-
-        rospy.Subscriber("imu_reset", Int16, self.resetImuCallback)
-        self.imu_angle_pub = rospy.Publisher('imu_angle_MicroController', Int16, queue_size=5)
-        self.imu_pub = rospy.Publisher('imu_val', String, queue_size=5)
-
-        rospy.Subscriber("encoder_reset", Int16, self.resetEncoderCallback)
-
-        self.lwheel_ele = 0
-        self.rwheel_ele = 0
-        self.lwheel_ele_pub = rospy.Publisher('lwheel_ele', Int32, queue_size=5)
-        self.rwheel_ele_pub = rospy.Publisher('rwheel_ele', Int32, queue_size=5)
-
-
         self.micro_version=0
         _,version=self.Microcontroller.get_hardware_version()
         self.slam_project_version = rospy.get_param("~slam_project_version",0)
@@ -436,125 +423,24 @@ class BaseController:
     def poll(self):
         now = rospy.Time.now()
         if now > self.t_next:
-            try:
-                stat_, left_enc,right_enc = self.Microcontroller.get_encoder_counts()#
-                #rospy.loginfo("left_enc:  " + str(left_enc)+" right_enc: " + str(right_enc))
-                self.lEncoderPub.publish(left_enc)
-                self.rEncoderPub.publish(right_enc)
-            except:
-                self.bad_encoder_count += 1
-                rospy.logerr("Encoder exception count: " + str(self.bad_encoder_count))
-                return
-                      
-            try:
-                self.lwheel_ele = vol3*4
-                self.lwheel_ele_pub.publish(self.lwheel_ele)
-                self.rwheel_ele = vol4*4
-                self.rwheel_ele_pub.publish(self.rwheel_ele)
-            except:
-                self.lwheel_ele_pub.publish(-1)
-                self.rwheel_ele_pub.publish(-1)
-                
 
-            try:
-                res  = self.Microcontroller.get_emergency_button()
-                self.emergencybt_val = res[1]
-                self.emergencybt_pub.publish(self.emergencybt_val)
-            except:
-                self.emergencybt_val = -1
-                self.emergencybt_pub.publish(-1)
-                rospy.logerr("get emergencybt  exception")
-
-
-            if (self.useImu == True) :
-                try:
-                    stat_, yaw, yaw_vel, acc_x, acc_y, acc_z = self.Microcontroller.get_imu_val()
-                    # Degree to radians
-                    yaw = yaw * 3.1415926 / 180.0
-                    isValid = True
-                    if yaw == 0.0:
-                        isValid = False
-
-                    # print("yaw:  " + str(yaw)+" yaw_vel: " + str(yaw_vel)+" acc_x: " + str(acc_x)+" acc_y: " + str(acc_y)+" acc_z: " + str(acc_z))
-                    if isValid:
-                        # if yaw>=18000:
-                        #     yaw = yaw-65535
-                        # yaw = yaw/100.0
-                        # if yaw_vel>=32768:
-                        #     yaw_vel = yaw_vel-65535
-                        # yaw_vel = yaw_vel/100.0
-                        
-                        imu_data = Imu()  
-                        imu_data.header.stamp = rospy.Time.now()
-                        imu_data.header.frame_id = self.imu_frame_id 
-                        imu_data.orientation_covariance[0] = 1000000
-                        imu_data.orientation_covariance[1] = 0
-                        imu_data.orientation_covariance[2] = 0
-                        imu_data.orientation_covariance[3] = 0
-                        imu_data.orientation_covariance[4] = 1000000
-                        imu_data.orientation_covariance[5] = 0
-                        imu_data.orientation_covariance[6] = 0
-                        imu_data.orientation_covariance[7] = 0
-                        imu_data.orientation_covariance[8] = 0.000001
-
-                        newquat = quaternion_from_euler(0, 0, yaw)
-                        imu_data.orientation = Quaternion(newquat[0], newquat[1], newquat[2], newquat[3])
-                        imu_data.linear_acceleration_covariance[0] = -1
-                        imu_data.angular_velocity_covariance[0] = -1
-
-                        imu_data.linear_acceleration.x = acc_x
-                        imu_data.linear_acceleration.y = acc_y
-                        imu_data.linear_acceleration.z = acc_z
-
-                        imu_data.angular_velocity.x = 0.0
-                        imu_data.angular_velocity.y = 0.0
-                        imu_data.angular_velocity.z = yaw_vel
-                        self.imuPub.publish(imu_data)
-                        self.imuAnglePub.publish(yaw)
-                except:
-                    self.bad_encoder_count += 1
-                    rospy.logerr("IMU exception count: " + str(self.bad_encoder_count))
-                    return
-     
             dt = now - self.then
             self.then = now
             dt = dt.to_sec()
-            
-            # Calculate odometry
-            dright = (1.0 * right_enc) / self.ticks_per_meter
-            dleft = (1.0 * left_enc) / self.ticks_per_meter
-            # print(dright, dleft, right_enc, left_enc)
 
-            dxy_ave = (dright + dleft) / 2.0
-            dth = (dright - dleft) / self.wheel_track
-            vxy = dxy_ave / dt
-            vth = dth / dt
-                
-            if (dxy_ave != 0):
-                dx = cos(dth) * dxy_ave
-                dy = -sin(dth) * dxy_ave
-                self.x += (cos(self.th) * dx - sin(self.th) * dy)
-                self.y += (sin(self.th) * dx + cos(self.th) * dy)
-    
-            if (dth != 0):
-                self.th += dth 
-    
-            quaternion = Quaternion()
-            quaternion.x = 0.0 
-            quaternion.y = 0.0
-            quaternion.z = sin(self.th / 2.0)
-            quaternion.w = cos(self.th / 2.0)
-    
-            # Create the odometry transform frame broadcaster.
-            if (self.useImu == False) :
-                self.odomBroadcaster.sendTransform(
-                  (self.x, self.y, 0), 
-                  (quaternion.x, quaternion.y, quaternion.z, quaternion.w),
-                  rospy.Time.now(),
-                  self.base_frame,
-                  "odom"
-                )
-    
+            vx = 0.0
+            vy = 0
+            vth = 0
+            # Get odometry from the microcontroller
+            try:
+                ack, vx, vy, vth, self.x, self.y  = self.Microcontroller.get_odometry()
+                if ack==self.FAIL:
+                    rospy.logerr("get odometry failed ")
+                    return
+            except:
+                rospy.logerr("get odometry exception ")
+                return
+            
             odom = Odometry()
             odom.header.frame_id = "odom"
             odom.child_frame_id = self.base_frame
@@ -562,9 +448,9 @@ class BaseController:
             odom.pose.pose.position.x = self.x
             odom.pose.pose.position.y = self.y
             odom.pose.pose.position.z = 0
-            odom.pose.pose.orientation = quaternion
-            odom.twist.twist.linear.x = vxy
-            odom.twist.twist.linear.y = 0
+            odom.pose.pose.orientation = self.quaternion
+            odom.twist.twist.linear.x = vx
+            odom.twist.twist.linear.y = vy
             odom.twist.twist.angular.z = vth
 
             odom.pose.covariance = ODOM_POSE_COVARIANCE
@@ -580,6 +466,7 @@ class BaseController:
             # Set motor speeds in encoder ticks per PID loop
             if ((not self.stopped)):
                 self.Microcontroller.drive(self.v_x, self.v_y, self.v_th)
+                self.Microcontroller.imu_angle(self.angle)
                 
             self.t_next = now + self.t_delta
             
@@ -591,23 +478,20 @@ class BaseController:
         # Handle velocity-based movement requests
         self.last_cmd_vel = rospy.Time.now()
         
-        robot_cmd_vel = Twist()
         x = req.linear.x         # m/s
+        y = req.linear.y         # m/s
         th = req.angular.z       # rad/s
 
-        if self.emergencybt_val == 1:
-            robot_cmd_vel.linear.x = 0
-            robot_cmd_vel.linear.y = 0
-            robot_cmd_vel.angular.z = 0
-        else:
-            robot_cmd_vel.linear.x = x
-            robot_cmd_vel.linear.y = 0
-            robot_cmd_vel.angular.z = th
-        self.robot_cmd_vel_pub.publish(robot_cmd_vel)
-
         self.v_x = x
-        self.v_y = 0
+        self.v_y = y
         self.v_th = th
+    
+    def imuDataCallback(self, req):
+        self.quaternion = req.orientation
+
+    def imuRPYCallback(self, req):
+        #TODO - implement rosservice call to reset if value is nan
+        self.angle = -req.z
 
 class MicroControllerROS():
     def __init__(self):
@@ -616,13 +500,13 @@ class MicroControllerROS():
         # Cleanup when termniating the node
         rospy.on_shutdown(self.shutdown)
         
-        self.port = rospy.get_param("~port", "/dev/ttyUSB0")
+        self.port = rospy.get_param("~port", "/dev/ttyACM0")
         self.baud = int(rospy.get_param("~baud", 115200))
         self.timeout = rospy.get_param("~timeout", 0.5)
         self.base_frame = rospy.get_param("~base_frame", 'base_link')
 
         # Overall loop rate: should be faster than fastest sensor rate
-        self.rate = int(rospy.get_param("~rate", 50))
+        self.rate = int(rospy.get_param("~rate", 10))
         r = rospy.Rate(self.rate)
 
 
@@ -631,9 +515,6 @@ class MicroControllerROS():
         # Initialize a Twist message
         self.cmd_vel = Twist()
   
-        # A cmd_vel publisher so we can stop the robot when shutting down
-        self.cmd_vel_pub = rospy.Publisher('cmd_vel', Twist, queue_size=5)
-        
         # Initialize the controlller
         self.controller = Microcontroller(self.port, self.baud, self.timeout)
         
@@ -661,7 +542,6 @@ class MicroControllerROS():
         # Stop the robot
         try:
             rospy.loginfo("Stopping the robot...")
-            self.cmd_vel_pub.Publish(Twist())
             rospy.sleep(2)
         except:
             pass
@@ -670,7 +550,7 @@ class MicroControllerROS():
 def testController():
     # Initialize the controlller
     port = "/dev/ttyACM0"
-    baud = 57600
+    baud = 115200 
     timeout = 0.1
     controller = Microcontroller(port, baud, timeout)
     controller.connect()
@@ -691,12 +571,12 @@ def testController():
         if time.time() - start_time > 2.5:
             index = (index + 1) % 4
             start_time = time.time()
-        #controller.drive(velX[index], velY[index], 0.0)
-        controller.drive(0.0, 0.0, 0.0)
+        controller.drive(velX[index], velY[index], 0.0)
+        #controller.drive(0.0, 0.0, 0.0)
         controller.imu_angle(imu_vals[index])
         time.sleep(0.1) 
 
 if __name__ == '__main__':
-    #myMicroController = MicroControllerROS()
-    testController()
+    myMicroController = MicroControllerROS()
+    #testController()
     
