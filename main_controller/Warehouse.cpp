@@ -84,7 +84,7 @@ void Warehouse::periodicIO(unsigned long current_time){
     //lower.distance = lower.tof->readRange();
 
     Level* lvl = &mid;
-    //for(auto lvl : levels){
+    for(auto lvl : levels){
         int error = - (lvl->distance - (int)lvl->cube_state);
         if( lvl->cube_state == CubePosition::Four && error < -5 ){
             lvl->demand = -lvl->speed;
@@ -100,7 +100,7 @@ void Warehouse::periodicIO(unsigned long current_time){
         analogWrite(lvl->fwdPin, lvl->demand>0? abs(lvl->demand) : 0);
         analogWrite(lvl->revPin, lvl->demand<0? abs(lvl->demand) : 0);
 
-    //}
+    }
 }
 
 int Warehouse::setSpeed(int a, int b, float speed){

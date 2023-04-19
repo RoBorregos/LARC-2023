@@ -32,7 +32,6 @@ class Drive{
         Pose2d velocity;
         Pose2d position;
         float angle;
-        float* imu_ptr;
         unsigned long last_time = 0;
     public:
         void init();

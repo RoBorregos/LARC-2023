@@ -8,7 +8,7 @@
 #include "Intake.h"
 #include "Elevator.h"
 #include "LineSensor.h"
-#include "Warehouse.h"
+//#include "Warehouse.h"
 
 Drive mDrive;
 Elevator mElevator;
@@ -58,9 +58,14 @@ void setup(){
     //mElevator.setPosition(ElevatorPosition::SecondWarehouse);
 
     ros.init(&mDrive);
+
+    pinMode(14, OUTPUT);
+    pinMode(15, OUTPUT);
 }
 
 void loop(){
+    analogWrite(14, 0);
+    analogWrite(15, 0);
 
     current_time = millis();
     ros.spin(current_time);

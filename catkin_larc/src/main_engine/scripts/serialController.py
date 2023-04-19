@@ -240,11 +240,11 @@ class Microcontroller:
            # print("ACK", self.payload_ack, self.payload_ack == b'\x00', self.execute(cmd_str)==1)
            return self.FAIL, 0
 
-    def get_encoder_counts(self):
+    def get_odometry(self):
         cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x01, 0x02) + struct.pack("B", 0x03)
         if (self.execute(cmd_str))==1 and self.payload_ack == b'\x00':
-           left_enc, right_enc = struct.unpack('hh', self.payload_args)
-           return  self.SUCCESS, left_enc, right_enc
+           velX, velY, velTh, posX, posY = struct.unpack('5f', self.payload_args)
+           return  self.SUCCESS, velX, velY, velTh, posX, posY
         else:
            return self.FAIL, 0, 0
 
@@ -255,13 +255,12 @@ class Microcontroller:
         else:
            return self.FAIL
 
-    def get_imu_val(self):
-        cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x01, 0x05) + struct.pack("B", 0x06)
+    def imu_angle(self, angle):
+        cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x05, 0x05) + struct.pack("f", angle) + struct.pack("B", 0x06)
         if (self.execute(cmd_str))==1 and self.payload_ack == b'\x00':
-           yaw, yaw_vel, x_acc, y_acc, z_acc, = struct.unpack('5f', self.payload_args)
-           return  self.SUCCESS, yaw, yaw_vel, x_acc, y_acc, z_acc
+           return  self.SUCCESS
         else:
-           return self.FAIL, 0, 0, 0, 0, 0
+           return self.FAIL
 
     def get_emergency_button(self):
         cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x01, 0x15) + struct.pack("B", 0x16)
@@ -286,14 +285,14 @@ class Microcontroller:
         cs=cs%255
         return cs
 
-    def drive(self, x, th):
+    def drive(self, x, y, th):
         # data1 = struct.pack("h", x)
         # data2 = struct.pack("h", th)
         # d1, d2 = struct.unpack("BB", data1)
         # c1, c2 = struct.unpack("BB", data2)
         # self.check_list = [0x05,0x04, d1, d2, c1, c2]
         # self.check_num = self.get_check_sum(self.check_list)
-        cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x09, 0x04) + struct.pack("ff", x, th) + struct.pack("B", 0x05)
+        cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x0D, 0x04) + struct.pack("fff", x, y, th) + struct.pack("B", 0x05)
         if (self.execute(cmd_str))==1 and self.payload_ack == b'\x00':
            return  self.SUCCESS
         else:
@@ -302,7 +301,7 @@ class Microcontroller:
     def stop(self):
         ''' Stop both motors.
         '''
-        return self.drive(0, 0)
+        return self.drive(0, 0, 0)
 
     def get_hardware_version(self):
         ''' Get the current version of the hardware.
@@ -580,13 +579,13 @@ class BaseController:
 
             # Set motor speeds in encoder ticks per PID loop
             if ((not self.stopped)):
-                self.Microcontroller.drive(self.v_x, self.v_th)
+                self.Microcontroller.drive(self.v_x, self.v_y, self.v_th)
                 
             self.t_next = now + self.t_delta
             
     def stop(self):
         self.stopped = True
-        self.Microcontroller.drive(0, 0)
+        self.Microcontroller.drive(0, 0, 0)
             
     def cmdVelCallback(self, req):
         # Handle velocity-based movement requests
@@ -670,7 +669,7 @@ class MicroControllerROS():
 
 def testController():
     # Initialize the controlller
-    port = "/dev/ttyUSB0"
+    port = "/dev/ttyACM0"
     baud = 57600
     timeout = 0.1
     controller = Microcontroller(port, baud, timeout)
@@ -678,26 +677,26 @@ def testController():
     rospy.loginfo("Connected to Microcontroller on port " + port + " at " + str(baud) + " baud")
     print(controller.get_hardware_version())
     print(controller.get_baud())
-    print(controller.get_encoder_counts())
-    print(controller.reset_IMU())
-    print(controller.get_emergency_button())
-    print(controller.reset_encoders())
+    print(controller.get_odometry())
     
     print(controller.stop())
     
-    velocities = [-0.25, 0.25]
+    velX = [0.7, 0.0, -0.7, 0.0]
+    velY = [0.0, 0.7, 0.0, -0.7]
+    imu_vals = [0.0, 2.0, -2.0, 10.0]
     index = 0
     start_time = time.time()
     while(1):
-        print(controller.get_imu_val())
-        print(controller.get_emergency_button())
-        print(controller.get_encoder_counts())
+        print(controller.get_odometry())
         if time.time() - start_time > 2.5:
-            index = (index + 1) % 2
+            index = (index + 1) % 4
             start_time = time.time()
-        # controller.drive(velocities[index], 0.0)
+        #controller.drive(velX[index], velY[index], 0.0)
+        controller.drive(0.0, 0.0, 0.0)
+        controller.imu_angle(imu_vals[index])
         time.sleep(0.1) 
 
 if __name__ == '__main__':
-    myMicroController = MicroControllerROS()
+    #myMicroController = MicroControllerROS()
+    testController()
     

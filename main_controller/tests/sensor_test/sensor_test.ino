@@ -1,8 +1,8 @@
 //encoder tests
-#define EN1 26
+#define EN1 23
 #define EN2 27
-#define EN3 23
-#define EN4 12
+#define EN3 12
+#define EN4 26
 
 volatile long en1_count = 0;
 volatile long en2_count = 0;
