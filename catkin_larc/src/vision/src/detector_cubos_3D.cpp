@@ -96,6 +96,18 @@ struct ObjectParams
   int file_id = 0;
 };
 
+struct Intrinsics
+{
+  int width;
+  int height;
+  double ppx;
+  double ppy;
+  double fx;
+  double fy;
+  std::string model;
+  std::vector<double> coeffs;
+};
+
 class CubeDetect3D
 {
    const std::string name = "CubeDetect3D";
@@ -109,6 +121,12 @@ class CubeDetect3D
     ros::Publisher pc_pub_2_;
     ros::Publisher pc_pub_3_;
     ros::Publisher pc_pub_img;
+    ros::Publisher point_pub1;
+    ros::Publisher point_pub2;
+    sensor_msgs::CameraInfo zed_info_;
+    sensor_msgs::Image zed_image_;
+    cv_bridge::CvImagePtr zed_iage_cv;
+
 public: 
   CubeDetect3D() :
     listener_(buffer_)
@@ -121,11 +139,25 @@ public:
       pc_pub_2_ = nh_.advertise<sensor_msgs::PointCloud2>("/test_pc_2", 10);
       pc_pub_3_ = nh_.advertise<sensor_msgs::Image>("/test_pc_3", 10);
 
-      pc_pub_img = nh_.advertise<sensor_msgs::Image>("/img", 10);
+      pc_pub_img = nh_.advertise<sensor_msgs::Image>("/object", 10);
+
+
+      zed_info_ = *(ros::topic::waitForMessage<sensor_msgs::CameraInfo>("/zed2/zed_node/depth/camera_info", nh_));
+      zed_image_ = *(ros::topic::waitForMessage<sensor_msgs::Image>("/zed2/zed_node/rgb/image_rect_color", nh_));
+      zed_image_cv = cv_bridge::toCvCopy(zed_image_, sensor_msgs::image_encodings::BGR8);
+
+      point_pub1 = nh_.advertise<geometry_msgs::PointStamped>("/point1", 10);
+      point_pub2 = nh_.advertise<geometry_msgs::PointStamped>("/point2", 10);
 
       while(true && ros::ok())
       {
-        sensor_msgs::PointCloud2 pc = *(ros::topic::waitForMessage<sensor_msgs::PointCloud2>("/zed2/zed_node/point_cloud/cloud_registered", nh_));
+        // zed2_left_camera_frame
+        sensor_msgs::PointCloud2 pc = *(ros::topic::waitForMessage<sensor_msgs::PointCloud2>("/zed2/zed_node/point_cloud/ds_cloud_registered", nh_));
+        sensor_msgs::PointCloud2 t_pc;
+        tf_listener->waitForTransform("/map", CAMERA_FRAME, ros::Time(0), ros::Duration(5.0));
+        pc.header.frame_id = CAMERA_FRAME;
+        pcl_ros::transformPointCloud("map", pc, t_pc, *tf_listener);
+
         cloudCB(pc);
         // Wait 3 segs.
         ros::Duration(5).sleep();
@@ -174,11 +206,186 @@ public:
 
  // /** \brief Given a pointcloud extract the ROI defined by the user.
   // @param cloud - Pointcloud whose ROI needs to be extracted. */
+  
+    void project_point_to_pixel(float pixel[2], float point[3], sensor_msgs::CameraInfo cam_info)
+  {
+    Intrinsics intrin;
+    intrin.width = cam_info.width;
+    intrin.height = cam_info.height;
+    intrin.ppx = cam_info.K[2];
+    intrin.ppy = cam_info.K[5];
+    intrin.fx = cam_info.K[0];
+    intrin.fy = cam_info.K[4];
+    for (int i = 0; i < 5; i++) {
+      intrin.coeffs.push_back(cam_info.D[i]);
+    }
+    if(cam_info.distortion_model == "plumb_bob") {
+      intrin.model = "RS2_DISTORTION_BROWN_CONRADY";
+    } else if(cam_info.distortion_model == "equidistant") {
+      intrin.model = "RS2_DISTORTION_KANNALA_BRANDT4";
+    }
+        
+    float x = point[0] / point[2], y = point[1] / point[2];
+
+    if ((intrin.model == "RS2_DISTORTION_MODIFIED_BROWN_CONRADY") ||
+        (intrin.model == "RS2_DISTORTION_INVERSE_BROWN_CONRADY"))
+    {
+
+        float r2 = x * x + y * y;
+        float f = 1 + intrin.coeffs[0] * r2 + intrin.coeffs[1] * r2 * r2 + intrin.coeffs[4] * r2 * r2 * r2;
+        x *= f;
+        y *= f;
+        float dx = x + 2 * intrin.coeffs[2] * x * y + intrin.coeffs[3] * (r2 + 2 * x * x);
+        float dy = y + 2 * intrin.coeffs[3] * x * y + intrin.coeffs[2] * (r2 + 2 * y * y);
+        x = dx;
+        y = dy;
+    }
+
+    if (intrin.model == "RS2_DISTORTION_BROWN_CONRADY")
+    {
+        float r2 = x * x + y * y;
+        float f = 1 + intrin.coeffs[0] * r2 + intrin.coeffs[1] * r2 * r2 + intrin.coeffs[4] * r2 * r2 * r2;
+
+        float xf = x * f;
+        float yf = y * f;
+
+        float dx = xf + 2 * intrin.coeffs[2] * x * y + intrin.coeffs[3] * (r2 + 2 * x * x);
+        float dy = yf + 2 * intrin.coeffs[3] * x * y + intrin.coeffs[2] * (r2 + 2 * y * y);
+
+        x = dx;
+        y = dy;
+    }
+
+    if (intrin.model == "RS2_DISTORTION_FTHETA")
+    {
+        float r = sqrtf(x * x + y * y);
+        if (r < FLT_EPSILON)
+        {
+            r = FLT_EPSILON;
+        }
+        float rd = (float)(1.0f / intrin.coeffs[0] * atan(2 * r * tan(intrin.coeffs[0] / 2.0f)));
+        x *= rd / r;
+        y *= rd / r;
+    }
+    if (intrin.model == "RS2_DISTORTION_KANNALA_BRANDT4")
+    {
+        float r = sqrtf(x * x + y * y);
+        if (r < FLT_EPSILON)
+        {
+            r = FLT_EPSILON;
+        }
+        float theta = atan(r);
+        float theta2 = theta * theta;
+        float series = 1 + theta2 * (intrin.coeffs[0] + theta2 * (intrin.coeffs[1] + theta2 * (intrin.coeffs[2] + theta2 * intrin.coeffs[3])));
+        float rd = theta * series;
+        x *= rd / r;
+        y *= rd / r;
+    }
+
+    pixel[0] = x * intrin.fx + intrin.ppx;
+    pixel[1] = y * intrin.fy + intrin.ppy;
+  }
+
+  void cropImage(cv::Mat &img, ObjectParams obj) {
+    float margin = 0.05; // 5cm
+    // Get Points and Project Points To Pixel
+    float pixel_left_up[2];
+    float point_left_up[3];
+    point_left_up[0] = obj.max_x + margin;
+    point_left_up[1] = obj.max_y + margin;
+    point_left_up[2] = obj.max_z + margin;
+    // Transform point to camera frame
+    tf::StampedTransform transform;
+    try {
+      tf_listener->waitForTransform("zed2_left_camera_optical_frame", "map", ros::Time(0), ros::Duration(10.0));
+      tf_listener->lookupTransform("zed2_left_camera_optical_frame", "map", ros::Time(0), transform);
+    } catch (tf::TransformException ex) {
+      ROS_ERROR("%s", ex.what());
+    }
+    tf::Vector3 point_lu(point_left_up[0], point_left_up[1], point_left_up[2]);
+    tf::Vector3 point_transformed_lu = transform * point_lu;
+    point_left_up[0] = point_transformed_lu.getX();
+    point_left_up[1] = point_transformed_lu.getY();
+    point_left_up[2] = point_transformed_lu.getZ();
+
+    // Publish PointStamped
+    geometry_msgs::PointStamped point_msg1;
+    point_msg1.header.frame_id = "zed2_left_camera_optical_frame";
+    point_msg1.header.stamp = ros::Time::now();
+    point_msg1.point.x = point_left_up[0];
+    point_msg1.point.y = point_left_up[1];
+    point_msg1.point.z = point_left_up[2];
+    point_pub1.publish(point_msg1);
+
+
+    project_point_to_pixel(pixel_left_up, point_left_up, zed_info_);
+    
+    float pixel_right_down[2];
+    float point_right_down[3];
+    point_right_down[0] = obj.min_x - margin;
+    point_right_down[1] = obj.max_y + margin;
+    point_right_down[2] = obj.min_z - margin;
+    // Transform point to camera frame
+    tf::Vector3 point_rd(point_right_down[0], point_right_down[1], point_right_down[2]);
+    tf::Vector3 point_transformed_rd = transform * point_rd;
+    point_right_down[0] = point_transformed_rd.getX();
+    point_right_down[1] = point_transformed_rd.getY();
+    point_right_down[2] = point_transformed_rd.getZ();
+
+    // Publish PointStamped
+    geometry_msgs::PointStamped point_msg2;
+    point_msg2.header.frame_id = "zed2_left_camera_optical_frame";
+    point_msg2.header.stamp = ros::Time::now();
+    point_msg2.point.x = point_right_down[0];
+    point_msg2.point.y = point_right_down[1];
+    point_msg2.point.z = point_right_down[2];
+    point_pub2.publish(point_msg2);
+
+    project_point_to_pixel(pixel_right_down, point_right_down, zed_info_);
+    ROS_INFO_STREAM("max_x: " << obj.max_x << " max_y: " << obj.max_y << " max_z: " << obj.max_z);
+    ROS_INFO_STREAM("min_x: " << obj.min_x << " min_y: " << obj.min_y << " min_z: " << obj.min_z);
+    ROS_INFO_STREAM("pixel_left_up: " << pixel_left_up[0] << " " << pixel_left_up[1]);
+    ROS_INFO_STREAM("pixel_right_down: " << pixel_right_down[0] << " " << pixel_right_down[1]);
+
+    // Check Limits
+    pixel_left_up[0] = std::max(pixel_left_up[0], 0.0f);
+    pixel_left_up[1] = std::max(pixel_left_up[1], 0.0f);
+    pixel_left_up[0] = std::min(pixel_left_up[0], (float)img.rows);
+    pixel_left_up[1] = std::min(pixel_left_up[1], (float)img.cols);
+    pixel_right_down[0] = std::max(pixel_right_down[0], 0.0f);
+    pixel_right_down[1] = std::max(pixel_right_down[1], 0.0f);
+    pixel_right_down[0] = std::min(pixel_right_down[0], (float)img.rows);
+    pixel_right_down[1] = std::min(pixel_right_down[1], (float)img.cols);
+
+
+    // Crop rect && Save Image
+    int x = pixel_left_up[0];
+    int y = pixel_left_up[1];
+    int width = abs(pixel_right_down[0] - pixel_left_up[0]);
+    int height = abs(pixel_right_down[1] - pixel_left_up[1]);
+    if (width == 0 || height == 0) {
+      ROS_ERROR_STREAM("Error cropping image: width or height is 0");
+      return;
+    }
+    try {
+      cv::Mat croppedImg = cv::Mat(img, cv::Rect(x, y, width, height));
+      // Display diff
+      pc_pub_img.publish(cropImage);
+      cv::imshow( "Cropped Image",  croppedImg);
+      cv::waitKey();
+    } catch (cv::Exception &e) {
+      ROS_ERROR_STREAM("Error cropping image: " << e.what());
+    }
+
+  }
+
+
+
   void passThroughFilter(const pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud)
   {
     pcl::PassThrough<pcl::PointXYZ> pass;
     pass.setInputCloud(cloud);
-    pass.setFilterFieldName("x");
+    pass.setFilterFieldName("z");
     // min and max values in z axis to keep
     pass.setFilterLimits(0, 5.0);
     pass.filter(*cloud);
@@ -199,89 +406,6 @@ public:
   //   ne.compute(*cloud_normals);
   // }
 
-  void rs2_deproject_pixel_to_point(float point[3], const struct rs2_intrinsics* intrin, const float pixel[2], float depth) 
-  {
-    assert(intrin->model != RS2_DISTORTION_MODIFIED_BROWN_CONRADY); // Cannot deproject from a forward-distorted image
-    //assert(intrin->model != RS2_DISTORTION_BROWN_CONRADY); // Cannot deproject to an brown conrady model
-
-    float x = (pixel[0] - intrin->ppx) / intrin->fx;
-    float y = (pixel[1] - intrin->ppy) / intrin->fy;
-
-    float xo = x;
-    float yo = y;
-
-    if (intrin->model == RS2_DISTORTION_INVERSE_BROWN_CONRADY)
-    {
-        // need to loop until convergence 
-        // 10 iterations determined empirically
-        for (int i = 0; i < 10; i++)
-        {
-            float r2 = x * x + y * y;
-            float icdist = (float)1 / (float)(1 + ((intrin->coeffs[4] * r2 + intrin->coeffs[1]) * r2 + intrin->coeffs[0]) * r2);
-            float xq = x / icdist;
-            float yq = y / icdist;
-            float delta_x = 2 * intrin->coeffs[2] * xq * yq + intrin->coeffs[3] * (r2 + 2 * xq * xq);
-            float delta_y = 2 * intrin->coeffs[3] * xq * yq + intrin->coeffs[2] * (r2 + 2 * yq * yq);
-            x = (xo - delta_x) * icdist;
-            y = (yo - delta_y) * icdist;
-        }
-    }
-    if (intrin->model == RS2_DISTORTION_BROWN_CONRADY)
-    {
-        // need to loop until convergence 
-        // 10 iterations determined empirically
-        for (int i = 0; i < 10; i++)
-        {
-            float r2 = x * x + y * y;
-            float icdist = (float)1 / (float)(1 + ((intrin->coeffs[4] * r2 + intrin->coeffs[1]) * r2 + intrin->coeffs[0]) * r2);
-            float delta_x = 2 * intrin->coeffs[2] * x * y + intrin->coeffs[3] * (r2 + 2 * x * x);
-            float delta_y = 2 * intrin->coeffs[3] * x * y + intrin->coeffs[2] * (r2 + 2 * y * y);
-            x = (xo - delta_x) * icdist;
-            y = (yo - delta_y) * icdist;
-        }
-
-    }
-    if (intrin->model == RS2_DISTORTION_KANNALA_BRANDT4)
-    {
-        float rd = sqrtf(x * x + y * y);
-        if (rd < FLT_EPSILON)
-        {
-            rd = FLT_EPSILON;
-        }
-
-        float theta = rd;
-        float theta2 = rd * rd;
-        for (int i = 0; i < 4; i++)
-        {
-            float f = theta * (1 + theta2 * (intrin->coeffs[0] + theta2 * (intrin->coeffs[1] + theta2 * (intrin->coeffs[2] + theta2 * intrin->coeffs[3])))) - rd;
-            if (fabs(f) < FLT_EPSILON)
-            {
-                break;
-            }
-            float df = 1 + theta2 * (3 * intrin->coeffs[0] + theta2 * (5 * intrin->coeffs[1] + theta2 * (7 * intrin->coeffs[2] + 9 * theta2 * intrin->coeffs[3])));
-            theta -= f / df;
-            theta2 = theta * theta;
-        }
-        float r = tan(theta);
-        x *= r / rd;
-        y *= r / rd;
-    }
-    if (intrin->model == RS2_DISTORTION_FTHETA)
-    {
-        float rd = sqrtf(x * x + y * y);
-        if (rd < FLT_EPSILON)
-        {
-            rd = FLT_EPSILON;
-        }
-        float r = (float)(tan(intrin->coeffs[0] * rd) / atan(2 * tan(intrin->coeffs[0] / 2.0f)));
-        x *= r / rd;
-        y *= r / rd;
-    }
-
-    point[0] = depth * x;
-    point[1] = depth * y;
-    point[2] = depth;
-  }
 
   /** \brief Given the point normals and point indices, extract the normals for the indices.
       @param cloud_normals - Point normals.
@@ -353,10 +477,10 @@ public:
     object_found.center.pose.orientation.z = 0.0;
     object_found.center.pose.orientation.w = 1.0;
 
-    // Store the object centroid referenced to the camera frame.
-    // geometry_msgs::TransformStamped tf_to_cam;
-    // tf_to_cam = buffer_.lookupTransform(CAMERA_FRAME, "map", ros::Time(0), ros::Duration(1.0));
-    // tf2::doTransform(object_found.center, object_found.center_cam, tf_to_cam);
+    //Store the object centroid referenced to the camera frame.
+    geometry_msgs::TransformStamped tf_to_cam;
+    tf_to_cam = buffer_.lookupTransform(CAMERA_FRAME, "map", ros::Time(0), ros::Duration(1.0));
+    tf2::doTransform(object_found.center, object_found.center_cam, tf_to_cam);
 
     if (isCluster) {
       object_found.isValid = true;
@@ -436,18 +560,6 @@ public:
     return cloud->size() > 0;
   }
 
-  //  void computeNormals(const pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud,
-  //                     const pcl::PointCloud<pcl::Normal>::Ptr& cloud_normals)
-  // {
-  //   pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZ>());
-  //   pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> ne;
-  //   ne.setSearchMethod(tree);
-  //   ne.setInputCloud(cloud);
-  //   // Set the number of k nearest neighbors to use for the feature estimation.
-  //   ne.setKSearch(50);
-  //   ne.compute(*cloud_normals);
-  // }
-
   /** \brief PointCloud callback. */
 
   void cloudCB(const sensor_msgs::PointCloud2& input)
@@ -506,11 +618,8 @@ public:
     for(int i=0;i < clustersFound; i++)
     {
       ObjectParams tmp;
-      tmp.mesh.reset(new shape_msgs::Mesh);
       extractObjectDetails(clusters[i], tmp, table_params);
-      ROS_INFO_STREAM("File saved: " << "pcl_object_"+std::to_string(i)+".pcd");
       tmp.file_id = i;
-      pcl::io::savePCDFile("pcl_object_"+std::to_string(i)+".pcd", *clusters[i]);
       if (tmp.isValid) 
       {
         objects.push_back(tmp);
@@ -522,65 +631,35 @@ public:
       return;
     }
 
-    ObjectParams selectedObject = objects[0];
-
-    // Convert PointCloud2 message to PointCloud object
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_rgb(new pcl::PointCloud<pcl::PointXYZRGB>);
-    pcl::fromROSMsg(input, *cloud_rgb);
-
-    //Extract RGB values and create sensor_msgs Image
-    cv_bridge::CvImagePtr cv_ptr;
-
-    for (int a = 0; a < clustersFound; a++) 
+        // Crop n Image to n objects and save them.
+    for (int i = 0; i < objects.size(); i++) 
     {
-      sensor_msgs::Image image_msg;
-      image_msg.header = input.header;
-      image_msg.height = cloud_rgb->height;
-      image_msg.width = cloud_rgb->width;
-      image_msg.encoding = "rgb8";
-      image_msg.is_bigendian = false;
-      image_msg.step = cloud_rgb->width * 3;
-      size_t data_size = cloud_rgb->width * cloud_rgb->height * 3;
-      image_msg.data.resize(data_size);
-      
-      int k = 0;
-      
-      for(int i = 0; i < cloud_rgb->height; i++)
-      {
-          for(int j = 0; j < cloud_rgb->width; j++)
-          {
-            // Get the RGB values of the current point
-              pcl::PointXYZRGB point = cloud_rgb->at(j, i);
-              uint8_t r = point.r;
-              uint8_t g = point.g;
-              uint8_t b = point.b;
-              //ROS_WARN("aqui mame %d", point.rgb);
-            //ROS_WARN("aqui mame ");
-            //ROS_WARN("aqui mame %d", k);
-               // Store the RGB values in the image message data
-              image_msg.data[k++] = r;
-              image_msg.data[k++] = g;
-              image_msg.data[k++] = b;
-              // ROS_WARN("aqui mame r %d", r);
-              // ROS_WARN("aqui mame g %d", g);
-              // ROS_WARN("aqui mame b %d", b);
-          }
-      } 
-          ROS_WARN("termine una");
+      cropImage(zed_image_cv->image, objects[i]);
+    }
+    
+          // for(int j = 0; j < cloud_rgb->width; j++)
+          // {
+          //   // Get the RGB values of the current point
+          //     pcl::PointXYZRGB point = cloud_rgb->at(j, i);
+          //     uint8_t r = point.r;
+          //     uint8_t g = point.g;
+          //     uint8_t b = point.b;
+          //     //ROS_WARN("aqui mame %d", point.rgb);
+          //   //ROS_WARN("aqui mame ");
+          //   //ROS_WARN("aqui mame %d", k);
+          //      // Store the RGB values in the image message data
+          //     image_msg.data[k++] = r;
+          //     image_msg.data[k++] = g;
+          //     image_msg.data[k++] = b;
+          //     // ROS_WARN("aqui mame r %d", r);
+          //     // ROS_WARN("aqui mame g %d", g);
+          //     // ROS_WARN("aqui mame b %d", b);
+          // }
+    } 
+          //ROS_WARN("termine una");
         // cv_ptr = cv_bridge::toCvCopy(image_msg, sensor_msgs::image_encodings::RGB8);
         // pc_pub_img.publish(cv_ptr->image);
 
-
-          
-    }
-
-    // Save all clusters to a file.
-    for (int i = 0; i < clustersFound; i++) {
-      std::stringstream ss;
-      ss << "pcl_cluster_" << i << ".pcd";
-      pcl::io::savePCDFile(ss.str(), *clusters[i]);
-    }
-  }
 
     /** \brief Find all clusters in a pointcloud.*/
   void getClusters(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> &clusters) 
@@ -592,9 +671,9 @@ public:
     //Set parameters for the clustering
     std::vector<pcl::PointIndices> cluster_indices;
     pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
-    ec.setClusterTolerance(0.025); // 2.5cm
-    ec.setMinClusterSize(100);
-    ec.setMaxClusterSize(30000);
+    ec.setClusterTolerance(0.035); // 3.5cm
+    ec.setMinClusterSize(50);
+    ec.setMaxClusterSize(20000);
     ec.setSearchMethod(tree);
     ec.setInputCloud(cloud);
     ec.extract(cluster_indices);
