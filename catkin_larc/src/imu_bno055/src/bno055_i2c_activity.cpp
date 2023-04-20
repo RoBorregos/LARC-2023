@@ -105,7 +105,7 @@ bool BNO055I2CActivity::start() {
         "calibrate",
         &BNO055I2CActivity::onServiceCalibrate,
         this
-    );Reset
+    );
 
     if(!service_reset) service_reset = nh.advertiseService(
         "imu_reset",

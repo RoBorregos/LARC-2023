@@ -4,6 +4,7 @@
 import rospy
 from geometry_msgs.msg import Twist
 from geometry_msgs.msg import Vector3
+from std_srvs.srv import Trigger, TriggerResponse
 import os, time
 import _thread
 
@@ -381,6 +382,8 @@ class BaseController:
         self.imu_offset = rospy.get_param('imu_offset', 1.01)
         rospy.Subscriber("imu_rpy", Vector3, self.imuRPYCallback)
         rospy.Subscriber("imu_data", Imu, self.imuDataCallback)
+        rospy.wait_for_service('/imu_reset')
+        reset_imu = rospy.ServiceProxy('/imu_reset', Trigger)
         #self.imuPub = rospy.Publisher('imu', Imu, queue_size=5)
         #self.imuAnglePub = rospy.Publisher('imu_angle', Float32, queue_size=5)
         # Set up the odometry broadcaster
@@ -492,7 +495,12 @@ class BaseController:
     def imuRPYCallback(self, req):
         #TODO - implement rosservice call to reset if value is nan
         #NOTE - when calling /reset service, speeds dies
-        self.angle = -req.z
+        if math.isnan(req.z):
+            rospy.logerr("imuRPYCallback - nan value")
+            self.angle = 0 
+            aux = reset_imu()
+        else:
+            self.angle = -req.z
 
 class MicroControllerROS():
     def __init__(self):
@@ -567,6 +575,7 @@ def testController():
     imu_vals = [0.0, 2.0, -2.0, 10.0]
     index = 0
     start_time = time.time()
+
     while(1):
         print(controller.get_odometry())
         if time.time() - start_time > 2.5:
