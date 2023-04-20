@@ -382,8 +382,6 @@ class BaseController:
         self.imu_offset = rospy.get_param('imu_offset', 1.01)
         rospy.Subscriber("imu_rpy", Vector3, self.imuRPYCallback)
         rospy.Subscriber("imu_data", Imu, self.imuDataCallback)
-        rospy.wait_for_service('/imu_reset')
-        reset_imu = rospy.ServiceProxy('/imu_reset', Trigger)
         #self.imuPub = rospy.Publisher('imu', Imu, queue_size=5)
         #self.imuAnglePub = rospy.Publisher('imu_angle', Float32, queue_size=5)
         # Set up the odometry broadcaster
@@ -496,9 +494,7 @@ class BaseController:
         #TODO - implement rosservice call to reset if value is nan
         #NOTE - when calling /reset service, speeds dies
         if math.isnan(req.z):
-            rospy.logerr("imuRPYCallback - nan value")
             self.angle = 0 
-            aux = reset_imu()
         else:
             self.angle = -req.z
 
