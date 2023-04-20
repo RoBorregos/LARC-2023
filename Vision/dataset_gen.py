@@ -3,7 +3,7 @@ from PIL import Image, ImageDraw, ImageFont
 import random
 
 # Tamaño de la imagen
-for i in range(5000):
+for i in range(1500):
     print(i)
     width = 500
     height = 500
