@@ -55,9 +55,9 @@ void RosBridge::readSerial() {
 
 //////////////////////////////////Velocity Suscriber//////////////////////////////////////
 void RosBridge::velocityCallback(float linearx, float lineary, float angularz) {
-    linearX_ = linearx;
-    linearY_ = lineary;
-    angularZ_ = angularz;
+    linearX_ = linearx * 3;
+    linearY_ = lineary * 3;
+    angularZ_ = angularz * 3;
     watchdog_timer_ = millis();
 }
 

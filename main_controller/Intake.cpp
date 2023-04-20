@@ -10,7 +10,7 @@ Intake::Intake(){
 
 void Intake::pick(){
     if( presence ){
-        stop();
+        setAction(Stop);
         return;
     }
     analogWrite(Constants::kIntakeMotor1A, Constants::kIntakePickSpeed);
@@ -21,7 +21,7 @@ void Intake::pick(){
 
 void Intake::in(){
     if( !presence ){
-        stop();
+        setAction(Stop);
         return;
     }
     analogWrite(Constants::kIntakeMotor1A, Constants::kIntakeInSpeed);
@@ -32,7 +32,7 @@ void Intake::in(){
 
 void Intake::out(unsigned long current_time){
     if( presence && current_time - presence_detection_time > 250 ){
-        stop();
+        setAction(Stop);
         return;
     }
     analogWrite(Constants::kIntakeMotor1A, 0);
@@ -43,7 +43,7 @@ void Intake::out(unsigned long current_time){
 
 void Intake::drop(){
     if( !presence ){
-        stop();
+        setAction(Stop);
         return;
     }
     analogWrite(Constants::kIntakeMotor1A, 0);
@@ -63,7 +63,14 @@ bool Intake::getPresence(){
     return presence;
 }
 
+void Intake::setAction(IntakeActions action){
+    this->action = action;
+}
+
 void Intake::periodicIO(unsigned long current_time){
+    if( current_time - last_time < loop_time )
+        return;
+
     presence = !digitalRead(Constants::kIntakePresence);
     if( presence && !flag ){
         presence_detection_time = current_time;
@@ -72,4 +79,24 @@ void Intake::periodicIO(unsigned long current_time){
     if( !presence && flag){
         flag = false;
     }
+
+    switch(action){
+        case In:
+            in();
+            break;
+        case Out:
+            out(current_time);
+            break;
+        case Pick:
+            pick();
+            break;
+        case Drop:
+            drop();
+            break;
+        case Stop:
+            stop();
+            break;
+    }
+
+    last_time = current_time;
 }

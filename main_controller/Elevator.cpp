@@ -20,6 +20,7 @@ void Elevator::setSpeed(long speed){
 void Elevator::setSteps(int step){
     mStepper.steps_left = abs(step);
     mStepper.direction = step > 0 ? 1 : 0;
+    periodicIO();
 }
 
 void Elevator::setPosition(ElevatorPosition position){
@@ -31,7 +32,7 @@ bool Elevator::positionReached(){
 }
 
 void Elevator::periodicIO(){
-    if(mStepper.steps_left > 0){
+    while(mStepper.steps_left > 0){
         current_time = micros();
         if( current_time - mStepper.last_step_time > mStepper.step_delay){
             mStepper.last_step_time = current_time;

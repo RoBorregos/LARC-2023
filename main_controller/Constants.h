@@ -11,7 +11,7 @@ class Constants{
         static constexpr float kWheelDiameter = 0.054; //meters
         static constexpr float kWheelTrack = 0.23; //meters
         static constexpr float kWheelBase = 0.155; //meters
-        static constexpr float kDriveKP = 0.05;
+        static constexpr float kDriveKP = 0.02;
         
         //Motors (A: fwd, B: rev)
         static constexpr float kMotorsRPM = 380; //RPM
@@ -46,12 +46,12 @@ class Constants{
         static constexpr int kLineSensorValue = 500;
 
         // Intake //
-        static constexpr int kIntakeMotor1A = 10;
-        static constexpr int kIntakeMotor1B = 11;
-        static constexpr int kIntakeMotor2A = 8;
-        static constexpr int kIntakeMotor2B = 9;
+        static constexpr int kIntakeMotor1A = 8;
+        static constexpr int kIntakeMotor1B = 9;
+        static constexpr int kIntakeMotor2A = 11;
+        static constexpr int kIntakeMotor2B = 10;
         static constexpr int kIntakePresence = 30;
-        static constexpr int kIntakePickSpeed = 220;
+        static constexpr int kIntakePickSpeed = 255;
         static constexpr int kIntakeInSpeed = 255;
         static constexpr int kIntakeOutSpeed = 160;
         static constexpr int kIntakeDropSpeed = 255;
@@ -61,21 +61,21 @@ class Constants{
         static constexpr int kStepperDirectionPin = 28;
         static constexpr int kStepperStepPin = 29;
         static constexpr int kStepperSpeed = 2000; //max 4688 / > 1000 torque
-        static constexpr int kElevatorVLXxshut = 34;
+        static constexpr int kElevatorVLXxshut = 39;
 
         // Warehouse //
-        static constexpr int kWarehouseUpperMotorA = 37;
-        static constexpr int kWarehouseUpperMotorB = 38;
-        static constexpr int kWarehouseMidMotorA = 35;
-        static constexpr int kWarehouseMidMotorB = 36;
+        static constexpr int kWarehouseUpperMotorA = 35;
+        static constexpr int kWarehouseUpperMotorB = 36;
+        static constexpr int kWarehouseMidMotorA = 37;
+        static constexpr int kWarehouseMidMotorB = 38;
         static constexpr int kWarehouseLowerMotorA = 14;
         static constexpr int kWarehouseLowerMotorB = 15;
-        static constexpr int kWarehouseVLXxshutUpper = 31;
-        static constexpr int kWarehouseVLXxshutMid = 32;
-        static constexpr int kWarehouseVLXxshutLower = 33;
+        static constexpr int kWarehouseVLXxshutUpper = 33;
+        static constexpr int kWarehouseVLXxshutMid = 34;
+        static constexpr int kWarehouseVLXxshutLower = 32;
         static constexpr int kWarehouseUpperSpeed = 180;
         static constexpr int kWarehouseMidSpeed = 150;
-        static constexpr int kWarehouseLowerSpeed = 0;
+        static constexpr int kWarehouseLowerSpeed = 180;
 };
 
 #endif
