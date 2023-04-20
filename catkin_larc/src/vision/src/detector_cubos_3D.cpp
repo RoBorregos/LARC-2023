@@ -376,7 +376,6 @@ public:
     } catch (cv::Exception &e) {
       ROS_ERROR_STREAM("Error cropping image: " << e.what());
     }
-
   }
 
 
