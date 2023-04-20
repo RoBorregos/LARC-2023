@@ -5,13 +5,16 @@
 #include "Constants.h"
 
 enum ElevatorPosition{
-    Pick = 0,
-    FirstWarehouse = 10000,
-    SecondWarehouse = 22500,
-    ThirdWarehouse = 24000,
-    FirstShelf = 5000,
-    SecondShelf = 17500,
-    ThirdShelf = 30000,
+    PickPos = 0,
+    FirstIn = 19000,
+    SecondIn = 42500,
+    ThirdIn = 65500,
+    FirstOut = 17000,
+    SecondOut = 17500,
+    ThirdOut = 30000,
+    FirstShelf = 10000,
+    SecondShelf = 22500,
+    ThirdShelf = 80000
 };
 
 class Elevator{

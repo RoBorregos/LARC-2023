@@ -42,7 +42,7 @@ void Motor::periodicIO(unsigned long current_time){
 
 // Set the speed of the motor in m/s
 void Motor::setSpeed(float speed){
-    if( abs(speed) < 0.1 ){
+    if( abs(speed) < 0.05 ){
         stop();
         return;
     }

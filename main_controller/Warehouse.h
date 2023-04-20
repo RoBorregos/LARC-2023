@@ -33,16 +33,17 @@ struct Level{
 
 class Warehouse{
     private:
+        constexpr static float loop_time = 100;
         Level upper;
         Level mid;
         Level lower;
         Level* levels[3];
+        unsigned long last_time = 0;
     public:
-        void init(unsigned long current_time, Adafruit_VL53L0X* tof1);//, Adafruit_VL53L0X* tof2, Adafruit_VL53L0X* tof3);
+        void init(unsigned long current_time, Adafruit_VL53L0X* tof1, Adafruit_VL53L0X* tof2, Adafruit_VL53L0X* tof3);
         void cubeOut(LevelPosition pos, unsigned long current_time);
         CubePosition getCubeState(String level);
         void periodicIO(unsigned long current_time);
-        int setSpeed(int a, int b, float speed);
 };
 
 #endif

@@ -132,10 +132,14 @@ void setup() {
     pinMode(sensors[i].shutdown_pin, OUTPUT);
     digitalWrite(sensors[i].shutdown_pin, LOW);
 
-    if (sensors[i].interrupt_pin >= 0)
+    if (sensors[i].interrupt_pin > 0)
       pinMode(sensors[i].interrupt_pin, INPUT_PULLUP);
   }
   Serial.println(F("Starting..."));
+  pinMode(37, OUTPUT);
+  digitalWrite(37, LOW);
+  pinMode(38, OUTPUT);
+  digitalWrite(38, LOW);
   Initialize_sensors();
 }  // End of function 'setup'
 
@@ -143,6 +147,8 @@ void setup() {
 // The 'loop' function:
 //====================================================================
 void loop() {
+  analogWrite(37, 0);
+  analogWrite(38, 0);
 
   // Read the data from the sensors using a 'for' loop:
   for (int i = 0; i < COUNT_SENSORS; i++) {

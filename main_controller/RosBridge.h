@@ -3,10 +3,14 @@
 
 #include "Arduino.h"
 #include "Drive.h"
+#include "Intake.h"
+#include "Elevator.h"
 
 class RosBridge{
     private:
         Drive *_drive;
+        Intake *_intake;
+        Elevator *_elevator;
 
         //////////////////////////////////Velocity Suscriber//////////////////////////////////////
         // Receives velocity commands.
@@ -14,6 +18,12 @@ class RosBridge{
 
         // Receives imu angle
         void imuCallback(float angle);
+
+        void intakeCallback(int command);
+
+        void elevatorCallback(int command);
+
+        void wareHouseMotor();
 
         ////////////////////////////////Odometry Publisher///////////////////
         void getOdometry();
@@ -32,6 +42,7 @@ class RosBridge{
         // Timers.
         unsigned long odom_timer_ = 0;
         unsigned long watchdog_timer_ = 0;
+        unsigned long warehouse_motor_timer_ = 0;
 
         // CMD Velocity.
         float linearX_ = 0;
@@ -42,7 +53,7 @@ class RosBridge{
         void executeCommand(uint8_t packet_size, uint8_t command, uint8_t* buffer);
         void writeSerial(bool success, uint8_t* payload, int elements);
     public:
-        void init(Drive *drive);
+        void init(Drive *drive, Intake *intake, Elevator *elevator);
         void spin(unsigned long current_time);
 };
 
