@@ -1,72 +1,72 @@
 //ros basic imports
 #include <ros/ros.h>
-#include <geometry_msgs/Twist.h>
-#include <std_msgs/Float64.h>
-#include <geometry_msgs/Point.h>
+#include <iostream>
+#include <std_msgs/Int32.h>
 
-#include "vision/objectDetectionArray.h"
-#include "vision/objectDetection.h" 
+using namespace std;
 
-bool redDetected = false;
-float redX = 0;
+class MainEngine{
+    public:
+        MainEngine(){ //constructor
+            //init node
+            nh = ros::NodeHandle();
+            //init publisher
+            pub_intake = nh.advertise<std_msgs::Int32>("intake", 10);
+            pub_elevator = nh.advertise<std_msgs::Int32>("elevator", 10);
+            pub_warehouse_m = nh.advertise<std_msgs::Int32>("warehouse_m", 10);
 
-void colorCallback(const vision::objectDetectionArray::ConstPtr& msg){
-    ROS_INFO("I heard");
-    for( auto detection : msg->detections){
-        if(detection.labelText == "rojo"){
-            redDetected = true;
-            redX = detection.point3D.x;
+            //init rate
         }
-    }
-}
+        void run(){
+            char key;
+            int command;
+            std_msgs::Int32 msg;
+            cin>>key;
+            cin>>command;
+
+            switch(key){
+                case 'Q':
+                    msg.data = command;
+                    pub_intake.publish(msg);
+                    break;
+                case 'q':
+                    msg.data = command;
+                    pub_intake.publish(msg);
+                    break;
+                case 'E':
+                    msg.data = command;
+                    pub_elevator.publish(msg);
+                    break;
+                case 'e':
+                    msg.data = command;
+                    pub_elevator.publish(msg);
+                    break;
+                case 'W':
+                    msg.data = command;
+                    pub_warehouse_m.publish(msg);
+                    break;
+                case 'w':
+                    msg.data = command;
+                    pub_warehouse_m.publish(msg);
+                    break;
+            }
+        }
+    private:
+        ros::NodeHandle nh;
+        ros::Publisher pub_intake;
+        ros::Publisher pub_elevator;
+        ros::Publisher pub_warehouse_m;
+};
 
 int main(int argc, char **argv){
     //init ros
-    ros::init(argc, argv, "main_engine");
-    ros::NodeHandle n;
-    //init publisher
-    //ros::Publisher pub = n.advertise<std_msgs::Float64>("motor", 1000);
-    ros::Publisher pub_drive = n.advertise<geometry_msgs::Twist>("cmd_vel", 1000);
-    //init subscriber
-    //ros::Subscriber sub = n.subscribe("cmd_vel", 1000, &cmd_velCallback);
-    ros::Subscriber sub_colors = n.subscribe("color_detect", 5, &colorCallback);
-    //init rate
-    ros::Rate loop_rate(10);
-    //init msg
-    //std_msgs::Float64 msg;
-    //init msg data
-    //msg.data = 0;
-    //init counter
-    int count = 0;
+    ros::init(argc, argv, "MainEngine");
+    MainEngine mainEngine;
 
-    geometry_msgs::Twist msg;
-    msg.linear.x = 0;
-    msg.linear.y = 0;
-    msg.linear.z = 0;
-    msg.angular.x = 0;
-    msg.angular.y = 0;
-    msg.angular.z = 0;
-    //main loop
     while (ros::ok()){
-        //publish msg
-        if( redDetected ){
-            if( redX < 0.2 ){
-                msg.angular.z = 0.2;
-            }else if( redX > 0.2 ){
-                msg.angular.z = -0.2;
-            } else {
-                msg.angular.z = 0;
-            }
-        } else {
-            msg.angular.z = 0.5;
-        }
-        pub_drive.publish(msg);
-        //spin
-        ros::spinOnce();
-        //sleep
-        loop_rate.sleep();
-        //increment counter
-        ++count;
+        mainEngine.run();
+        ros::Rate(10).sleep();
+        ros::spinOnce(); 
     }
     return 0;
 }

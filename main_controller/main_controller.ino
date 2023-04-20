@@ -8,15 +8,15 @@
 #include "Intake.h"
 #include "Elevator.h"
 #include "LineSensor.h"
-#include "Warehouse.h"
+//#include "Warehouse.h"
 
 Drive mDrive;
 Elevator mElevator;
 Intake mIntake;
-Warehouse mWarehouse;
+//Warehouse mWarehouse;
 RosBridge ros;
 
-bool ENABLE_ROS = false;
+bool ENABLE_ROS = true;
 
 unsigned long debug_time = 0;
 int state = -1;
@@ -55,7 +55,7 @@ void setup(){
 
     Wire1.begin();
     Wire2.begin();
-    for (int i = 0; i < COUNT_SENSORS; i++) {
+    /*for (int i = 0; i < COUNT_SENSORS; i++) {
         pinMode(sensors[i].shutdown_pin, OUTPUT);
         digitalWrite(sensors[i].shutdown_pin, LOW);
     }
@@ -72,10 +72,10 @@ void setup(){
             Serial.print(i, DEC);
             Serial.print(F(": c to start\n"));
         }
-    }
+    }*/
 
     mDrive.init();
-    mWarehouse.init(current_time, &sensor1, &sensor3, &sensor2);
+    //mWarehouse.init(current_time, &sensor1, &sensor3, &sensor2);
     Serial.begin(115200);
 
     //Serial.write("<target>");
@@ -87,11 +87,12 @@ void setup(){
     state_time = current_time;
     loop_time = current_time;
     debug_time = current_time;
-    mIntake.setAction(IntakeActions::Pick);
 
     if( ENABLE_ROS )
-        ros.init(&mDrive);
+        ros.init(&mDrive, &mIntake, &mElevator);
 
+    //mIntake.setAction(IntakeActions::Pick);
+    //mElevator.setPosition(ElevatorPosition::ThirdShelf);
 }
 
 void loop(){
@@ -102,80 +103,10 @@ void loop(){
     mDrive.periodicIO(current_time);
     //mElevator.periodicIO();
     mIntake.periodicIO(current_time);
-    mWarehouse.periodicIO(current_time);
-
-    switch(state){
-        case -1:
-            if( mIntake.getPresence() ){
-                mIntake.stop();
-                mElevator.setPosition(ElevatorPosition::FirstIn);
-                mWarehouse.cubeOut(LevelPosition::Mid, current_time);
-                Serial.println("Going to first position");
-                state = 0;
-                state_time = current_time;
-            }
-            break;
-        case 0:
-            if( current_time - state_time > 3000 ){
-                Serial.println("Reached first position");
-                state = 1;
-                state_time = current_time;
-            }
-            break;
-        case 1:
-            if( current_time - state_time > 2000 ){
-                mElevator.setPosition(ElevatorPosition::SecondIn);
-                state = 2;
-                state_time = current_time;
-            }
-            break;
-        case 2:
-            if( mElevator.positionReached() ){
-                Serial.println("Reached second position");
-                mIntake.setAction(IntakeActions::In);
-                state = 3;
-                state_time = current_time;
-            }
-            break;
-        case 3:
-            if( current_time - state_time > 3000 && !mIntake.getPresence()){
-                mIntake.stop();
-                mElevator.setPosition(ElevatorPosition::ThirdIn);
-                state = 4;
-                state_time = current_time;
-            }
-            break;
-        case 4:
-            if( mElevator.positionReached() ){
-                Serial.println("Reached third position");
-                state = 5;
-                state_time = current_time;
-            }
-            break;
-        case 5:
-            if( current_time - state_time > 2000 ){
-                mWarehouse.cubeOut(LevelPosition::Mid, current_time);
-                mElevator.setPosition(ElevatorPosition::PickPos);
-                state = 6;
-                state_time = current_time;
-            }
-            break;
-        case 6:
-            if( mElevator.positionReached() ){
-                Serial.println("Reached pick position");
-                mWarehouse.cubeOut(LevelPosition::Mid, current_time);
-                state = 7;
-                state_time = current_time;
-            }
-            break;
-
-    }
-
-    //mElevator.setPosition(ElevatorPosition::SecondWarehouse);
+    //mWarehouse.periodicIO(current_time);
 
     // Plot (TODO: make a library for this)
     if( current_time - debug_time > 50 ){
-        ////mWarehouse.periodicIO(current_time);
         //Serial.println(mDrive.getSpeed(MotorID::FrontLeft));
         //plotData(mDrive.getSpeed(MotorID::FrontLeft), mDrive.getSpeed(MotorID::FrontRight), mDrive.getSpeed(MotorID::BackLeft), mDrive.getSpeed(MotorID::BackRight), targetSpeed);
         debug_time = current_time;

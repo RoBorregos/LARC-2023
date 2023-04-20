@@ -1,7 +1,13 @@
 #include "RosBridge.h"
 
-void RosBridge::init(Drive *drive){
+void RosBridge::init(Drive *drive, Intake *intake, Elevator *elevator){
     _drive = drive;
+    _intake = intake;
+    _elevator = elevator;
+    pinMode(14, OUTPUT);
+    pinMode(15, OUTPUT);
+    analogWrite(14, 0);
+    analogWrite(15, 0);
 }
 
 //Read serial/////////////////////////////////////////////////////////
@@ -65,6 +71,49 @@ void RosBridge::imuCallback(float angle) {
     angle_ = angle;
 }
 
+void RosBridge::intakeCallback(int command) {
+    switch(command){
+        case 1:
+            _intake->setAction(IntakeActions::Pick);
+            break;
+        case 2:
+            _intake->setAction(IntakeActions::In);
+            break;
+        case 3:
+            _intake->setAction(IntakeActions::Out);
+            break;
+        case 4:
+            _intake->setAction(IntakeActions::Drop);
+            break;
+        case 5:
+            _intake->setAction(IntakeActions::Stop);
+            break;
+    }
+}
+
+void RosBridge::elevatorCallback(int command) {
+    ElevatorPosition postions[] = {
+        ElevatorPosition::PickPos,
+        ElevatorPosition::PickPos,
+        ElevatorPosition::FirstIn,
+        ElevatorPosition::SecondIn,
+        ElevatorPosition::ThirdIn,
+        ElevatorPosition::FirstOut,
+        ElevatorPosition::SecondOut,
+        ElevatorPosition::ThirdOut,
+        ElevatorPosition::FirstShelf,
+        ElevatorPosition::SecondShelf,
+        ElevatorPosition::ThirdShelf
+    };
+    _elevator->setPosition(postions[command]);
+}
+
+void RosBridge::wareHouseMotor(){
+    warehouse_motor_timer_ = millis();
+    analogWrite(14, 200);
+    analogWrite(15, 0);
+}
+
 ////////////////////////////////Odometry Publisher//////////////////////////////////////
 void RosBridge::getOdometry() {
     Pose2d vel = _drive->getChassisSpeeds();
@@ -118,6 +167,27 @@ void RosBridge::executeCommand(uint8_t packet_size, uint8_t command, uint8_t* bu
             //digitalWrite(13, !digitalRead(13));
         }
         break;
+        case 0x06: // Send Intake
+        if (packet_size == 5) { // Check packet size
+            int command;
+            memcpy(&command, buffer, sizeof(command));
+            intakeCallback(command);
+            writeSerial(true, nullptr, 0);
+        }
+        break;
+        case 0x08: // Send Elevator}
+        if (packet_size == 5) { // Check packet size
+            int command;
+            memcpy(&command, buffer, sizeof(command));
+            elevatorCallback(command);
+            writeSerial(true, nullptr, 0);
+        }
+        break;
+        case 0x0A: // Send Warehouse Motor
+        if (packet_size == 1) { // Check packet size
+            wareHouseMotor();
+            writeSerial(true, nullptr, 0);
+        }
         default:
         break;
     }
@@ -147,6 +217,10 @@ void RosBridge::spin(unsigned long current_time){
         linearY_ = 0.0;
         angularZ_ = 0.0;        
         watchdog_timer_ = millis();
+    }
+    if((millis() - warehouse_motor_timer_) > 1000) {
+        analogWrite(14, 0);
+        analogWrite(15, 0);
     }
     _drive->setSpeed(linearX_, linearY_, angularZ_);
     _drive->setAngle(angle_);

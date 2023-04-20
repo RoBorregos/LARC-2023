@@ -31,7 +31,7 @@ void Intake::in(){
 }
 
 void Intake::out(unsigned long current_time){
-    if( presence && current_time - presence_detection_time > 250 ){
+    if( presence && current_time - presence_detection_time > 350 ){
         setAction(Stop);
         return;
     }
@@ -41,8 +41,8 @@ void Intake::out(unsigned long current_time){
     analogWrite(Constants::kIntakeMotor2B, 0);
 }
 
-void Intake::drop(){
-    if( !presence ){
+void Intake::drop(unsigned long current_time){
+    if( !presence && current_time - presence_detection_time > 1000){
         setAction(Stop);
         return;
     }
@@ -78,6 +78,7 @@ void Intake::periodicIO(unsigned long current_time){
     }
     if( !presence && flag){
         flag = false;
+        presence_detection_time = current_time;
     }
 
     switch(action){
@@ -91,7 +92,7 @@ void Intake::periodicIO(unsigned long current_time){
             pick();
             break;
         case Drop:
-            drop();
+            drop(current_time);
             break;
         case Stop:
             stop();

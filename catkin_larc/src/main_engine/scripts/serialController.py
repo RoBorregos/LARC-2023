@@ -299,6 +299,27 @@ class Microcontroller:
            return  self.SUCCESS
         else:
            return self.FAIL
+    
+    def intake(self, command):
+        cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x05, 0x06) + struct.pack("i", command) + struct.pack("B", 0x07)
+        if (self.execute(cmd_str))==1 and self.payload_ack == b'\x00':
+           return  self.SUCCESS
+        else:
+           return self.FAIL
+        
+    def elevator(self, command):
+        cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x05, 0x08) + struct.pack("i", command) + struct.pack("B", 0x09)
+        if (self.execute(cmd_str))==1 and self.payload_ack == b'\x00':
+           return  self.SUCCESS
+        else:
+           return self.FAIL
+    
+    def warehouse_m(self, command):
+        cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x01, 0x0A) + struct.pack("B", 0x0B)
+        if (self.execute(cmd_str))==1 and self.payload_ack == b'\x00':
+           return  self.SUCCESS
+        else:
+           return self.FAIL
         
     def stop(self):
         ''' Stop both motors.
@@ -371,8 +392,16 @@ class BaseController:
         self.angle = 0
         self.quaternion = Quaternion()
 
+        self.intake_command = 0
+        self.elevator_command = 0
+        self.warehouse_m = 0
+
         # Subscriptions
         rospy.Subscriber("cmd_vel", Twist, self.cmdVelCallback)
+
+        rospy.Subscriber("intake", Int32, self.intakeCallback)
+        rospy.Subscriber("elevator", Int32, self.elevatorCallback)
+        rospy.Subscriber("warehouse_m", Int32, self.warehouseMCallback)
         
         # Clear any old odometry info
         #self.Microcontroller.reset_encoders()
@@ -382,8 +411,6 @@ class BaseController:
         self.imu_offset = rospy.get_param('imu_offset', 1.01)
         rospy.Subscriber("imu_rpy", Vector3, self.imuRPYCallback)
         rospy.Subscriber("imu_data", Imu, self.imuDataCallback)
-        rospy.wait_for_service('/imu_reset')
-        reset_imu = rospy.ServiceProxy('/imu_reset', Trigger)
         #self.imuPub = rospy.Publisher('imu', Imu, queue_size=5)
         #self.imuAnglePub = rospy.Publisher('imu_angle', Float32, queue_size=5)
         # Set up the odometry broadcaster
@@ -471,6 +498,19 @@ class BaseController:
                 self.Microcontroller.drive(self.v_x, self.v_y, self.v_th)
                 self.Microcontroller.imu_angle(self.angle)
                 
+            if(self.intake_command != 0):
+                self.Microcontroller.intake(self.intake_command)
+                self.intake_command = 0
+
+            if(self.elevator_command != 0):
+                self.Microcontroller.elevator(self.elevator_command)
+                self.elevator_command = 0
+
+            if(self.warehouse_m != 0):
+                self.Microcontroller.warehouse_m(self.warehouse_m)
+                self.warehouse_m = 0
+
+                
             self.t_next = now + self.t_delta
             
     def stop(self):
@@ -496,11 +536,19 @@ class BaseController:
         #TODO - implement rosservice call to reset if value is nan
         #NOTE - when calling /reset service, speeds dies
         if math.isnan(req.z):
-            rospy.logerr("imuRPYCallback - nan value")
             self.angle = 0 
-            aux = reset_imu()
         else:
             self.angle = -req.z
+
+    def intakeCallback(self, req):
+        self.intake_command = req.data
+
+    def elevatorCallback(self, req):
+        self.elevator_command = req.data
+    
+    def warehouseMCallback(self, req):
+        self.warehouse_m = req.data
+
 
 class MicroControllerROS():
     def __init__(self):

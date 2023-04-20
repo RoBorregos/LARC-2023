@@ -25,7 +25,7 @@ class Intake{
         void pick();
         void in();
         void out(unsigned long current_time);
-        void drop();
+        void drop(unsigned long current_time);
         void stop();
         void setAction(IntakeActions action);
         bool getPresence();
