@@ -70,7 +70,7 @@ class MainEngine{
         pair<float, float> readTarget(){
             //rosinfo target
             ROS_INFO("Enter target (X,Y): ");
-            int x, y;
+            float x, y;
             cin>>x;
             cin>>y;
             return make_pair(x, y);
@@ -135,7 +135,7 @@ int main(int argc, char **argv){
     MainEngine mainEngine;
 
     while (ros::ok()){
-        mainEngine.manualCommand();
+        mainEngine.run();
         ros::Rate(10).sleep();
         ros::spinOnce(); 
     }
