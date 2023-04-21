@@ -45,6 +45,7 @@ class Drive{
         long getTicks(MotorID motorID);
         Pose2d getChassisSpeeds();
         Pose2d getPosition();
+        void resetOdometry();
 };
 
 #endif

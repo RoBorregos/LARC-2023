@@ -70,9 +70,9 @@ class Constants{
         static constexpr int kWarehouseMidMotorB = 38;
         static constexpr int kWarehouseLowerMotorA = 14;
         static constexpr int kWarehouseLowerMotorB = 15;
-        static constexpr int kWarehouseVLXxshutUpper = 33;
+        static constexpr int kWarehouseVLXxshutUpper = 32;
         static constexpr int kWarehouseVLXxshutMid = 34;
-        static constexpr int kWarehouseVLXxshutLower = 32;
+        static constexpr int kWarehouseVLXxshutLower = 33;
         static constexpr int kWarehouseUpperSpeed = 180;
         static constexpr int kWarehouseMidSpeed = 150;
         static constexpr int kWarehouseLowerSpeed = 180;

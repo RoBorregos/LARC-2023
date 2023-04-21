@@ -68,6 +68,13 @@ float Motor::getMaxVelocity(){
     return Constants::kWheelDiameter * PI * Constants::kMotorsRPM / 60;
 }
 
+void Motor::resetEncoder(){
+    io.ticks = 0;
+    io.last_ticks = 0;
+    io.delta_ticks = 0;
+    io.speed = 0;
+}
+
 long Motor::getTicks(){
     return io.ticks;
 }

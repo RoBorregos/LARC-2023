@@ -16,7 +16,7 @@ Intake mIntake;
 Warehouse mWarehouse;
 RosBridge ros;
 
-bool ENABLE_ROS = true;
+bool ENABLE_ROS = false;
 
 unsigned long debug_time = 0;
 int state = -1;

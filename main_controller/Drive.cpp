@@ -97,6 +97,20 @@ Pose2d Drive::getPosition(){
     return position;
 }
 
+void Drive::resetOdometry(){
+    frontLeft.resetEncoder();
+    frontRight.resetEncoder();
+    backLeft.resetEncoder();
+    backRight.resetEncoder();
+    
+    velocity.x = 0;
+    velocity.y = 0;
+    velocity.theta = 0;
+    position.x = 0;
+    position.y = 0;
+    position.theta = 0;
+}
+
 void Drive::periodicIO(unsigned long current_time){
     if( current_time - last_time < loop_time)
         return;

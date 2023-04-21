@@ -37,6 +37,7 @@ class Motor{
         void periodicIO(unsigned long current_time);
         float getMaxVelocity();
         void encoderInterrupt();
+        void resetEncoder();
         long getTicks();
         float getSpeed();
 };
