@@ -1,49 +1,35 @@
 #include "Warehouse.h"
 
 void Warehouse::init(unsigned long current_time, Adafruit_VL53L0X* tof1, Adafruit_VL53L0X* tof2, Adafruit_VL53L0X* tof3){
-    upper.fwdPin = Constants::kWarehouseUpperMotorA;
-    upper.revPin = Constants::kWarehouseUpperMotorB;
-    upper.speed = Constants::kWarehouseUpperSpeed;
-    upper.demand = 0;
-    upper.tof = tof1;
-    upper.distance = 0;
-    upper.cube_state = CubePosition::Four;
-    upper.state_time = current_time;
+    level[0].fwdPin = Constants::kWarehouseUpperMotorA;
+    level[0].revPin = Constants::kWarehouseUpperMotorB;
+    level[0].speed = Constants::kWarehouseUpperSpeed;
+    level[0].tof = tof1;
+    level[0].state_time = current_time;
 
-    mid.fwdPin = Constants::kWarehouseMidMotorA;
-    mid.revPin = Constants::kWarehouseMidMotorB;
-    mid.speed = Constants::kWarehouseMidSpeed;
-    mid.demand = 0;
-    mid.tof = tof2;
-    mid.distance = 0;
-    mid.cube_state = CubePosition::Four;
-    mid.state_time = current_time;
+    level[1].fwdPin = Constants::kWarehouseMidMotorA;
+    level[1].revPin = Constants::kWarehouseMidMotorB;
+    level[1].speed = Constants::kWarehouseMidSpeed;
+    level[1].tof = tof2;
+    level[1].state_time = current_time;
 
-    lower.fwdPin = Constants::kWarehouseLowerMotorA;
-    lower.revPin = Constants::kWarehouseLowerMotorB;
-    lower.speed = Constants::kWarehouseLowerSpeed;
-    lower.demand = 0;
-    lower.tof = tof3;
-    lower.distance = 0;
-    lower.cube_state = CubePosition::Four;
-    lower.state_time = current_time;
+    level[2].fwdPin = Constants::kWarehouseLowerMotorA;
+    level[2].revPin = Constants::kWarehouseLowerMotorB;
+    level[2].speed = Constants::kWarehouseLowerSpeed;
+    level[2].tof = tof3;
+    level[2].state_time = current_time;
 
-    levels[0] = &upper;
-    levels[1] = &mid;
-    levels[2] = &lower;
-
-    pinMode(upper.fwdPin, OUTPUT);
-    pinMode(upper.revPin, OUTPUT);
-    pinMode(37, OUTPUT);
-    pinMode(38, OUTPUT);
-    pinMode(lower.fwdPin, OUTPUT);
-    pinMode(lower.revPin, OUTPUT);
+    for(int i=0; i<3; i++){
+        pinMode(level[i].fwdPin, OUTPUT);
+        pinMode(level[i].fwdPin, OUTPUT);
+        stop( (LevelPosition)i );
+    }
 
     last_time = current_time;
 }
 
 void Warehouse::cubeOut(LevelPosition pos, unsigned long current_time){
-    Level* lvl = levels[pos];
+    Level* lvl = &level[pos];
     lvl->state_time = current_time;
 
     switch( lvl->cube_state ){
@@ -62,53 +48,52 @@ void Warehouse::cubeOut(LevelPosition pos, unsigned long current_time){
             lvl->cube_state = CubePosition::Three;
             break;
     }
+
+    lvl->stopped = false;
 }
 
-CubePosition Warehouse::getCubeState(String level){
-    Level* lvl;
-    if( level == "upper" )
-        lvl = &upper;
-    else if( level == "mid" )
-        lvl = &mid;
-    else if( level == "lower" )
-        lvl = &lower;
-    else
-        return CubePosition::Empty;
-
-    return lvl->cube_state;
+CubePosition Warehouse::getCubeState(LevelPosition pos){
+    return level[pos].cube_state;
 }
 
 void Warehouse::periodicIO(unsigned long current_time){
     if( current_time - last_time < loop_time )
         return;
 
-    Level* lvl = &mid;
-    //for(auto lvl : levels){
-        lvl->distance = lvl->tof->readRange();
-        Serial.print(lvl->distance);
+    //int i=0;
+    for(int i=0; i<3; i++){
+        if(level[i].stopped)
+            //stop( (LevelPosition)i );
+            continue;
+
+        level[i].distance = level[i].tof->readRange();
+        Serial.print(level[i].distance);
         Serial.print(" ");
-        int error = - (lvl->distance - (int)lvl->cube_state);
-        if( lvl->cube_state == CubePosition::Four ){
-            lvl->demand = 0;
+        int error = - (level[i].distance - (int)level[i].cube_state);
+
+        if( level[i].cube_state == CubePosition::Four ){
+            level[i].demand = 0;
         } else if( error > 5){
-            lvl->demand = lvl->speed;
+            level[i].demand = level[i].speed;
         } else {
-            lvl->demand = 0;
+            level[i].demand = 0;
         }
 
-        if( current_time - lvl->state_time > 4000 )
-            lvl->demand = 0;
+        if( current_time - level[i].state_time > 4000 )
+            level[i].demand = 0;
 
-        analogWrite(37, lvl->demand>0? abs(lvl->demand) : 0);
-        analogWrite(38, lvl->demand<0? abs(lvl->demand) : 0);
+        if( level[i].demand == 0 )
+            level[i].stopped = true;
 
-        Serial.print(lvl->fwdPin);
-        Serial.print(" ");
-        Serial.print(lvl->revPin);
-        Serial.print(" ");
-        Serial.println(lvl->demand);
-
-    //}
+        analogWrite(level[i].fwdPin, level[i].demand>0? abs(level[i].demand) : 0);
+        analogWrite(level[i].revPin, level[i].demand<0? abs(level[i].demand) : 0);
+    }
 
     last_time = current_time;
+}
+
+void Warehouse::stop(LevelPosition pos){
+    analogWrite(level[pos].fwdPin, 0);
+    analogWrite(level[pos].revPin, 0);
+    level[pos].demand = 0;
 }

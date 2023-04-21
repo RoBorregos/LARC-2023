@@ -1,3 +1,4 @@
 {
-    "board": "teensy:avr:teensy40"
+    "board": "teensy:avr:teensy40",
+    "sketch": "main_controller/main_controller.ino"
 }

@@ -17,7 +17,7 @@
         },
         {
             "name": "Arduino",
-            "compilerPath": "C:\\Users\\afr10\\AppData\\Local\\Arduino15\\packages\\teensy\\tools\\teensy-compile\\5.4.1\\arm\\bin\\arm-none-eabi-g++",
+            "compilerPath": "/home/afr2903/.arduino15/packages/teensy/tools/teensy-compile/5.4.1/arm/bin/arm-none-eabi-g++",
             "compilerArgs": [
                 "-Wall",
                 "-ffunction-sections",
@@ -26,17 +26,19 @@
             ],
             "intelliSenseMode": "gcc-x64",
             "includePath": [
-                "C:\\Users\\afr10\\AppData\\Local\\Temp\\arduino\\sketches\\0A6CA4F477000C8D21723B5780F331E9\\pch",
-                "C:\\Users\\afr10\\AppData\\Local\\Arduino15\\packages\\teensy\\hardware\\avr\\1.57.2\\cores\\teensy4",
-                "c:\\users\\afr10\\appdata\\local\\arduino15\\packages\\teensy\\tools\\teensy-compile\\5.4.1\\arm\\arm-none-eabi\\include\\c++\\5.4.1",
-                "c:\\users\\afr10\\appdata\\local\\arduino15\\packages\\teensy\\tools\\teensy-compile\\5.4.1\\arm\\arm-none-eabi\\include\\c++\\5.4.1\\arm-none-eabi",
-                "c:\\users\\afr10\\appdata\\local\\arduino15\\packages\\teensy\\tools\\teensy-compile\\5.4.1\\arm\\arm-none-eabi\\include\\c++\\5.4.1\\backward",
-                "c:\\users\\afr10\\appdata\\local\\arduino15\\packages\\teensy\\tools\\teensy-compile\\5.4.1\\arm\\lib\\gcc\\arm-none-eabi\\5.4.1\\include",
-                "c:\\users\\afr10\\appdata\\local\\arduino15\\packages\\teensy\\tools\\teensy-compile\\5.4.1\\arm\\lib\\gcc\\arm-none-eabi\\5.4.1\\include-fixed",
-                "c:\\users\\afr10\\appdata\\local\\arduino15\\packages\\teensy\\tools\\teensy-compile\\5.4.1\\arm\\arm-none-eabi\\include"
+                "/tmp/arduino/sketches/E78E69BA7B63DE3635D4AE4342A4286B/pch",
+                "/home/afr2903/.arduino15/packages/teensy/hardware/avr/1.57.2/cores/teensy4",
+                "/home/afr2903/.arduino15/packages/teensy/hardware/avr/1.57.2/libraries/Wire",
+                "/home/afr2903/Arduino/libraries/Adafruit_VL53L0X/src",
+                "/home/afr2903/.arduino15/packages/teensy/tools/teensy-compile/5.4.1/arm/arm-none-eabi/include/c++/5.4.1",
+                "/home/afr2903/.arduino15/packages/teensy/tools/teensy-compile/5.4.1/arm/arm-none-eabi/include/c++/5.4.1/arm-none-eabi",
+                "/home/afr2903/.arduino15/packages/teensy/tools/teensy-compile/5.4.1/arm/arm-none-eabi/include/c++/5.4.1/backward",
+                "/home/afr2903/.arduino15/packages/teensy/tools/teensy-compile/5.4.1/arm/lib/gcc/arm-none-eabi/5.4.1/include",
+                "/home/afr2903/.arduino15/packages/teensy/tools/teensy-compile/5.4.1/arm/lib/gcc/arm-none-eabi/5.4.1/include-fixed",
+                "/home/afr2903/.arduino15/packages/teensy/tools/teensy-compile/5.4.1/arm/arm-none-eabi/include"
             ],
             "forcedInclude": [
-                "C:\\Users\\afr10\\AppData\\Local\\Temp\\arduino\\sketches\\0A6CA4F477000C8D21723B5780F331E9\\pch\\Arduino.h"
+                "/tmp/arduino/sketches/E78E69BA7B63DE3635D4AE4342A4286B/pch/Arduino.h"
             ],
             "cStandard": "c11",
             "cppStandard": "c++14",
