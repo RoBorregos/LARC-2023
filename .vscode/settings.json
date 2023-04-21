@@ -7,6 +7,9 @@
         "hash_set": "cpp",
         "any": "cpp",
         "string_view": "cpp",
-        "regex": "cpp"
-    }
+        "regex": "cpp",
+        "optional": "cpp",
+        "variant": "cpp"
+    },
+    "python.analysis.typeCheckingMode": "basic"
 }

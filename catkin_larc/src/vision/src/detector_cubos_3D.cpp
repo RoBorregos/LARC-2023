@@ -2,6 +2,7 @@
 #include <std_srvs/Empty.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/point_cloud2_iterator.h>
+#include <sensor_msgs/CameraInfo.h>
 #include <shape_msgs/Mesh.h>
 #include <shape_msgs/MeshTriangle.h>
 #include <pcl/io/auto_io.h>
@@ -44,6 +45,7 @@
 
 #include <geometry_msgs/Point.h>
 #include <geometry_msgs/PoseArray.h>
+#include <geometry_msgs/PointStamped.h>
 #include <geometry_msgs/Quaternion.h>
 
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
@@ -60,7 +62,7 @@
 
 
 
-#define CAMERA_FRAME "zed2/zed_node/rgb/image_rect_color"
+#define CAMERA_FRAME "zed2_left_camera_frame"
 
 using namespace octomap;
 
@@ -125,7 +127,7 @@ class CubeDetect3D
     ros::Publisher point_pub2;
     sensor_msgs::CameraInfo zed_info_;
     sensor_msgs::Image zed_image_;
-    cv_bridge::CvImagePtr zed_iage_cv;
+    cv_bridge::CvImagePtr zed_image_cv;
 
 public: 
   CubeDetect3D() :
@@ -287,6 +289,7 @@ public:
   }
 
   void cropImage(cv::Mat &img, ObjectParams obj) {
+    ROS_INFO_STREAM("---------------------Entreeeee a crop---------------------");
     float margin = 0.05; // 5cm
     // Get Points and Project Points To Pixel
     float pixel_left_up[2];
@@ -341,6 +344,8 @@ public:
     point_msg2.point.z = point_right_down[2];
     point_pub2.publish(point_msg2);
 
+    ROS_INFO_STREAM("---------------------Antes---------------------");
+
     project_point_to_pixel(pixel_right_down, point_right_down, zed_info_);
     ROS_INFO_STREAM("max_x: " << obj.max_x << " max_y: " << obj.max_y << " max_z: " << obj.max_z);
     ROS_INFO_STREAM("min_x: " << obj.min_x << " min_y: " << obj.min_y << " min_z: " << obj.min_z);
@@ -357,21 +362,38 @@ public:
     pixel_right_down[0] = std::min(pixel_right_down[0], (float)img.rows);
     pixel_right_down[1] = std::min(pixel_right_down[1], (float)img.cols);
 
+    ROS_INFO_STREAM("---------------------Despues---------------------");
+
+    project_point_to_pixel(pixel_right_down, point_right_down, zed_info_);
+    ROS_INFO_STREAM("max_x: " << obj.max_x << " max_y: " << obj.max_y << " max_z: " << obj.max_z);
+    ROS_INFO_STREAM("min_x: " << obj.min_x << " min_y: " << obj.min_y << " min_z: " << obj.min_z);
+    ROS_INFO_STREAM("pixel_left_up: " << pixel_left_up[0] << " " << pixel_left_up[1]);
+    ROS_INFO_STREAM("pixel_right_down: " << pixel_right_down[0] << " " << pixel_right_down[1]);
 
     // Crop rect && Save Image
     int x = pixel_left_up[0];
     int y = pixel_left_up[1];
     int width = abs(pixel_right_down[0] - pixel_left_up[0]);
     int height = abs(pixel_right_down[1] - pixel_left_up[1]);
+      ROS_INFO_STREAM("---------------------Entreeeee---------------------");
+      ROS_INFO_STREAM("width:"<<width << " height:"<<height);
     if (width == 0 || height == 0) {
       ROS_ERROR_STREAM("Error cropping image: width or height is 0");
       return;
     }
     try {
       cv::Mat croppedImg = cv::Mat(img, cv::Rect(x, y, width, height));
-      // Display diff
+
+      // Convert cv::Mat to sensor_msgs::Image
+      sensor_msgs::ImagePtr cropImage = cv_bridge::CvImage(std_msgs::Header(), "bgr8", croppedImg).toImageMsg();
+      cropImage->header.frame_id = "zed2_left_camera_optical_frame";
+      cropImage->header.stamp = ros::Time::now();
       pc_pub_img.publish(cropImage);
-      cv::imshow( "Cropped Image",  croppedImg);
+      ROS_INFO_STREAM("------------------Cropped Image Published------------------");
+
+      // Display diff
+      // pc_pub_img.publish(cropImage);
+      //cv::imshow( "Cropped Image",  croppedImg);
       cv::waitKey();
     } catch (cv::Exception &e) {
       ROS_ERROR_STREAM("Error cropping image: " << e.what());
@@ -507,7 +529,7 @@ public:
         object_found.isValid = false;
         return;
       }
-
+      ROS_INFO_STREAM("-----------------Object accepted.-----------------");
       object_found.cluster_original = *cloud;
       // Change point cloud origin to object centroid and save it.
       for (auto &point : cloud->points)
@@ -627,6 +649,7 @@ public:
 
     if (objects.size() < 1) 
     {
+      ROS_INFO_STREAM("objects array empty");
       return;
     }
 
