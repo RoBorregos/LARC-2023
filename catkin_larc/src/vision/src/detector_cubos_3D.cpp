@@ -162,13 +162,13 @@ public:
 
         cloudCB(pc);
         // Wait 3 segs.
-        ros::Duration(5).sleep();
+        ros::Duration(3).sleep();
       }
 
       // ROS_INFO_STREAM("Action Server Detect3D - Initialized");
     }
   //   /** \brief Handle Action Server Goal Received. */
-  // void handleActionServer(const object_detector::DetectObjects3DGoalConstPtr &goal)
+  // void handleActionServer(const objects_detector::DetectObjects3DGoalConstPtr &goal)
   // {
   //   ROS_INFO_STREAM("Action Server Detect3D - Goal Received");
   //   biggest_object_ = goal->force_object.detections.size() == 0;
@@ -375,12 +375,15 @@ public:
     int y = pixel_left_up[1];
     int width = abs(pixel_right_down[0] - pixel_left_up[0]);
     int height = abs(pixel_right_down[1] - pixel_left_up[1]);
-      ROS_INFO_STREAM("---------------------Entreeeee---------------------");
-      ROS_INFO_STREAM("width:"<<width << " height:"<<height);
+    ROS_INFO_STREAM("width:"<<width << " height:"<<height);
     if (width == 0 || height == 0) {
       ROS_ERROR_STREAM("Error cropping image: width or height is 0");
       return;
     }
+    // if (width+50>height || height +50>width) {
+    //   ROS_ERROR_STREAM("is not a cube");
+    //   return;
+    // }
     try {
       cv::Mat croppedImg = cv::Mat(img, cv::Rect(x, y, width, height));
 
@@ -388,6 +391,7 @@ public:
       sensor_msgs::ImagePtr cropImage = cv_bridge::CvImage(std_msgs::Header(), "bgr8", croppedImg).toImageMsg();
       cropImage->header.frame_id = "zed2_left_camera_optical_frame";
       cropImage->header.stamp = ros::Time::now();
+      ROS_INFO_STREAM("---------------------Ready to publish---------------------");
       pc_pub_img.publish(cropImage);
       ROS_INFO_STREAM("------------------Cropped Image Published------------------");
 
@@ -454,7 +458,7 @@ public:
   
    /** \brief Given the pointcloud containing just the object,
       compute its center point, its height and its mesh and store in object_found.
-      @param cloud - point cloud containing just the object. */
+      @param cloud - point cloud containing just then object. */
   void extractObjectDetails(const pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud, ObjectParams& object_found, ObjectParams &table_params, bool isCluster = true)
   {
     ROS_INFO_STREAM("Extracting Object Details " << cloud->points.size());
@@ -522,9 +526,9 @@ public:
         << " " << abs(object_found.max_z - object_found.min_z));
 
       // Add object only if it has restricted dimensions.
-      if (abs(object_found.max_x - object_found.min_x) > 0.5 ||
-        abs(object_found.max_y - object_found.min_y) > 0.5 ||
-        abs(object_found.max_z - object_found.min_z) > 0.5) {
+      if (abs(object_found.max_x - object_found.min_x) > 0.7 ||
+        abs(object_found.max_y - object_found.min_y) > 0.7 ||
+        abs(object_found.max_z - object_found.min_z) > 0.7) {
         ROS_INFO_STREAM("Object rejected due to dimensions.");
         object_found.isValid = false;
         return;
@@ -707,7 +711,7 @@ public:
         cloud_cluster->points.push_back(cloud->points[*pit]); //*
 
       // Discard Noise
-      if (cloud_cluster->points.size() < 1000){
+      if (cloud_cluster->points.size() < 100){
         continue; 
       }
       cloud_cluster->width = cloud_cluster->points.size();
