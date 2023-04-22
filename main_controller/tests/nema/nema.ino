@@ -5,7 +5,7 @@
 
 // Define stepper motor connections and motor interface type. Motor interface type must be set to 1 when using a driver
 
-Stepper stepper(STEPS, 28, 29); // Pin 2 connected to DIRECTION & Pin 3 connected to STEP Pin of Driver
+Stepper stepper(STEPS, 36, 37); // Pin 2 connected to DIRECTION & Pin 3 connected to STEP Pin of Driver
 
 #define motorInterfaceType 1
 

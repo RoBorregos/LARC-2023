@@ -58,12 +58,12 @@ typedef struct {
 sensorList_t sensors[] = {
   // For 'sensor1', define the IIC accress as hexadecimal value 0x30. Assign digital pin #4 to this 
   // sensor's XSHUT pin (shut-down pin). Assign digital pin #5 to the sensor's INTERRUPT pin.
-  {&sensor1, &Wire2, 0x30, 33, 0, Adafruit_VL53L0X::VL53L0X_SENSE_DEFAULT, 0, 0},
+  {&sensor1, &Wire, 0x30, 48, 0, Adafruit_VL53L0X::VL53L0X_SENSE_DEFAULT, 0, 0},
   // For 'sensor2', define the IIC accress as hexadecimal value 0x31. Assign digital pin #6 to this 
   // sensor's XSHUT pin (shut-down pin). Assign digital pin #7 to the sensor's INTERRUPT pin.
-  {&sensor2, &Wire2, 0x31, 32, 0, Adafruit_VL53L0X::VL53L0X_SENSE_DEFAULT, 0, 0},
-  {&sensor3, &Wire1, 0x32, 34, 0, Adafruit_VL53L0X::VL53L0X_SENSE_DEFAULT, 0, 0},
-  {&sensor4, &Wire1, 0x33, 39, 0, Adafruit_VL53L0X::VL53L0X_SENSE_DEFAULT, 0, 0}
+  {&sensor2, &Wire, 0x31, 50, 0, Adafruit_VL53L0X::VL53L0X_SENSE_DEFAULT, 0, 0},
+  {&sensor3, &Wire, 0x32, 53, 0, Adafruit_VL53L0X::VL53L0X_SENSE_DEFAULT, 0, 0},
+  {&sensor4, &Wire, 0x33, 46, 0, Adafruit_VL53L0X::VL53L0X_SENSE_DEFAULT, 0, 0}
 };
 
 // Calculate the number of sensors by checking the size of the above 'sensors' array:
@@ -119,8 +119,7 @@ void setup() {
   Serial.begin(9600);
 
   // Start the IIC bus:
-  Wire1.begin();
-  Wire2.begin();
+  Wire.begin();
 
   // Wait until serial port opens ... For 5 seconds max
   while (!Serial && (millis() < 5000))
@@ -136,10 +135,6 @@ void setup() {
       pinMode(sensors[i].interrupt_pin, INPUT_PULLUP);
   }
   Serial.println(F("Starting..."));
-  pinMode(37, OUTPUT);
-  digitalWrite(37, LOW);
-  pinMode(38, OUTPUT);
-  digitalWrite(38, LOW);
   Initialize_sensors();
 }  // End of function 'setup'
 
@@ -147,8 +142,6 @@ void setup() {
 // The 'loop' function:
 //====================================================================
 void loop() {
-  analogWrite(37, 0);
-  analogWrite(38, 0);
 
   // Read the data from the sensors using a 'for' loop:
   for (int i = 0; i < COUNT_SENSORS; i++) {
