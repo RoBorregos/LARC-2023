@@ -65,7 +65,7 @@ void setup() {
 
 void loop() {
     //encoder 
-    ///*
+    /*
     Serial.print("EN// E1: ");
     Serial.print(digitalRead(EN1));
     Serial.print(" ");
@@ -85,7 +85,7 @@ void loop() {
     //*/
 
     //multiplexor test
-    /*
+    ///*
     Serial.print("Li//");
     for (int i = 0; i < 16; i++) {
         digitalWrite(S0, i & 1);

@@ -21,6 +21,7 @@ enum LevelPosition{
 };
 
 struct Level{
+    int pwmPin = -1;
     int fwdPin;
     int revPin;
     int speed;

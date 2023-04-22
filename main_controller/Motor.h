@@ -8,8 +8,9 @@
 class Motor{
     private:
         //A(fwd) and B(rev) pins
-        int motorA;
-        int motorB;
+        int pinPWM;
+        int pinA;
+        int pinB;
         int encoder;
         PID pidController;
 
@@ -30,7 +31,7 @@ class Motor{
         
     public:
         Motor();
-        void init(int motorA, int motorB, int encoder);
+        void init(int pinPWM, int pinA, int pinB, int encoder);
         void setSpeed(float speed);
         void setPWM(int pwm);
         void stop();

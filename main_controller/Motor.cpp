@@ -1,18 +1,21 @@
 #include "Motor.h"
 
 Motor::Motor(){
-    this->motorA = 0;
-    this->motorB = 0;
+    this->pinPWM = 0;
+    this->pinA = 0;
+    this->pinB = 0;
     this->encoder = 0;
 }
 
-void Motor::init(int motorA, int motorB, int encoder){
-    this->motorA = motorA;
-    this->motorB = motorB;
+void Motor::init(int pinPWM, int pinA, int pinB, int encoder){
+    this->pinPWM = pinPWM;
+    this->pinA = pinA;
+    this->pinB = pinB;
     this->encoder = encoder;
 
-    pinMode(motorA, OUTPUT);
-    pinMode(motorB, OUTPUT);
+    pinMode(pinPWM, OUTPUT);
+    pinMode(pinA, OUTPUT);
+    pinMode(pinB, OUTPUT);
     pinMode(encoder, INPUT_PULLUP);
 }
 
@@ -24,8 +27,9 @@ void Motor::encoderInterrupt(){
 }
 
 void Motor::periodicIO(unsigned long current_time){
-    analogWrite(motorA, io.direction? io.demand : 0);
-    analogWrite(motorB, io.direction? 0 : io.demand);
+    analogWrite(pinPWM, io.demand);
+    digitalWrite(pinA, io.direction);
+    digitalWrite(pinB, !io.direction);
 
     //overflow
     if( abs(io.ticks) > 2147483647){
@@ -52,6 +56,7 @@ void Motor::setSpeed(float speed){
     setPWM(pwm);
 }
 
+
 // Set the speed of the motor in PWM
 void Motor::setPWM(int pwm){
     io.direction = pwm > 0;
@@ -60,8 +65,8 @@ void Motor::setPWM(int pwm){
 
 void Motor::stop(){
     io.demand = 0;
-    analogWrite(motorA, 0);
-    analogWrite(motorB, 0);
+    analogWrite(pinA, 0);
+    analogWrite(pinB, 0);
 }
 
 float Motor::getMaxVelocity(){

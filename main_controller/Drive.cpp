@@ -1,10 +1,10 @@
 #include "Drive.h"
 
 void Drive::init(){
-    frontLeft.init(Constants::kFrontLeftA, Constants::kFrontLeftB, Constants::kFrontLeftEncoder);
-    frontRight.init(Constants::kFrontRightA, Constants::kFrontRightB, Constants::kFrontRightEncoder);
-    backLeft.init(Constants::kBackLeftA, Constants::kBackLeftB, Constants::kBackLeftEncoder);
-    backRight.init(Constants::kBackRightA, Constants::kBackRightB, Constants::kBackRightEncoder);
+    frontLeft.init(Constants::kFrontLeftPWM, Constants::kFrontLeftA, Constants::kFrontLeftB, Constants::kFrontLeftEncoder);
+    frontRight.init(Constants::kFrontRightPWM, Constants::kFrontRightA, Constants::kFrontRightB, Constants::kFrontRightEncoder);
+    backLeft.init(Constants::kBackLeftPWM, Constants::kBackLeftA, Constants::kBackLeftB, Constants::kBackLeftEncoder);
+    backRight.init(Constants::kBackRightPWM, Constants::kBackRightA, Constants::kBackRightB, Constants::kBackRightEncoder);
 }
 
 void Drive::setSpeed(float linearX, float linearY, float angularZ){

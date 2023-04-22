@@ -8,15 +8,15 @@
 #include "Intake.h"
 #include "Elevator.h"
 #include "LineSensor.h"
-#include "Warehouse.h"
+//#include "Warehouse.h"
 
 Drive mDrive;
 Elevator mElevator;
 Intake mIntake;
-Warehouse mWarehouse;
+//Warehouse mWarehouse;
 RosBridge ros;
 
-bool ENABLE_ROS = false;
+bool ENABLE_ROS = true;
 
 unsigned long debug_time = 0;
 int state = -1;
@@ -30,12 +30,11 @@ unsigned long current_time = 0;
 void setup(){
     current_time = millis();
 
-    Wire1.begin();
-    Wire2.begin();
-    vlxSetup();
+    Wire.begin();
+    //vlxSetup();
 
     mDrive.init();
-    mWarehouse.init(current_time, &vlx[0], &vlx[1], &vlx[2]);
+    //mWarehouse.init(current_time, &vlx[0], &vlx[1], &vlx[2]);
     Serial.begin(115200);
 
     //Serial.write("<target>");
@@ -63,7 +62,7 @@ void loop(){
     mDrive.periodicIO(current_time);
     //mElevator.periodicIO();
     mIntake.periodicIO(current_time);
-    mWarehouse.periodicIO(current_time);
+    //mWarehouse.periodicIO(current_time);
 
     // Plot (TODO: make a library for this)
     if( current_time - debug_time > 50 ){
