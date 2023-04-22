@@ -8,10 +8,10 @@ struct motor{
     int pinB;
 };
 
-struct motor fl = {5, 24, 25};
+struct motor br = {5, 25, 24};
 struct motor fr = {4, 22, 23};
 struct motor bl = {6, 27, 26};
-struct motor br = {7, 29, 28};
+struct motor fl = {7, 28, 29};
 
 void setup() {
     pinMode(fl.pinPwm, OUTPUT);

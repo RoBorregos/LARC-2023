@@ -1,8 +1,8 @@
 //encoder tests
-#define EN1 2
+#define EN1 19
 #define EN2 3
 #define EN3 18
-#define EN4 19
+#define EN4 2
 
 volatile long en1_count = 0;
 volatile long en2_count = 0;
@@ -65,7 +65,7 @@ void setup() {
 
 void loop() {
     //encoder 
-    /*
+    ///*
     Serial.print("EN// E1: ");
     Serial.print(digitalRead(EN1));
     Serial.print(" ");
@@ -85,7 +85,7 @@ void loop() {
     //*/
 
     //multiplexor test
-    ///*
+    /*
     Serial.print("Li//");
     for (int i = 0; i < 16; i++) {
         digitalWrite(S0, i & 1);

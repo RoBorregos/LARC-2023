@@ -7,14 +7,13 @@
 
 ros::Publisher pub;
 
-void laserScanCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
-{
+void laserScanCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg){
     // Create a point cloud object to store the laser scan data
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
 
     // Fill in the point cloud data from the laser scan message
-    for (int i = 0; i < scan_msg->ranges.size(); ++i)
-    {
+    // ros print ranges size
+    for (int i = 0; i < scan_msg->ranges.size(); ++i){
         float range = scan_msg->ranges[i];
         if (std::isnan(range) || range < scan_msg->range_min || range > scan_msg->range_max)
         {
@@ -45,25 +44,33 @@ void laserScanCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
     cluster_extraction.extract(cluster_indices);
 
     // Create a point cloud object for each cluster and publish it
-    for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin(); it != cluster_indices.end(); ++it)
-    {
-        pcl::PointCloud<pcl::PointXYZ>::Ptr cluster_cloud(new pcl::PointCloud<pcl::PointXYZ>);
-        for (std::vector<int>::const_iterator pit = it->indices.begin(); pit != it->indices.end(); ++pit)
-        {
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cluster_cloud(new pcl::PointCloud<pcl::PointXYZ>);
+    float x = 0;
+    float y = 0;
+    int sz = 0;
+
+    for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin(); it != cluster_indices.end(); ++it){
+        for (std::vector<int>::const_iterator pit = it->indices.begin(); pit != it->indices.end(); ++pit){
             cluster_cloud->points.push_back(downsampled_cloud->points[*pit]);
+            x += downsampled_cloud->points[*pit].x;
+            y += downsampled_cloud->points[*pit].y;
+            sz++;
         }
-        cluster_cloud->width = cluster_cloud->points.size();
-        cluster_cloud->height = 1;
-        cluster_cloud->is_dense = true;
-        sensor_msgs::PointCloud2 cloud_msg;
-        pcl::toROSMsg(*cluster_cloud, cloud_msg);
-        cloud_msg.header = scan_msg->header;
-        pub.publish(cloud_msg);
     }
+    cluster_cloud->width = cluster_cloud->points.size();
+    cluster_cloud->height = 1;
+    cluster_cloud->is_dense = true;
+    sensor_msgs::PointCloud2 cloud_msg;
+    pcl::toROSMsg(*cluster_cloud, cloud_msg);
+    cloud_msg.header = scan_msg->header;
+    pub.publish(cloud_msg);
+    x /= sz;
+    y /= sz;
+    //print the first point of the cluster
+    ROS_INFO("First cluster midpoint: %f, %f", x, y);
 }
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv){
     ros::init(argc, argv, "euclidean_cluster_extraction");
     ros::NodeHandle nh;
 
