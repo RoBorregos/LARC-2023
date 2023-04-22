@@ -515,22 +515,6 @@ public:
     pass.filter(*cloud);
   }
 
-  // /** \brief Given the pointcloud and pointer cloud_normals compute the point normals and store in cloud_normals.
-  //   @param cloud - Pointcloud.
-  //   @param cloud_normals - The point normals once computer will be stored in this. */
-  // void computeNormals(const pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud,
-  //                     const pcl::PointCloud<pcl::Normal>::Ptr& cloud_normals)
-  // {
-  //   pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZ>());
-  //   pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> ne;
-  //   ne.setSearchMethod(tree);
-  //   ne.setInputCloud(cloud);
-  //   // Set the number of k nearest neighbors to use for the feature estimation.
-  //   ne.setKSearch(50);
-  //   ne.compute(*cloud_normals);
-  // }
-
-
   /** \brief Given the point normals and point indices, extract the normals for the indices.
       @param cloud_normals - Point normals.
       @param inliers - Indices whose normals need to be extracted. */
@@ -609,15 +593,15 @@ public:
     if (isCluster) {
       object_found.isValid = true;
       // Add object only if is above table.
-      if (object_found.center.pose.position.z < table_params.min_z - 0.025) {
-        ROS_INFO_STREAM("Object rejected due to table height: "
-              << " x: " << object_found.center.pose.position.x
-              << " y: " << object_found.center.pose.position.y
-              << " z: " << object_found.center.pose.position.z
-              << " Tz: " << table_params.min_z);
-        object_found.isValid = false;
-        return;
-      }
+      // if (object_found.center.pose.position.z < table_params.min_z - 0.025) {
+      //   ROS_INFO_STREAM("Object rejected due to table height: "
+      //         << " x: " << object_found.center.pose.position.x
+      //         << " y: " << object_found.center.pose.position.y
+      //         << " z: " << object_found.center.pose.position.z
+      //         << " Tz: " << table_params.min_z);
+      //   object_found.isValid = false;
+      //   return;
+      // }
 
       ROS_INFO_STREAM("Object dimensions: "
         << " " << abs(object_found.max_x - object_found.min_x)
@@ -810,8 +794,8 @@ public:
         cloud_cluster->points.push_back(cloud->points[*pit]); //*
 
       // Discard Noise
-      if (cloud_cluster->points.size() < 100){
-        continue; 
+      if (cloud_cluster->points.size() < 50){
+        continue;
       }
       cloud_cluster->width = cloud_cluster->points.size();
       cloud_cluster->height = 1;
