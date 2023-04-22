@@ -11,7 +11,7 @@ void Drive::setSpeed(float linearX, float linearY, float angularZ){
     float error = (angle-setpoint) * Constants::kDriveKP;
     float wheelPosX = Constants::kWheelBase/2;
     float wheelPosY = Constants::kWheelTrack/2;
-    if(abs(angularZ) > 0.2)
+    if(abs( velocity.theta ) > 0.2)
         setpoint = angle;
     
     float frontLeftSpeed = linearX - linearY - angularZ*(wheelPosX + wheelPosY) - error;

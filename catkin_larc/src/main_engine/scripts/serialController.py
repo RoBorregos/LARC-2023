@@ -20,7 +20,7 @@ import roslib
 
 from geometry_msgs.msg import Quaternion, Twist, Pose
 from nav_msgs.msg import Odometry
-from std_msgs.msg import Int16, Int32, UInt16, Float32, String
+from std_msgs.msg import Int16, Int32, UInt16, Float32, String, Bool
 from tf.broadcaster import TransformBroadcaster
 from sensor_msgs.msg import Range, Imu
 
@@ -265,7 +265,7 @@ class Microcontroller:
         else:
            return self.FAIL, 0
 
-    def reset_encoders(self):
+    def reset_odometry(self):
         cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x01, 0x03) + struct.pack("B", 0x04)
         if (self.execute(cmd_str))==1 and self.payload_ack == b'\x00':
            return  self.SUCCESS
@@ -307,6 +307,14 @@ class Microcontroller:
         else:
            return self.FAIL
     
+    def line_sensors(self):
+        cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x01, 0x07) + struct.pack("B", 0x08)
+        if (self.execute(cmd_str))==1 and self.payload_ack == b'\x00':
+            val = struct.unpack('I', self.payload_args)
+            return  self.SUCCESS, val
+        else:
+            return self.FAIL, 0
+        
     def warehouse_m(self, command):
         cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x01, 0x0A) + struct.pack("B", 0x0B)
         if (self.execute(cmd_str))==1 and self.payload_ack == b'\x00':
@@ -388,6 +396,7 @@ class BaseController:
         self.intake_command = 0
         self.elevator_command = 0
         self.warehouse_m = 0
+        self.line_sensor = 0
 
         # Subscriptions
         rospy.Subscriber("cmd_vel", Twist, self.cmdVelCallback)
@@ -395,6 +404,7 @@ class BaseController:
         rospy.Subscriber("intake", Int32, self.intakeCallback)
         rospy.Subscriber("elevator", Int32, self.elevatorCallback)
         rospy.Subscriber("warehouse_m", Int32, self.warehouseMCallback)
+        self.line_sensor_pub = rospy.Publisher("line_sensors", Int32, queue_size=5)
         
         # Clear any old odometry info
         #self.Microcontroller.reset_encoders()
@@ -409,6 +419,7 @@ class BaseController:
         # Set up the odometry broadcaster
         self.odomPub = rospy.Publisher('odom', Odometry, queue_size=5)
         self.odomBroadcaster = TransformBroadcaster()
+        self.reset_odom = rospy.Subscriber("reset_odom", Bool, self.resetOdomCallback)
         
         rospy.loginfo("Started base controller for a base of " + str(self.wheel_track) + "m wide with " + str(self.encoder_resolution) + " ticks per rev")
         rospy.loginfo("Publishing odometry data at: " + str(self.rate) + " Hz using " + str(self.base_frame) + " as base frame")
@@ -480,6 +491,9 @@ class BaseController:
             odom.twist.covariance = ODOM_TWIST_COVARIANCE
 
             self.odomPub.publish(odom)
+
+            ack, self.line_sensor = self.Microcontroller.line_sensors()
+            self.line_sensor_pub.publish(self.line_sensor)
             
             if now > (self.last_cmd_vel + rospy.Duration(self.timeout)):
                 self.v_x = 0
@@ -538,6 +552,10 @@ class BaseController:
 
     def elevatorCallback(self, req):
         self.elevator_command = req.data
+    
+    def resetOdomCallback(self, req):
+        if req.data==True:
+            self.Microcontroller.reset_odometry()
     
     def warehouseMCallback(self, req):
         self.warehouse_m = req.data

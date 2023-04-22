@@ -47,7 +47,7 @@ class MainEngine{
                     msg.angular.z = 0;
                     pub_cmd_vel.publish(msg);
                 }
-                else{
+                else {
                     //move to target
                     //rosinfo target
                     ROS_INFO("Moving to target from current (X,Y): ");

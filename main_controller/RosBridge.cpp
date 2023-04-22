@@ -159,6 +159,12 @@ void RosBridge::executeCommand(uint8_t packet_size, uint8_t command, uint8_t* bu
             writeSerial(true, (uint8_t*)data, sizeof(data));
         }
         break;
+        case 0x03: // Reset odometry
+        if (packet_size == 1) { // Check packet size
+            _drive->resetOdometry();
+            writeSerial(true, nullptr, 0);
+        }
+        break;
         case 0x05: // Send IMU
         if (packet_size == 5) { // Check packet size
             float angle;

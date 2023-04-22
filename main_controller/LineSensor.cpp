@@ -15,3 +15,11 @@ bool LineSensor::lineDetected(SensorID id){
     digitalWrite(Constants::kLineSensorS3, id & 8);
     return analogRead(Constants::kLineSensorSignal) > Constants::kLineSensorValue;
 }
+
+int LineSensor::getData(){
+    int data = 0;
+    for( int i = 0; i < 16; i++ ){
+        data |= lineDetected((SensorID)i) << i;
+    }
+    return data;
+}

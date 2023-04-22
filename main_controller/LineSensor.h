@@ -29,6 +29,7 @@ class LineSensor{
     public:
         LineSensor();
         bool lineDetected(SensorID sensor);
+        int getData();
 };
 
 #endif
