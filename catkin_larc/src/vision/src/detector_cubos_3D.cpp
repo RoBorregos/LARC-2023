@@ -160,7 +160,7 @@ public:
         pc.header.frame_id = CAMERA_FRAME;
         pcl_ros::transformPointCloud("map", pc, t_pc, *tf_listener);
 
-        cloudCB(pc);
+        cloudCB(t_pc);
         // Wait 3 segs.
         ros::Duration(3).sleep();
       }
@@ -287,6 +287,105 @@ public:
     pixel[0] = x * intrin.fx + intrin.ppx;
     pixel[1] = y * intrin.fy + intrin.ppy;
   }
+
+  void project_pixel_to_point(float point[3], float pixel[2], float depth, sensor_msgs::CameraInfo cam_info)
+  {
+    Intrinsics intrin;
+    intrin.width = cam_info.width;
+    intrin.height = cam_info.height;
+    intrin.ppx = cam_info.K[2];
+    intrin.ppy = cam_info.K[5];
+    intrin.fx = cam_info.K[0];
+    intrin.fy = cam_info.K[4];
+    for (int i = 0; i < 5; i++) {
+      intrin.coeffs.push_back(cam_info.D[i]);
+    }
+    if(cam_info.distortion_model == "plumb_bob") {
+      intrin.model = "RS2_DISTORTION_BROWN_CONRADY";
+    } else if(cam_info.distortion_model == "equidistant") {
+      intrin.model = "RS2_DISTORTION_KANNALA_BRANDT4";
+    }
+
+    float x = (pixel[0] - intrin.ppx) / intrin.fx;
+    float y = (pixel[1] - intrin.ppy) / intrin.fy;
+
+    float xo = x;
+    float yo = y;
+
+    if (intrin.model == "RS2_DISTORTION_INVERSE_BROWN_CONRADY")
+    {
+        // need to loop until convergence 
+        // 10 iterations determined empirically
+        for (int i = 0; i < 10; i++)
+        {
+            float r2 = x * x + y * y;
+            float icdist = (float)1 / (float)(1 + ((intrin.coeffs[4] * r2 + intrin.coeffs[1]) * r2 + intrin.coeffs[0]) * r2);
+            float xq = x / icdist;
+            float yq = y / icdist;
+            float delta_x = 2 * intrin.coeffs[2] * xq * yq + intrin.coeffs[3] * (r2 + 2 * xq * xq);
+            float delta_y = 2 * intrin.coeffs[3] * xq * yq + intrin.coeffs[2] * (r2 + 2 * yq * yq);
+            x = (xo - delta_x) * icdist;
+            y = (yo - delta_y) * icdist;
+        }
+    }
+    if (intrin.model == "RS2_DISTORTION_BROWN_CONRADY")
+    {
+        // need to loop until convergence 
+        // 10 iterations determined empirically
+        for (int i = 0; i < 10; i++)
+        {
+            float r2 = x * x + y * y;
+            float icdist = (float)1 / (float)(1 + ((intrin.coeffs[4] * r2 + intrin.coeffs[1]) * r2 + intrin.coeffs[0]) * r2);
+            float delta_x = 2 * intrin.coeffs[2] * x * y + intrin.coeffs[3] * (r2 + 2 * x * x);
+            float delta_y = 2 * intrin.coeffs[3] * x * y + intrin.coeffs[2] * (r2 + 2 * y * y);
+            x = (xo - delta_x) * icdist;
+            y = (yo - delta_y) * icdist;
+        }
+
+    }
+    if (intrin.model == "RS2_DISTORTION_KANNALA_BRANDT4")
+    {
+        float rd = sqrtf(x * x + y * y);
+        if (rd < FLT_EPSILON)
+        {
+            rd = FLT_EPSILON;
+        }
+
+        float theta = rd;
+        float theta2 = rd * rd;
+        for (int i = 0; i < 4; i++)
+        {
+            float f = theta * (1 + theta2 * (intrin.coeffs[0] + theta2 * (intrin.coeffs[1] + theta2 * (intrin.coeffs[2] + theta2 * intrin.coeffs[3])))) - rd;
+            if (fabs(f) < FLT_EPSILON)
+            {
+                break;
+            }
+            float df = 1 + theta2 * (3 * intrin.coeffs[0] + theta2 * (5 * intrin.coeffs[1] + theta2 * (7 * intrin.coeffs[2] + 9 * theta2 * intrin.coeffs[3])));
+            theta -= f / df;
+            theta2 = theta * theta;
+        }
+        float r = tan(theta);
+        x *= r / rd;
+        y *= r / rd;
+    }
+    if (intrin.model == "RS2_DISTORTION_FTHETA")
+    {
+        float rd = sqrtf(x * x + y * y);
+        if (rd < FLT_EPSILON)
+        {
+            rd = FLT_EPSILON;
+        }
+        float r = (float)(tan(intrin.coeffs[0] * rd) / atan(2 * tan(intrin.coeffs[0] / 2.0f)));
+        x *= r / rd;
+        y *= r / rd;
+    }
+
+    point[0] = depth * x;
+    point[1] = depth * y;
+    point[2] = depth;
+  
+  }
+
 
   void cropImage(cv::Mat &img, ObjectParams obj) {
     ROS_INFO_STREAM("---------------------Entreeeee a crop---------------------");
