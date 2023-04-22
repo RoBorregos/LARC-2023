@@ -110,8 +110,9 @@ void RosBridge::elevatorCallback(int command) {
 
 void RosBridge::wareHouseMotor(){
     warehouse_motor_timer_ = millis();
-    analogWrite(14, 200);
-    analogWrite(15, 0);
+    analogWrite(8, 200);
+    digitalWrite(30, 1);
+    digitalWrite(31, 0);
 }
 
 ////////////////////////////////Odometry Publisher//////////////////////////////////////
@@ -219,8 +220,8 @@ void RosBridge::spin(unsigned long current_time){
         watchdog_timer_ = millis();
     }
     if((millis() - warehouse_motor_timer_) > 1000) {
-        analogWrite(14, 0);
-        analogWrite(15, 0);
+        analogWrite(30, 0);
+        analogWrite(31, 0);
     }
     _drive->setSpeed(linearX_, linearY_, angularZ_);
     _drive->setAngle(angle_);

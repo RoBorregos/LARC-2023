@@ -8,7 +8,7 @@ class Constants{
     /* data */
     public:
         // Drive constants //
-        static constexpr float kWheelDiameter = 0.054; //meters
+        static constexpr float kWheelDiameter = 0.058; //meters
         static constexpr float kWheelTrack = 0.23; //meters
         static constexpr float kWheelBase = 0.155; //meters
         static constexpr float kDriveKP = 0.02;

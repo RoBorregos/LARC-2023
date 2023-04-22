@@ -55,8 +55,8 @@ class MainEngine{
                     ROS_INFO("Y: %f", current_position.second);
 
                     geometry_msgs::Twist msg;
-                    msg.linear.x = (target_position.first - current_position.first) * 1;
-                    msg.linear.y = (target_position.second - current_position.second) * 1;
+                    msg.linear.x = (target_position.first - current_position.first) * 0.5;
+                    msg.linear.y = (target_position.second - current_position.second) * 0.5;
                     msg.linear.z = 0;
                     msg.angular.x = 0;
                     msg.angular.y = 0;
