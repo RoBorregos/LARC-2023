@@ -222,7 +222,7 @@ public:
       intrin.coeffs.push_back(cam_info.D[i]);
     }
     if(cam_info.distortion_model == "plumb_bob") {
-      intrin.model = "RS2_DISTORTION_BROWN_CONRADY";
+      intrin.model = "RS2_DISTORTION_BROWN_CONRADY";c
     } else if(cam_info.distortion_model == "equidistant") {
       intrin.model = "RS2_DISTORTION_KANNALA_BRANDT4";
     }
