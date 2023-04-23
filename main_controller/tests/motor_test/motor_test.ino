@@ -1,6 +1,5 @@
 //motor tests
-
-//motor pinout
+#define SPEED 50
 
 struct motor{
     int pinPwm;
@@ -29,10 +28,11 @@ void setup() {
 }
 
 void loop() {
-    analogWrite(fl.pinPwm, 255);
-    analogWrite(fr.pinPwm, 255);
-    analogWrite(bl.pinPwm, 255);
-    analogWrite(br.pinPwm, 255);
+    analogWrite(fl.pinPwm, SPEED);
+    analogWrite(fr.pinPwm, SPEED);
+    analogWrite(bl.pinPwm, SPEED);
+    analogWrite(br.pinPwm, SPEED);
+    
     digitalWrite(fl.pinA, HIGH);
     digitalWrite(fl.pinB, LOW);
     delay(1500);

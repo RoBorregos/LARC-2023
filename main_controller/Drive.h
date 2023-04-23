@@ -33,6 +33,8 @@ class Drive{
         Pose2d position;
         float angle;
         float setpoint;
+        float error;
+        float last_error;
         unsigned long last_time = 0;
     public:
         void init();

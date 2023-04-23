@@ -309,9 +309,10 @@ class Microcontroller:
     
     def line_sensors(self):
         cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x01, 0x07) + struct.pack("B", 0x08)
+ 
         if (self.execute(cmd_str))==1 and self.payload_ack == b'\x00':
-            val = struct.unpack('I', self.payload_args)
-            return  self.SUCCESS, val
+           val = struct.unpack('i', self.payload_args)
+           return  self.SUCCESS, val
         else:
             return self.FAIL, 0
         
@@ -492,8 +493,8 @@ class BaseController:
 
             self.odomPub.publish(odom)
 
-            ack, self.line_sensor = self.Microcontroller.line_sensors()
-            self.line_sensor_pub.publish(self.line_sensor)
+            #ack, self.line_sensor = self.Microcontroller.line_sensors()
+            #self.line_sensor_pub.publish(self.line_sensor)
             
             if now > (self.last_cmd_vel + rospy.Duration(self.timeout)):
                 self.v_x = 0

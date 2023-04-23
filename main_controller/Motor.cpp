@@ -56,7 +56,6 @@ void Motor::setSpeed(float speed){
     setPWM(pwm);
 }
 
-
 // Set the speed of the motor in PWM
 void Motor::setPWM(int pwm){
     io.direction = pwm > 0;
