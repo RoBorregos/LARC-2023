@@ -7,11 +7,12 @@ from std_msgs.msg import String
 import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
-from PIL import Image
 from cv_bridge import CvBridge, CvBridgeError
 from vision.msg import objectDetection, objectDetectionArray
 import pathlib
 from geometry_msgs.msg import Point, PoseArray, Pose
+
+interpreter = tf.lite.Interpreter(model_path="primero.tflite")
 
 class Letras_tf:
     def __init__(self):
@@ -60,7 +61,7 @@ class Letras_tf:
         
     def lector(self):
         image = self.cv_image
-        interpreter = tf.lite.Interpreter(model_path="primero.tflite")
+        
         interpreter.allocate_tensors()
 
         output = interpreter.get_output_details()[0]
