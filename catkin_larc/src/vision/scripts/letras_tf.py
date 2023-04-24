@@ -64,14 +64,6 @@ class Letras_tf:
         interpreter.allocate_tensors()
 
         output = interpreter.get_output_details()[0]
-        tf.lite.Interpreter(
-            model_path="primero.tflite",
-            model_content=None,
-            experimental_delegates=None,
-            num_threads=None,
-            experimental_op_resolver_type=tf.lite.experimental.OpResolverType.AUTO,
-            experimental_preserve_all_tensors=False
-        )
         input = interpreter.get_input_details()[0]
         input_data = tf.constant(1., shape=[1, 1])
         
