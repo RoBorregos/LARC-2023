@@ -12,7 +12,9 @@ from vision.msg import objectDetection, objectDetectionArray
 import pathlib
 from geometry_msgs.msg import Point, PoseArray, Pose
 
-interpreter = tf.lite.Interpreter(model_path="primero.tflite")
+import sys
+sys.path.append(str(pathlib.Path(__file__).parent) + '/../include')
+from vision_utils import *
 
 class Letras_tf:
     def __init__(self):
@@ -23,21 +25,23 @@ class Letras_tf:
         self.posePublisher = rospy.Publisher("/test/detectionposes", PoseArray, queue_size=5)
         self.sub = rospy.Subscriber('/zed2/zed_node/rgb/image_rect_color', Image, self.callback)
         self.subscriberDepth = rospy.Subscriber("/zed2/zed_node/depth/depth_registered", Image, self.depthImageRosCallback)
-        self.ubscriberInfo = rospy.Subscriber("/zed2/zed_node/depth/camera_info", CameraInfo, self.infoImageRosCallback)
+        self.subscriberInfo = rospy.Subscriber("/zed2/zed_node/depth/camera_info", CameraInfo, self.infoImageRosCallback)
         self.pcsubs = rospy.Subscriber("/object", Image, self.pc_callback)
     
         self.pubmask = rospy.Publisher('/mask_letras', Image, queue_size=10)
         self.mask  = None
         self.cv_image = np.array([])
+        self.let_img = np.array([])
         rospy.loginfo("Subscribed to image")
         self.main()
         
     def pc_callback(self, data):
         try:
-            self.cv_image = self.bridge.imgmsg_to_cv2(data,desired_encoding="bgr8")
+            self.let_img = self.bridge.imgmsg_to_cv2(data,desired_encoding="bgr8")
             self.lector()
         except CvBridgeError as e:
             print(e)
+            self.publetter.publish(self.bridge.cv2_to_imgmsg(self.cv_image, encoding="bgr8"))
     
         
     # Function to handle a ROS depth input.
@@ -60,24 +64,29 @@ class Letras_tf:
         self.pub.publish(self.bridge.cv2_to_imgmsg(self.cv_image, encoding="bgr8"))
         
     def lector(self):
-        image = self.cv_image
-        
+        img = self.let_img
+
+        interpreter = tf.lite.Interpreter(model_path="/home/jabv/Desktop/LARC-2023/catkin_larc/src/vision/scripts/primero.tflite")
         interpreter.allocate_tensors()
 
         output = interpreter.get_output_details()[0]
         input = interpreter.get_input_details()[0]
-        input_data = tf.constant(1., shape=[1, 1])
+        #input_data = tf.constant(1., shape=[1, 1])
         
-        image = "F.png" #aqui va el topico de la imagen que se esta recibiendo
-        image = cv2.imread(image, cv2.IMREAD_UNCHANGED)
+        #image = "/home/jabv/Desktop/LARC-2023/Vision/F.png" #aqui va el topico de la imagen que se esta recibiendo
+        image = img
+        #image = cv2.imread(image, cv2.IMREAD_UNCHANGED)
         shape = interpreter.get_input_details()[0]['shape']
         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         image = np.asanyarray(image, dtype="uint8")
         image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB) 
         image = cv2.resize(image, (shape[1], shape[2])) 
-        plt.imshow(image)
-        image = image.reshape(shape)
-        interpreter.set_tensor(input['index'], image)
+        #plt.imshow(image)
+        image = cv2.resize(image, (shape[1], shape[2]))
+        image = np.expand_dims(image, axis=0)
+        input_index = interpreter.get_input_details()[0]['index']
+        interpreter.set_tensor(input_index, image)
+
         interpreter.invoke()
         val = (interpreter.get_tensor(output['index'])[0])
         acum = 0
@@ -93,9 +102,11 @@ class Letras_tf:
 
         data = ['A', 'B', 'C', 'D','E', 'F', ' G', 'H','I']
 
-        print(val)
-        print(data[max])
+        #print(val)
+        #how to do a ros info
+        rospy.loginfo(data[max])
         self.publetter.publish(data[max])
+
         
     def get_objects(self, boxes, detections):
         res = []
@@ -140,7 +151,6 @@ class Letras_tf:
 
     def main(self):
         rospy.logwarn("Starting listener")
-        rospy.init_node('detector_colores', anonymous=True)
         rate = rospy.Rate(10)
         try:
             while not rospy.is_shutdown():
@@ -152,4 +162,5 @@ class Letras_tf:
             rospy.logwarn("Keyboard interrupt detected, stopping listener")
 
 if __name__ == '__main__':
+    rospy.init_node('letter_reader', anonymous=True)
     Letras_tf()
