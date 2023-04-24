@@ -620,12 +620,12 @@ public:
                             << " " << abs(object_found.max_z - object_found.min_z));
 
             // Add object only if it has restricted dimensions.
-            if (abs(object_found.max_x - object_found.min_x) > 0.06 &&
-                abs(object_found.max_y - object_found.min_y) > 0.06 &&
-                abs(object_found.max_z - object_found.min_z) > 0.6 &&
-                abs(object_found.max_x - object_found.min_x) < 0.1 &&
-                abs(object_found.max_y - object_found.min_y) < 0.1 &&
-                abs(object_found.max_z - object_found.min_z) < 0.1)
+            if (abs(object_found.max_x - object_found.min_x) < 0.02 ||
+                abs(object_found.max_y - object_found.min_y) < 0.02 ||
+                abs(object_found.max_z - object_found.min_z) < 0.02 ||
+                abs(object_found.max_x - object_found.min_x) > 0.5 ||
+                abs(object_found.max_y - object_found.min_y) > 0.5 ||
+                abs(object_found.max_z - object_found.min_z) > 0.5)
             {
                 ROS_INFO_STREAM("Object rejected due to dimensions.");
                 object_found.isValid = false;
