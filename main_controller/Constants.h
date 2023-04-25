@@ -64,7 +64,7 @@ class Constants{
         static constexpr int kIntakeDropSpeed = 255;
 
         // Elevator //
-        static constexpr int kStepperSteps = 200;
+        static constexpr int kStepperSteps = 3200;
         static constexpr int kStepperDirectionPin = 36;
         static constexpr int kStepperStepPin = 37;
         static constexpr int kStepperSpeed = 2000; //max 4688 / > 1000 torque
@@ -78,8 +78,8 @@ class Constants{
         static constexpr int kWarehouseLowerPWM = 8;
         static constexpr int kWarehouseLowerMotorA = 30;
         static constexpr int kWarehouseLowerMotorB = 31;
-        static constexpr int kWarehouseVLXxshutUpper = 46;
-        static constexpr int kWarehouseVLXxshutMid = 48;
+        static constexpr int kWarehouseVLXxshutUpper = 48;
+        static constexpr int kWarehouseVLXxshutMid = 46;
         static constexpr int kWarehouseVLXxshutLower = 50;
         static constexpr int kWarehouseUpperSpeed = 180;
         static constexpr int kWarehouseMidSpeed = 180;

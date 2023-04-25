@@ -46,15 +46,15 @@ void loop(){
     analogWrite(LWS, 180); 
     digitalWrite(LWA, true); //abajo
     digitalWrite(LWB, !true);
-    analogWrite(MDA, 180);     //arriba
-    analogWrite(MDB, 0); 
+    analogWrite(MDA, 0);     //arriba
+    analogWrite(MDB, 180); 
     analogWrite(UPA, 200);  //medio
     analogWrite(UPB, 0);
     delay(1000);
     digitalWrite(LWA, 0); //abajo
     digitalWrite(LWB, 1);
-    analogWrite(MDA, 0);     //arriba
-    analogWrite(MDB, 180);
+    analogWrite(MDA, 180);     //arriba
+    analogWrite(MDB, 0);
     analogWrite(UPA, 0);  //medio
     analogWrite(UPB, 200);
     delay(1000);

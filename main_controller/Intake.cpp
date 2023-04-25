@@ -11,8 +11,8 @@ Intake::Intake(){
     pinMode(Constants::kIntakePresence, INPUT);
 }
 
-void Intake::pick(){
-    if( presence ){
+void Intake::pick(unsigned long current_time){
+    if( presence && current_time - presence_detection_time > 1000){
         setAction(Stop);
         return;
     }
@@ -24,8 +24,8 @@ void Intake::pick(){
     digitalWrite(Constants::kIntakeMotor2B, 1);
 }
 
-void Intake::in(){
-    if( !presence ){
+void Intake::in(unsigned long current_time){
+    if( !presence && current_time - presence_detection_time > 1000){
         setAction(Stop);
         return;
     }
@@ -82,7 +82,7 @@ void Intake::periodicIO(unsigned long current_time){
     if( current_time - last_time < loop_time )
         return;
 
-    presence = !digitalRead(Constants::kIntakePresence);
+    presence = digitalRead(Constants::kIntakePresence);
     if( presence && !flag ){
         presence_detection_time = current_time;
         flag = true;
@@ -94,13 +94,13 @@ void Intake::periodicIO(unsigned long current_time){
 
     switch(action){
         case In:
-            in();
+            in(current_time);
             break;
         case Out:
             out(current_time);
             break;
         case Pick:
-            pick();
+            pick(current_time);
             break;
         case Drop:
             drop(current_time);

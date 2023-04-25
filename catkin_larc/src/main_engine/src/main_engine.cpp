@@ -28,6 +28,11 @@ class MainEngine{
         }
 
         void run(){
+            if( task == 1 ){
+                manualCommand();
+                return;
+            }
+
             if( target_reached ){
                 target_position = readTarget();
                 target_reached = false;
@@ -127,6 +132,7 @@ class MainEngine{
         pair<float, float> target_position;
         pair<float, float> current_position;
         float tolerance = 0.03;
+        int task = 1;
 };
 
 int main(int argc, char **argv){

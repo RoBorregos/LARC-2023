@@ -1,6 +1,6 @@
 #include <Stepper.h> 
 
-#define STEPS 200
+#define STEPS 3200
 
 
 // Define stepper motor connections and motor interface type. Motor interface type must be set to 1 when using a driver
@@ -18,18 +18,18 @@ void setup() {
 
   // Set the maximum speed in steps per second:
 
-  stepper.setSpeed(2000); //max 4688 / > 1000 torque
+stepper.setSpeed(2000); //max 4688 / > 1000 torque
 
 }
 
 void loop() {
 
- 
 
-
-    stepper.step(-30000);
+    stepper.step(-32000);
+    stepper.step(-32000);
     delay(1000);
-    stepper.step(30000);
+    stepper.step(32000);
+    stepper.step(32000);
     delay(1000);
 
 

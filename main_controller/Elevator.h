@@ -3,23 +3,24 @@
 
 #include "Arduino.h"
 #include "Constants.h"
+#include <Stepper.h>
 
 enum ElevatorPosition{
     PickPos = 0,
-    FirstIn = 19000,
-    SecondIn = 42500,
-    ThirdIn = 65500,
-    FirstOut = 17000,
+    FirstIn = 22000,
+    SecondIn = 45500,
+    ThirdIn = 68500,
+    FirstOut = 20000,
     SecondOut = 17500,
     ThirdOut = 30000,
     FirstShelf = 10000,
     SecondShelf = 22500,
-    ThirdShelf = 80000
+    ThirdShelf = 83000
 };
 
 class Elevator{
     private:
-        struct Stepper{
+        struct StepperC{
             int directionPin = 0;
             int stepPin = 0;
             int direction = 0;
@@ -28,13 +29,15 @@ class Elevator{
             int number_of_steps = 0;
             int step = 0;
             int steps_left = 0;
-
         };
-        Stepper mStepper;
+        StepperC mStepper;
+        Stepper* stepperPtr;
         unsigned long current_time = 0;
         int current_position = 0;
+        int steps_queued = 0;
     public:
         Elevator();
+        void init(Stepper *stepper);
         void setSpeed(long speed);
         void setSteps(int step);
         void periodicIO();

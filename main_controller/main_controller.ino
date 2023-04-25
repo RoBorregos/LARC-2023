@@ -1,5 +1,6 @@
 #include <Wire.h>
 #include <Adafruit_VL53L0X.h>
+#include <Stepper.h>
 
 #include "Constants.h"
 #include "RosBridge.h"
@@ -16,7 +17,7 @@ Intake mIntake;
 //Warehouse mWarehouse;
 RosBridge ros;
 
-bool ENABLE_ROS = true;
+bool ENABLE_ROS = false;
 
 unsigned long debug_time = 0;
 int state = -1;
@@ -24,6 +25,7 @@ unsigned long state_time = 0;
 unsigned long loop_time = 0;
 
 Adafruit_VL53L0X vlx[4];
+Stepper mStepper(Constants::kStepperSteps, Constants::kStepperDirectionPin, Constants::kStepperStepPin);
 
 unsigned long current_time = 0;
 
@@ -34,6 +36,7 @@ void setup(){
     //vlxSetup();
 
     mDrive.init();
+    mElevator.init(&mStepper);
     //mWarehouse.init(current_time, &vlx[0], &vlx[1], &vlx[2]);
     Serial.begin(115200);
 
@@ -51,7 +54,7 @@ void setup(){
         ros.init(&mDrive, &mIntake, &mElevator);
 
     //mIntake.setAction(IntakeActions::Pick);
-    //mElevator.setPosition(ElevatorPosition::ThirdShelf);
+    mElevator.setPosition(ElevatorPosition::ThirdShelf);
 }
 
 void loop(){
@@ -60,7 +63,7 @@ void loop(){
     if( ENABLE_ROS )
         ros.spin(current_time);
     mDrive.periodicIO(current_time);
-    //mElevator.periodicIO();
+    mElevator.periodicIO();
     mIntake.periodicIO(current_time);
     //mWarehouse.periodicIO(current_time);
 

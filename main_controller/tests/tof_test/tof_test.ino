@@ -58,10 +58,10 @@ typedef struct {
 sensorList_t sensors[] = {
   // For 'sensor1', define the IIC accress as hexadecimal value 0x30. Assign digital pin #4 to this 
   // sensor's XSHUT pin (shut-down pin). Assign digital pin #5 to the sensor's INTERRUPT pin.
-  {&sensor1, &Wire, 0x30, 46, 0, Adafruit_VL53L0X::VL53L0X_SENSE_DEFAULT, 0, 0},
+  {&sensor1, &Wire, 0x30, 48, 0, Adafruit_VL53L0X::VL53L0X_SENSE_DEFAULT, 0, 0},
   // For 'sensor2', define the IIC accress as hexadecimal value 0x31. Assign digital pin #6 to this 
   // sensor's XSHUT pin (shut-down pin). Assign digital pin #7 to the sensor's INTERRUPT pin.
-  {&sensor2, &Wire, 0x31, 48, 0, Adafruit_VL53L0X::VL53L0X_SENSE_DEFAULT, 0, 0},
+  {&sensor2, &Wire, 0x31, 46, 0, Adafruit_VL53L0X::VL53L0X_SENSE_DEFAULT, 0, 0},
   {&sensor3, &Wire, 0x32, 50, 0, Adafruit_VL53L0X::VL53L0X_SENSE_DEFAULT, 0, 0},
   {&sensor4, &Wire, 0x33, 53, 0, Adafruit_VL53L0X::VL53L0X_SENSE_DEFAULT, 0, 0}
 };

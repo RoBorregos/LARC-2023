@@ -22,8 +22,8 @@ class Intake{
         IntakeActions action = Stop;
     public:
         Intake();
-        void pick();
-        void in();
+        void pick(unsigned long current_time);
+        void in(unsigned long current_time);
         void out(unsigned long current_time);
         void drop(unsigned long current_time);
         void stop();
