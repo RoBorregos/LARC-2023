@@ -60,7 +60,7 @@ class Constants{
         static constexpr int kIntakePresence = 44;
         static constexpr int kIntakePickSpeed = 255;
         static constexpr int kIntakeInSpeed = 255;
-        static constexpr int kIntakeOutSpeed = 160;
+        static constexpr int kIntakeOutSpeed = 140;
         static constexpr int kIntakeDropSpeed = 255;
 
         // Elevator //
@@ -83,7 +83,7 @@ class Constants{
         static constexpr int kWarehouseVLXxshutLower = 50;
         static constexpr int kWarehouseUpperSpeed = 180;
         static constexpr int kWarehouseMidSpeed = 180;
-        static constexpr int kWarehouseLowerSpeed = 130;
+        static constexpr int kWarehouseLowerSpeed = 140;
 };
 
 #endif

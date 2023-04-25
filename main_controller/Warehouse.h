@@ -7,11 +7,11 @@
 #include "Adafruit_VL53L0X.h"
 
 enum CubePosition{
-    Empty = 250,
-    One = 215,
-    Two = 155,
-    Three = 95,
-    Four = 55
+    Empty = 260,
+    One = 225,
+    Two = 165,
+    Three = 105,
+    Four = 65
 };
 
 enum LevelPosition{

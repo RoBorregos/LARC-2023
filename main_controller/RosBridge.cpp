@@ -105,11 +105,8 @@ void RosBridge::elevatorCallback(int command) {
     _elevator->setPosition(postions[command]);
 }
 
-void RosBridge::wareHouseMotor(){
-    warehouse_motor_timer_ = millis();
-    analogWrite(8, 200);
-    digitalWrite(30, 1);
-    digitalWrite(31, 0);
+void RosBridge::warehouseCallback(int level){
+    _warehouse->cubeOut( LevelPosition(level-1), current_time_);
 }
 
 ////////////////////////////////Odometry Publisher//////////////////////////////////////
@@ -187,11 +184,14 @@ void RosBridge::executeCommand(uint8_t packet_size, uint8_t command, uint8_t* bu
             writeSerial(true, nullptr, 0);
         }
         break;
-        case 0x0A: // Send Warehouse Motor
-        if (packet_size == 1) { // Check packet size
-            wareHouseMotor();
+        case 0x0A: // Send Warehouse 
+        if (packet_size == 5) { // Check packet size
+            int level;
+            memcpy(&level, buffer, sizeof(level));
+            warehouseCallback(level);
             writeSerial(true, nullptr, 0);
         }
+        break;
         default:
         break;
     }
@@ -215,16 +215,14 @@ void RosBridge::writeSerial(bool success, uint8_t* payload, int elements) {
 }
 
 void RosBridge::spin(unsigned long current_time){
+    current_time_ = current_time;
+
     readSerial();
     if((millis() - watchdog_timer_) > kWatchdogPeriod) {
         linearX_ = 0.0;
         linearY_ = 0.0;
         angularZ_ = 0.0;        
         watchdog_timer_ = millis();
-    }
-    if((millis() - warehouse_motor_timer_) > 1000) {
-        analogWrite(30, 0);
-        analogWrite(31, 0);
     }
     _drive->setSpeed(linearX_, linearY_, angularZ_);
     _drive->setAngle(angle_);

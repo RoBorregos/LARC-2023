@@ -25,7 +25,7 @@ class RosBridge{
 
         void elevatorCallback(int command);
 
-        void wareHouseMotor();
+        void warehouseCallback(int level);
 
         ////////////////////////////////Odometry Publisher///////////////////
         void getOdometry();
@@ -45,6 +45,8 @@ class RosBridge{
         unsigned long odom_timer_ = 0;
         unsigned long watchdog_timer_ = 0;
         unsigned long warehouse_motor_timer_ = 0;
+
+        unsigned long current_time_ = 0;
 
         // CMD Velocity.
         float linearX_ = 0;

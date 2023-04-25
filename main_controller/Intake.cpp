@@ -38,7 +38,7 @@ void Intake::in(unsigned long current_time){
 }
 
 void Intake::out(unsigned long current_time){
-    if( presence && current_time - presence_detection_time > 350 ){
+    if( presence && current_time - presence_detection_time > 200 ){
         setAction(Stop);
         return;
     }

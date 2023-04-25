@@ -18,7 +18,7 @@ class MainEngine{
             pub_cmd_vel = nh.advertise<geometry_msgs::Twist>("cmd_vel", 10);
             pub_intake = nh.advertise<std_msgs::Int32>("intake", 10);
             pub_elevator = nh.advertise<std_msgs::Int32>("elevator", 10);
-            pub_warehouse_m = nh.advertise<std_msgs::Int32>("warehouse_m", 10);
+            pub_warehouse = nh.advertise<std_msgs::Int32>("warehouse", 10);
 
             //init subscriber
             sub_odom = nh.subscribe("odom", 10, &MainEngine::odomCallback, this);
@@ -112,11 +112,11 @@ class MainEngine{
                     break;
                 case 'W':
                     msg.data = command;
-                    pub_warehouse_m.publish(msg);
+                    pub_warehouse.publish(msg);
                     break;
                 case 'w':
                     msg.data = command;
-                    pub_warehouse_m.publish(msg);
+                    pub_warehouse.publish(msg);
                     break;
             }
         }
@@ -125,7 +125,7 @@ class MainEngine{
         ros::Publisher pub_cmd_vel;
         ros::Publisher pub_intake;
         ros::Publisher pub_elevator;
-        ros::Publisher pub_warehouse_m;
+        ros::Publisher pub_warehouse;
 
         ros::Subscriber sub_odom;
         bool target_reached = true;
