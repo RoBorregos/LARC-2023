@@ -55,6 +55,23 @@ void Warehouse::cubeOut(LevelPosition pos, unsigned long current_time){
     lvl->stopped = false;
 }
 
+void Warehouse::reset(){
+    for(int i=0; i<3; i++){
+        level[i].demand = -level[i].speed;
+        if(level[i].pwmPin != -1)
+            analogWrite(level[i].pwmPin, abs(level[i].demand) );
+        
+        analogWrite(level[i].fwdPin, level[i].demand>0? abs(level[i].demand) : 0);
+        analogWrite(level[i].revPin, level[i].demand<0? abs(level[i].demand) : 0);
+    }
+    delay(500);
+    for(int i=0; i<3; i++){
+        stop( (LevelPosition)i );
+        level[i].cube_state = CubePosition::Four;
+        level[i].stopped = true;
+    }
+}
+
 CubePosition Warehouse::getCubeState(LevelPosition pos){
     return level[pos].cube_state;
 }
@@ -77,13 +94,16 @@ void Warehouse::periodicIO(unsigned long current_time){
 
         if( level[i].cube_state == CubePosition::Four ){
             level[i].demand = 0;
-        } else if( error > 15){
+        } else {
+            level[i].demand = level[i].speed;
+        }
+        /*} else if( error > 15){
             level[i].demand = level[i].speed;
         } else {
             level[i].demand = 0;
-        }
+        }*/
 
-        if( current_time - level[i].state_time > 4000 )
+        if( current_time - level[i].state_time > 3000 )
             level[i].demand = 0;
 
         if(level[i].pwmPin != -1)

@@ -106,7 +106,10 @@ void RosBridge::elevatorCallback(int command) {
 }
 
 void RosBridge::warehouseCallback(int level){
-    _warehouse->cubeOut( LevelPosition(level-1), current_time_);
+    if( level == 4 )
+        _warehouse->reset();
+    else
+        _warehouse->cubeOut( LevelPosition(level-1), current_time_);
 }
 
 ////////////////////////////////Odometry Publisher//////////////////////////////////////

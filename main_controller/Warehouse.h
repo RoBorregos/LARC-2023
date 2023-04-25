@@ -41,6 +41,7 @@ class Warehouse{
     public:
         void init(unsigned long current_time, Adafruit_VL53L0X* tof1, Adafruit_VL53L0X* tof2, Adafruit_VL53L0X* tof3);
         void cubeOut(LevelPosition pos, unsigned long current_time);
+        void reset();
         CubePosition getCubeState(LevelPosition pos);
         void periodicIO(unsigned long current_time);
         void stop(LevelPosition pos);
