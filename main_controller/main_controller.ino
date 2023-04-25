@@ -68,10 +68,4 @@ void loop(){
     mIntake.periodicIO(current_time);
     mWarehouse.periodicIO(current_time);
 
-    // Plot (TODO: make a library for this)
-    if( current_time - debug_time > 50 ){
-        //Serial.println(mDrive.getSpeed(MotorID::FrontLeft));
-        //plotData(mDrive.getSpeed(MotorID::FrontLeft), mDrive.getSpeed(MotorID::FrontRight), mDrive.getSpeed(MotorID::BackLeft), mDrive.getSpeed(MotorID::BackRight), targetSpeed);
-        debug_time = current_time;
-    }
 }

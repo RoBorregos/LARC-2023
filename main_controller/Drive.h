@@ -36,6 +36,7 @@ class Drive{
         float error;
         float last_error;
         unsigned long last_time = 0;
+        bool spin_flag = false;
     public:
         void init();
         void setSpeed(float linearX, float linearY, float angularZ);

@@ -316,8 +316,8 @@ class Microcontroller:
         else:
             return self.FAIL, 0
         
-    def warehouse_m(self, command):
-        cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x01, 0x0A) + struct.pack("B", 0x0B)
+    def warehouse(self, level):
+        cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x05, 0x0A) + struct.pack("i", level) + struct.pack("B", 0x0B)
         if (self.execute(cmd_str))==1 and self.payload_ack == b'\x00':
            return  self.SUCCESS
         else:
@@ -396,7 +396,7 @@ class BaseController:
 
         self.intake_command = 0
         self.elevator_command = 0
-        self.warehouse_m = 0
+        self.warehouse = 0 
         self.line_sensor = 0
 
         # Subscriptions
@@ -404,7 +404,7 @@ class BaseController:
 
         rospy.Subscriber("intake", Int32, self.intakeCallback)
         rospy.Subscriber("elevator", Int32, self.elevatorCallback)
-        rospy.Subscriber("warehouse_m", Int32, self.warehouseMCallback)
+        rospy.Subscriber("warehouse", Int32, self.warehouseCallback)
         self.line_sensor_pub = rospy.Publisher("line_sensors", Int32, queue_size=5)
         
         # Clear any old odometry info
@@ -420,7 +420,7 @@ class BaseController:
         # Set up the odometry broadcaster
         self.odomPub = rospy.Publisher('odom', Odometry, queue_size=5)
         self.odomBroadcaster = TransformBroadcaster()
-        self.reset_odom = rospy.Subscriber("reset_odom", Bool, self.resetOdomCallback)
+        rospy.Subscriber("reset_odom", Bool, self.resetOdomCallback)
         
         rospy.loginfo("Started base controller for a base of " + str(self.wheel_track) + "m wide with " + str(self.encoder_resolution) + " ticks per rev")
         rospy.loginfo("Publishing odometry data at: " + str(self.rate) + " Hz using " + str(self.base_frame) + " as base frame")
@@ -514,9 +514,9 @@ class BaseController:
                 self.Microcontroller.elevator(self.elevator_command)
                 self.elevator_command = 0
 
-            if(self.warehouse_m != 0):
-                self.Microcontroller.warehouse_m(self.warehouse_m)
-                self.warehouse_m = 0
+            if(self.warehouse != 0):
+                self.Microcontroller.warehouse(self.warehouse)
+                self.warehouse = 0
 
                 
             self.t_next = now + self.t_delta
@@ -555,11 +555,11 @@ class BaseController:
         self.elevator_command = req.data
     
     def resetOdomCallback(self, req):
-        if req.data==True:
+        if req.data:
             self.Microcontroller.reset_odometry()
     
-    def warehouseMCallback(self, req):
-        self.warehouse_m = req.data
+    def warehouseCallback(self, req):
+        self.warehouse = req.data
 
 
 class MicroControllerROS():

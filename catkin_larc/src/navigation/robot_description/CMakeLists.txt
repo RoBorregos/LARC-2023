@@ -10,7 +10,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   std_srvs
   tf
-  message_generation
+  #message_generation
 )
 
 include_directories(include ${catkin_INCLUDE_DIRS})

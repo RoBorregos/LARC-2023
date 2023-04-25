@@ -8,11 +8,11 @@ class Constants{
     /* data */
     public:
         // Drive constants //
-        static constexpr float kWheelDiameter = 0.058; //meters
+        static constexpr float kWheelDiameter = 0.075; //meters
         static constexpr float kWheelTrack = 0.23; //meters
         static constexpr float kWheelBase = 0.155; //meters
-        static constexpr float kDriveKP = 0.016;
-        static constexpr float kDriveKD = 0.001;
+        static constexpr float kDriveKP = 0.018;
+        static constexpr float kDriveKD = 0.00;
         
         //Motors (A: fwd, B: rev)
         static constexpr float kMotorsRPM = 380; //RPM
@@ -60,7 +60,7 @@ class Constants{
         static constexpr int kIntakePresence = 44;
         static constexpr int kIntakePickSpeed = 255;
         static constexpr int kIntakeInSpeed = 255;
-        static constexpr int kIntakeOutSpeed = 160;
+        static constexpr int kIntakeOutSpeed = 140;
         static constexpr int kIntakeDropSpeed = 255;
 
         // Elevator //
@@ -71,8 +71,8 @@ class Constants{
         static constexpr int kElevatorVLXxshut = 53;
 
         // Warehouse //
-        static constexpr int kWarehouseUpperMotorA = 49;
-        static constexpr int kWarehouseUpperMotorB = 47;
+        static constexpr int kWarehouseUpperMotorA = 47;
+        static constexpr int kWarehouseUpperMotorB = 49;
         static constexpr int kWarehouseMidMotorA = 51;
         static constexpr int kWarehouseMidMotorB = 52;
         static constexpr int kWarehouseLowerPWM = 8;
@@ -83,7 +83,7 @@ class Constants{
         static constexpr int kWarehouseVLXxshutLower = 50;
         static constexpr int kWarehouseUpperSpeed = 180;
         static constexpr int kWarehouseMidSpeed = 180;
-        static constexpr int kWarehouseLowerSpeed = 130;
+        static constexpr int kWarehouseLowerSpeed = 140;
 };
 
 #endif
