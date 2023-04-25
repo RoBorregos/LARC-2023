@@ -15,6 +15,9 @@ from vision_utils import *
 
 class DetectorColores:
     def __init__(self):
+        self.boxes = []
+        self.detections = []
+
         self.bridge = CvBridge()
         self.pub = rospy.Publisher('/colores_out', Image, queue_size=10)
         self.pubData = rospy.Publisher('color_detect', objectDetectionArray, queue_size=5)
@@ -52,9 +55,7 @@ class DetectorColores:
         frame= self.cv_image
         contornos,_ = cv2.findContours(mask, cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
        
-        bb = []
-        detections = []
-        tempo = []
+        temp = []
         for c in contornos:
             area = cv2.contourArea(c)
             if area > 3000:
@@ -71,27 +72,26 @@ class DetectorColores:
                 xmayor = x + w
                 ymayor = y + h
 
-                tempo =  ymenor, xmenor, ymayor, xmayor
+                temp =  ymenor, xmenor, ymayor, xmayor
 
                 if color == (255,0,0):
                     print('azul')
-                    detections.append('azul')
+                    self.detections.append('azul')
                     
                 if color == (0,255,0):
                     print('verde')
-                    detections.append('verde')
+                    self.detections.append('verde')
 
                 if color == (0,0,255):
                     print('rojo')   
-                    detections.append('rojo')
+                    self.detections.append('rojo')
 
                 if color == (0,255,255):
                     print('amarillo')
-                    detections.append('amarillo')
+                    self.detections.append('amarillo')
 
                 cv2.drawContours(frame,[nuevoContorno],0,color,3)
-                bb.append(tempo)
-        self.get_objects(bb, detections)
+                self.boxes.append(temp)
 
 
     def callback(self, data):
@@ -100,6 +100,8 @@ class DetectorColores:
         self.cv_image = self.bridge.imgmsg_to_cv2(data,desired_encoding="bgr8")
         self.detectar_colores()
         self.pub.publish(self.bridge.cv2_to_imgmsg(self.cv_image, encoding="bgr8"))
+        self.boxes = []
+        self.detections = []
 
     def get_objects(self, boxes, detections):
         res = []
@@ -173,6 +175,8 @@ class DetectorColores:
         self.dibujar(maskamarillo,(0,255,255))
         self.dibujar(maskVerde,(0,255,0))
         self.dibujar(maskred,(0,0,255))
+
+        self.get_objects(self.boxes, self.detections)
         #frame = cv2.resize(frame, (0, 0), fx = 0.3, fy = 0.3)
         #cv2.imshow('frame',frame)
         
