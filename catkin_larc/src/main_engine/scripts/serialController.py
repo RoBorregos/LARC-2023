@@ -420,7 +420,7 @@ class BaseController:
         # Set up the odometry broadcaster
         self.odomPub = rospy.Publisher('odom', Odometry, queue_size=5)
         self.odomBroadcaster = TransformBroadcaster()
-        self.reset_odom = rospy.Subscriber("reset_odom", Bool, self.resetOdomCallback)
+        rospy.Subscriber("reset_odom", Bool, self.resetOdomCallback)
         
         rospy.loginfo("Started base controller for a base of " + str(self.wheel_track) + "m wide with " + str(self.encoder_resolution) + " ticks per rev")
         rospy.loginfo("Publishing odometry data at: " + str(self.rate) + " Hz using " + str(self.base_frame) + " as base frame")
@@ -555,7 +555,7 @@ class BaseController:
         self.elevator_command = req.data
     
     def resetOdomCallback(self, req):
-        if req.data==True:
+        if req.data:
             self.Microcontroller.reset_odometry()
     
     def warehouseCallback(self, req):

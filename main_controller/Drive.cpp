@@ -10,8 +10,15 @@ void Drive::init(){
 void Drive::setSpeed(float linearX, float linearY, float angularZ){
     float wheelPosX = Constants::kWheelBase/2;
     float wheelPosY = Constants::kWheelTrack/2;
-    if(abs( angularZ ) > 0.1)
-        setpoint = angle;
+    if(abs( angularZ ) > 0.2 && !spin_flag){
+        if( angularZ < 0 )
+            setpoint += 90;
+        else
+            setpoint -= 90;
+        spin_flag = true;
+    } else if( abs(angularZ) == 0 && spin_flag ){
+        spin_flag = false;
+    }
     
     float frontLeftSpeed = linearX - linearY - angularZ*(wheelPosX + wheelPosY) - error;
     float frontRightSpeed = linearX + linearY + angularZ*(wheelPosX + wheelPosY) + error;
@@ -130,6 +137,12 @@ void Drive::periodicIO(unsigned long current_time){
     position.theta = angle;
 
     error = (angle - setpoint);
+    //map error to -180 to 180
+    if(error > 180){
+        error -= 360;
+    }else if(error < -180){
+        error += 360;
+    }
     error = error * Constants::kDriveKP + (error - last_error)/delta_time * Constants::kDriveKD;
 
     last_time = current_time;
