@@ -9,15 +9,15 @@
 #include "Intake.h"
 #include "Elevator.h"
 #include "LineSensor.h"
-//#include "Warehouse.h"
+#include "Warehouse.h"
 
 Drive mDrive;
 Elevator mElevator;
 Intake mIntake;
-//Warehouse mWarehouse;
+Warehouse mWarehouse;
 RosBridge ros;
 
-bool ENABLE_ROS = false;
+bool ENABLE_ROS = true;
 
 unsigned long debug_time = 0;
 int state = -1;
@@ -33,11 +33,11 @@ void setup(){
     current_time = millis();
 
     Wire.begin();
-    //vlxSetup();
+    vlxSetup();
 
     mDrive.init();
     mElevator.init(&mStepper);
-    //mWarehouse.init(current_time, &vlx[0], &vlx[1], &vlx[2]);
+    mWarehouse.init(current_time, &vlx[0], &vlx[1], &vlx[2]);
     Serial.begin(115200);
 
     //Serial.write("<target>");
@@ -51,10 +51,11 @@ void setup(){
     debug_time = current_time;
 
     if( ENABLE_ROS )
-        ros.init(&mDrive, &mIntake, &mElevator);
+        ros.init(&mDrive, &mIntake, &mElevator, &mWarehouse);
 
     //mIntake.setAction(IntakeActions::Pick);
-    mElevator.setPosition(ElevatorPosition::ThirdShelf);
+    //mElevator.setPosition(ElevatorPosition::FirstIn);
+    //mWarehouse.cubeOut(LevelPosition::Upper, current_time);
 }
 
 void loop(){
@@ -65,7 +66,7 @@ void loop(){
     mDrive.periodicIO(current_time);
     mElevator.periodicIO();
     mIntake.periodicIO(current_time);
-    //mWarehouse.periodicIO(current_time);
+    mWarehouse.periodicIO(current_time);
 
     // Plot (TODO: make a library for this)
     if( current_time - debug_time > 50 ){

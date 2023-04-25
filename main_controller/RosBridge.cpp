@@ -1,13 +1,10 @@
 #include "RosBridge.h"
 
-void RosBridge::init(Drive *drive, Intake *intake, Elevator *elevator){
+void RosBridge::init(Drive *drive, Intake *intake, Elevator *elevator, Warehouse *warehouse){
     _drive = drive;
     _intake = intake;
     _elevator = elevator;
-    pinMode(14, OUTPUT);
-    pinMode(15, OUTPUT);
-    analogWrite(14, 0);
-    analogWrite(15, 0);
+    _warehouse = warehouse;
 }
 
 //Read serial/////////////////////////////////////////////////////////

@@ -65,9 +65,10 @@ void Warehouse::periodicIO(unsigned long current_time){
 
     //int i=0;
     for(int i=0; i<3; i++){
-        if(level[i].stopped)
-            //stop( (LevelPosition)i );
+        if(level[i].stopped){
+            stop( (LevelPosition)i );
             continue;
+        }
 
         level[i].distance = level[i].tof->readRange();
         Serial.print(level[i].distance);
@@ -76,7 +77,7 @@ void Warehouse::periodicIO(unsigned long current_time){
 
         if( level[i].cube_state == CubePosition::Four ){
             level[i].demand = 0;
-        } else if( error > 5){
+        } else if( error > 15){
             level[i].demand = level[i].speed;
         } else {
             level[i].demand = 0;
@@ -85,14 +86,16 @@ void Warehouse::periodicIO(unsigned long current_time){
         if( current_time - level[i].state_time > 4000 )
             level[i].demand = 0;
 
-        if( level[i].demand == 0 )
-            level[i].stopped = true;
-
         if(level[i].pwmPin != -1)
-            analogWrite(level[i].pwmPin, level[i].speed);
+            analogWrite(level[i].pwmPin, level[i].demand);
         
         analogWrite(level[i].fwdPin, level[i].demand>0? abs(level[i].demand) : 0);
         analogWrite(level[i].revPin, level[i].demand<0? abs(level[i].demand) : 0);
+        
+        if( level[i].demand == 0 ){
+            level[i].stopped = true;
+            stop( (LevelPosition)i );
+        }
     }
 
     last_time = current_time;

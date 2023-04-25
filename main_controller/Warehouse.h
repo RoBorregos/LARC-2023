@@ -7,10 +7,10 @@
 #include "Adafruit_VL53L0X.h"
 
 enum CubePosition{
-    Empty = 265,
-    One = 230,
-    Two = 170,
-    Three = 110,
+    Empty = 250,
+    One = 215,
+    Two = 155,
+    Three = 95,
     Four = 55
 };
 
@@ -35,7 +35,7 @@ struct Level{
 
 class Warehouse{
     private:
-        constexpr static float loop_time = 100;
+        constexpr static float loop_time = 50;
         Level level[3];
         unsigned long last_time = 0;
     public:

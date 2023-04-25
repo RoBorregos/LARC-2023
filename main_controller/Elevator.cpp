@@ -22,17 +22,15 @@ void Elevator::setSpeed(long speed){
     mStepper.step_delay = 60L * 1000L * 1000L / mStepper.number_of_steps / speed;
 }
 
-void Elevator::setSteps(int step){
-    int temp_step = abs(step);
+void Elevator::setSteps(long int step){
+    long int temp_step = abs(step);
     steps_queued = int(temp_step / 32000);
-    Serial.println(steps_queued);
     mStepper.steps_left = temp_step % 32000;
-    Serial.println(mStepper.steps_left);
     mStepper.direction = step > 0 ? 1 : 0;
-    Serial.println(mStepper.direction);
 }
 
 void Elevator::setPosition(ElevatorPosition position){
+    //Serial.println(-position - current_position);
     setSteps(-position - current_position);
 }
 
@@ -41,8 +39,7 @@ bool Elevator::positionReached(){
 }
 
 void Elevator::periodicIO(){
-    if( mStepper.steps_left > 0 ){
-        Serial.println(mStepper.steps_left);
+    while( mStepper.steps_left > 0 ){
         stepperPtr->step( (mStepper.direction? 1:-1) * mStepper.steps_left);
         current_position += (mStepper.direction? 1:-1) * mStepper.steps_left;
         mStepper.steps_left = 0;

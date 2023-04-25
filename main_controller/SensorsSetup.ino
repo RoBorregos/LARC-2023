@@ -27,10 +27,10 @@ void interruptBR(){
 void vlxSetup(){
 
     sensorList_t sensors[] = {
-        {&vlx[0], &Wire, 0x30, Constants::kWarehouseVLXxshutUpper, 0, Adafruit_VL53L0X::VL53L0X_SENSE_HIGH_ACCURACY, 0, 0},
-        {&vlx[1], &Wire, 0x31, Constants::kWarehouseVLXxshutMid, 0, Adafruit_VL53L0X::VL53L0X_SENSE_HIGH_ACCURACY, 0, 0},
-        {&vlx[2], &Wire, 0x32, Constants::kWarehouseVLXxshutLower, 0, Adafruit_VL53L0X::VL53L0X_SENSE_HIGH_ACCURACY, 0, 0},
-        {&vlx[3], &Wire, 0x33, Constants::kElevatorVLXxshut, 0, Adafruit_VL53L0X::VL53L0X_SENSE_HIGH_ACCURACY, 0, 0}
+        {&vlx[0], &Wire, 0x30, Constants::kWarehouseVLXxshutUpper, 0, Adafruit_VL53L0X::VL53L0X_SENSE_DEFAULT, 0, 0},
+        {&vlx[1], &Wire, 0x31, Constants::kWarehouseVLXxshutMid, 0, Adafruit_VL53L0X::VL53L0X_SENSE_DEFAULT, 0, 0},
+        {&vlx[2], &Wire, 0x32, Constants::kWarehouseVLXxshutLower, 0, Adafruit_VL53L0X::VL53L0X_SENSE_DEFAULT, 0, 0},
+        {&vlx[3], &Wire, 0x33, Constants::kElevatorVLXxshut, 0, Adafruit_VL53L0X::VL53L0X_SENSE_DEFAULT, 0, 0}
     };
 
     const int COUNT_SENSORS = sizeof(sensors) / sizeof(sensors[0]);

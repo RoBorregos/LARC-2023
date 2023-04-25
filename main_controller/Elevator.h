@@ -26,20 +26,20 @@ class Elevator{
             int direction = 0;
             unsigned long step_delay = 0;
             unsigned long last_step_time = 0;
-            int number_of_steps = 0;
-            int step = 0;
-            int steps_left = 0;
+            long int number_of_steps = 0;
+            long int step = 0;
+            long int steps_left = 0;
         };
         StepperC mStepper;
         Stepper* stepperPtr;
         unsigned long current_time = 0;
-        int current_position = 0;
+        long int current_position = 0;
         int steps_queued = 0;
     public:
         Elevator();
         void init(Stepper *stepper);
         void setSpeed(long speed);
-        void setSteps(int step);
+        void setSteps(long int step);
         void periodicIO();
         void setPosition(ElevatorPosition position);
         bool positionReached();

@@ -83,7 +83,7 @@ class Constants{
         static constexpr int kWarehouseVLXxshutLower = 50;
         static constexpr int kWarehouseUpperSpeed = 180;
         static constexpr int kWarehouseMidSpeed = 180;
-        static constexpr int kWarehouseLowerSpeed = 180;
+        static constexpr int kWarehouseLowerSpeed = 130;
 };
 
 #endif
