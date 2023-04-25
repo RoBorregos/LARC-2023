@@ -105,6 +105,22 @@ class DetectorColores:
 
     def get_objects(self, boxes, detections):
         res = []
+        #sort boxes full content by first parameter, then second, and save in new obj
+        sorted_boxes = []
+        sorted_detections = []
+        for box in boxes:
+            appended = False
+            for i in range(len(sorted_boxes)):
+                if sorted_boxes[i][1]>box[1] and abs(sorted_boxes[i][0]-box[0])<50:
+                    sorted_boxes.insert(i, box)
+                    sorted_detections.insert(i, detections[boxes.index(box)])
+                    appended = True
+                    break
+            if not appended:
+                sorted_boxes.append(box)
+                sorted_detections.append(detections[boxes.index(box)])
+        boxes = sorted_boxes
+        detections = sorted_detections
 
         pa = PoseArray()
         pa.header.frame_id = "camera_depth_frame"
