@@ -13,6 +13,9 @@ void laserScanCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg){
 
     // Fill in the point cloud data from the laser scan message
     // ros print ranges size
+    float x = 0;
+    float y = 0;
+    int sz = 0;
     for (int i = 0; i < scan_msg->ranges.size(); ++i){
         float range = scan_msg->ranges[i];
         if (std::isnan(range) || range < scan_msg->range_min || range > scan_msg->range_max)
@@ -20,12 +23,23 @@ void laserScanCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg){
             continue;
         }
         float angle = scan_msg->angle_min + i * scan_msg->angle_increment;
+        if(angle > 0.349 || angle < -0.349){
+            continue;
+        }
         pcl::PointXYZ point;
         point.x = range * std::cos(angle);
         point.y = range * std::sin(angle);
         point.z = 0;
         cloud->points.push_back(point);
+
+        x += point.x;
+        y += point.y;
+        sz++;
     }
+
+    x /= sz;
+    y /= sz;
+    ROS_INFO("Midpoint: %f, %f", x, y);
 
     // Downsample the point cloud using voxel grid filtering
     pcl::PointCloud<pcl::PointXYZ>::Ptr downsampled_cloud(new pcl::PointCloud<pcl::PointXYZ>);
@@ -45,16 +59,10 @@ void laserScanCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg){
 
     // Create a point cloud object for each cluster and publish it
     pcl::PointCloud<pcl::PointXYZ>::Ptr cluster_cloud(new pcl::PointCloud<pcl::PointXYZ>);
-    float x = 0;
-    float y = 0;
-    int sz = 0;
 
     for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin(); it != cluster_indices.end(); ++it){
         for (std::vector<int>::const_iterator pit = it->indices.begin(); pit != it->indices.end(); ++pit){
             cluster_cloud->points.push_back(downsampled_cloud->points[*pit]);
-            x += downsampled_cloud->points[*pit].x;
-            y += downsampled_cloud->points[*pit].y;
-            sz++;
         }
     }
     cluster_cloud->width = cluster_cloud->points.size();
@@ -64,10 +72,6 @@ void laserScanCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg){
     pcl::toROSMsg(*cluster_cloud, cloud_msg);
     cloud_msg.header = scan_msg->header;
     pub.publish(cloud_msg);
-    x /= sz;
-    y /= sz;
-    //print the first point of the cluster
-    ROS_INFO("First cluster midpoint: %f, %f", x, y);
 }
 
 int main(int argc, char **argv){

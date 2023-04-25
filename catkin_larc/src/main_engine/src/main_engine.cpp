@@ -23,7 +23,7 @@ class MainEngine{
         ros::Publisher pub_reset_odom;
 
         ros::Subscriber sub_odom;
-        ros::Suscriber sub_color_detect;
+        ros::Subscriber sub_color_detect;
         bool target_reached = true;
         pair<float, float> target_position;
         pair<float, float> current_position;
@@ -34,7 +34,11 @@ class MainEngine{
 
         ros::Time last_spin_time;
         bool color_sequence_detected = false;
-
+        bool color_detected[4] = {false, false, false, false};
+        int seq_id = 0;
+        float detection_max_size = 0;
+        float detection_max_y = 0;
+        float detection_y_pos[5] = {0, 0, 0, 0, 0};
 
     public:
         MainEngine(){ //constructor
@@ -49,7 +53,7 @@ class MainEngine{
 
             //init subscriber
             sub_odom = nh.subscribe("odom", 10, &MainEngine::odomCallback, this);
-            sub_color_detect = nh.subscribe("color_detect", 100, )
+            sub_color_detect = nh.subscribe("color_detect", 20, &MainEngine::colorDetectCallback, this);
 
             target_reached = true;
             state = 0;
@@ -60,8 +64,9 @@ class MainEngine{
         void run(){
             switch( state ){
                 case 0:
-                    timed_spin();
+                    timedSpin();
                     if( color_sequence_detected ){
+                        ROS_INFO(":)");
                         state = 1;
                     }
                 break;
@@ -69,7 +74,7 @@ class MainEngine{
         }
 
         void timedSpin(){
-            if( ros::Time::now().toSec() - last_spin_time.toSec() >= ros::Duration(5) ){
+            if( ros::Time::now() - last_spin_time >= ros::Duration(10) ){
                 geometry_msgs::Twist msg;
                 msg.linear.x = 0;
                 msg.linear.y = 0;
@@ -79,6 +84,7 @@ class MainEngine{
                 msg.angular.z = -0.5;
                 pub_cmd_vel.publish(msg);
                 last_spin_time = ros::Time::now();
+                seq_id = 5;
             }
         }
 
@@ -138,29 +144,46 @@ class MainEngine{
         }
 
         void colorDetectCallback(const vision::objectDetectionArray::ConstPtr& msg){
-            float detection_max_size = 0;
-            float detection_max_y = 0;
+            if( seq_id == 5 ){
+                int aux = 0;
+                int auxPos = 0;
+                for(int i=0; i<4; i++){
+                    if( color_detected[i] )
+                        aux++;
+                    color_detected[i] = false;
+                }
+                for(int i=0; i<5; i++){
+                    if( abs( detection_max_y - detection_y_pos[i] ) <= 40 )
+                        auxPos++;
+                    detection_y_pos[i] = 0;
+                }
+                if( aux >= 3 && auxPos >= 3 ){
+                    color_sequence_detected = true;
+                }
+                ROS_INFO("colors: %i, pos: %i", aux, auxPos);
+                seq_id = 0;
+                detection_max_size = 0;
+                detection_max_y = 0;
+            }
+
             for( auto detection : msg->detections ){
+                string color_name = detection.labelText;
+                if (color_name == "rojo")
+                    color_detected[0] = true;
+                else if(color_name == "verde")
+                    color_detected[1] = true;
+                else if(color_name == "azul")
+                    color_detected[2] = true;
+                else if(color_name == "amarillo")
+                    color_detected[3] = true;
+                
                 if( detection.xmax - detection.xmin > detection_max_size){
                     detection_max_size = detection.xmax - detection.xmin;
                     detection_max_y = (detection.ymax + detection.ymin) / 2;
                 }
+                detection_y_pos[seq_id] = (detection.ymax + detection.ymin) / 2;
             }
-            //find sequential detections with similar y as max_y
-            float detection_max_y_tolerance = 30;
-            float detection_x_distance_tolerance = 30;
-            int detection_count = 0;
-            for( auto detection : msg->detections ){
-                if( abs(detection_max_y - (detection.ymax + detection.ymin)/2) <= detection_max_y_tolerance ){
-                    detection_count++;
-                }
-            }
-            if( detection_count >= 3 ){
-                color_sequence_detected = true;
-            }
-            else{
-                color_sequence_detected = false;
-            }
+            seq_id++;
         }
 
         void manualCommand(){
