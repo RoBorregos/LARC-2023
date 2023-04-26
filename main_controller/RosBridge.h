@@ -34,7 +34,7 @@ class RosBridge{
 
         //Serial
         void readSerial();
-        static constexpr uint16_t kWatchdogPeriod = 500;
+        static constexpr uint16_t kWatchdogPeriod = 350;
         
         //Odometry
         float velX = 0.0;

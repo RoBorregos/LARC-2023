@@ -22,10 +22,9 @@ class LineDetector:
 
         #Suscriber topics changed for simulation
         self.sub = rospy.Subscriber('/zed2/zed_node/rgb/image_rect_color', Image, self.callback)
-        self.subscriberDepth = rospy.Subscriber("/zed2/zed_node/depth/depth_registered", Image, self.depthImageRosCallback)
-        self.subscriberInfo = rospy.Subscriber("/zed2/zed_node/depth/camera_info", CameraInfo, self.infoImageRosCallback)
+        #self.subscriberDepth = rospy.Subscriber("/zed2/zed_node/depth/depth_registered", Image, self.depthImageRosCallback)
+        #self.subscriberInfo = rospy.Subscriber("/zed2/zed_node/depth/camera_info", CameraInfo, self.infoImageRosCallback)
 
-        self.pubmask = rospy.Publisher('/mask_colores', Image, queue_size=10)
         self.mask  = None
         self.cv_image = np.array([])
         rospy.loginfo("Subscribed to image")
@@ -41,7 +40,7 @@ class LineDetector:
         lowMask = np.array([97,11,4],np.uint8)
         upperMask = np.array([179,84,152],np.uint8)
 
-        img = frame[0:, 480:1300]
+        img = frame
         h,w = img.shape[0:2]
         hsv = cv2.cvtColor(img,cv2.COLOR_BGR2HSV)
         mask = cv2.inRange(hsv,lowMask,upperMask)

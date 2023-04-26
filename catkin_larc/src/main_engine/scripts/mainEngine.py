@@ -15,13 +15,15 @@ from enum import Enum
 
 class State(Enum):
     SEARCH_HEADING = 0
-    ROTATE_POSITIONING = 1
-    POSITION_FOR_SWEEP = 2
-    ROTATE_PICK = 3
-    PICK = 4
-    MOVE2PICK = 5
-    DROP = 6
-    FINISH = 7
+    WAIT4ROTATION = 1
+    SET_SETPOINT = 2
+    ROTATE_POSITIONING = 3
+    POSITION_FOR_SWEEP = 4
+    ROTATE_PICK = 5
+    PICK = 6
+    MOVE2PICK = 7
+    DROP = 8
+    FINISH = 9
 
 class MainEngine:
     def __init__(self):
@@ -80,7 +82,6 @@ class MainEngine:
         if color_seq in self.static_color_seq and len(color_seq) >= 3:
             rospy.loginfo("Color sequence detected: " + color_seq)
             self.color_sequence_detected = True
-            self.pubGlobalSetpoint.publish(True)
             #get square from closer point x and adjacents
             x_square_label = data.detections[point_x_min_id].labelText
             x_square_cont = ""
@@ -115,11 +116,23 @@ class MainEngine:
                 self.driveSpin(1)
                 self.state_time = self.current_time
             if self.color_sequence_detected:
+                self.state = State.WAIT4ROTATION
+                self.state_time = self.current_time
+                rospy.loginfo("State changed to WAIT4ROTATION")
+
+        elif self.state == State.WAIT4ROTATION:
+            if (self.current_time - self.state_time).to_sec() > 4:
+                self.state = State.SET_SETPOINT
+                self.pubGlobalSetpoint.publish(True)
+                self.state_time = self.current_time
+                rospy.loginfo("State changed to SET_SETPOINT")
+        
+        elif self.state == State.SET_SETPOINT:
+            if (self.current_time - self.state_time).to_sec() > 3:
+                self.driveSpin(-1)
                 self.state = State.ROTATE_POSITIONING
-                self.color_sequence_detected = False
                 self.state_time = self.current_time
                 rospy.loginfo("State changed to ROTATE_POSITIONING")
-                self.driveSpin(-1)
 
         elif self.state == State.ROTATE_POSITIONING:
             if (self.current_time - self.state_time).to_sec() > 4:
@@ -173,7 +186,7 @@ class MainEngine:
     def driveFwdToLine(self):
         #publish to cmd_vel with linear velocity X = 0.5
         cmd_vel = Twist()
-        cmd_vel.linear.y = 0.5
+        cmd_vel.linear.y = 0.4
         self.pubCmdVel.publish(cmd_vel)
     
     def driveFwdTimed(self):

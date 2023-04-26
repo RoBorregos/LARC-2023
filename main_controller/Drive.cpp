@@ -11,21 +11,11 @@ void Drive::init( LineSensor *lineSensor ){
 
 void Drive::setSpeed(float linearX, float linearY, float angularZ){
     if( line_move ){
-        if( line_state==1 ){
-            if( lineSensor->lineDetected(SensorID::FrontLeft1) ){
-                frontLeft.setSpeed(0.7);
-                frontRight.setSpeed(0.7);
-                backLeft.setSpeed(0.7);
-                backRight.setSpeed(0.7);
-            }
-        }
-        if( line_state==2 ){
-            if( !lineSensor->lineDetected(SensorID::FrontLeft1) ){
-                frontLeft.setSpeed(0.6);
-                frontRight.setSpeed(0.6);
-                backLeft.setSpeed(0.6);
-                backRight.setSpeed(0.6);
-            }
+        if( !lineSensor->lineDetected(SensorID::BackLeft1) && !lineSensor->lineDetected(SensorID::BackRight2) ){
+            frontLeft.setSpeed(0.4);
+            frontRight.setSpeed(0.4);
+            backLeft.setSpeed(0.4);
+            backRight.setSpeed(0.4);
         }
         return;
     }
@@ -42,7 +32,7 @@ void Drive::setSpeed(float linearX, float linearY, float angularZ){
         spin_flag = false;
     }
 
-    if( abs(linearY) > 0.2 && !line_move ){
+    if( abs(linearY) == 0.4 && !line_move ){
         line_move = true;
         line_state = 1;
         return;
@@ -61,16 +51,15 @@ void Drive::setSpeed(float linearX, float linearY, float angularZ){
 
 void Drive::setAngle(float angle){
     this->angle = angle - global_setpoint;
-}
-
-void Drive::setGlobalSetpoint(){
-    this->global_setpoint = setpoint;
-    setpoint = 0;
-    //180 to -180
     if(this->angle > 180)
         this->angle -= 360;
     else if(this->angle < -180)
         this->angle += 360;
+}
+
+void Drive::setGlobalSetpoint(){
+    this->global_setpoint = angle;
+    setpoint = 0;
 }
 
 void Drive::stop(){
@@ -160,19 +149,13 @@ void Drive::periodicIO(unsigned long current_time){
         return;
 
     if( line_move ){
-        if( line_state==1 ){
-            if( !lineSensor->lineDetected(SensorID::FrontLeft1) )
-                line_state = 2;
-        }
-        if( line_state==2 ){
-            if( lineSensor->lineDetected(SensorID::FrontLeft1) ){
-                frontLeft.stop();
-                frontRight.stop();
-                backLeft.stop();
-                backRight.stop();
-                line_state = 0;
-                line_move = false;
-            }
+        if( lineSensor->lineDetected(SensorID::BackLeft1) || lineSensor->lineDetected(SensorID::BackRight2) ){
+            frontLeft.stop();
+            frontRight.stop();
+            backLeft.stop();
+            backRight.stop();
+            line_state = 0;
+            line_move = false;
         }
     }
 
@@ -187,8 +170,8 @@ void Drive::periodicIO(unsigned long current_time){
 
     unsigned long delta_time = current_time - last_time;
     float angleRad = angle * PI/180;
-    position.x += (velocity.x * cos(angleRad) + velocity.y * sin(angleRad)) * (delta_time * 0.001);
-    position.y += (velocity.x * sin(angleRad) + velocity.y * cos(angleRad)) * (delta_time * 0.001);
+    position.x += velocity.x  * (delta_time * 0.001);
+    position.y += velocity.y  * (delta_time * 0.001);
     position.theta = angle;
 
     error = (angle - setpoint);
