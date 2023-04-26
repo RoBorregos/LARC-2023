@@ -389,13 +389,13 @@ public:
     void cropImage(cv::Mat &img, ObjectParams obj)
     {
         ROS_INFO_STREAM("---------------------Entreeeee a crop---------------------");
-        float margin = 0.05; // 5cm
+        float margin = 0.04; // 5cm
         // Get Points and Project Points To Pixel
         float pixel_left_up[2];
         float point_left_up[3];
-        point_left_up[0] = obj.max_x + margin;
-        point_left_up[1] = obj.max_y + margin;
-        point_left_up[2] = obj.max_z + margin;
+        point_left_up[0] = obj.max_x;
+        point_left_up[1] = obj.max_y;
+        point_left_up[2] = obj.max_z + margin*2;
         // Transform point to camera frame
         tf::StampedTransform transform;
         try
@@ -427,7 +427,7 @@ public:
         float pixel_right_down[2];
         float point_right_down[3];
         point_right_down[0] = obj.min_x - margin;
-        point_right_down[1] = obj.max_y + margin;
+        point_right_down[1] = obj.max_y ;
         point_right_down[2] = obj.min_z - margin;
         // Transform point to camera frame
         tf::Vector3 point_rd(point_right_down[0], point_right_down[1], point_right_down[2]);
