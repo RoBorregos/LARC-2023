@@ -7,6 +7,6 @@
     </node>
 
     <!-- Static transform map -->
-    <node pkg="tf" type="static_transform_publisher" name="map_to_cam" args="0.001 0.1 1.5325 -1.54 0.822 0 map base_link 30" />
+    <node pkg="tf" type="static_transform_publisher" name="map_to_cam" args="0.001 0.1 1.5325 -1.54 0.733038 0 map base_link 30" />
 
 </launch>
