@@ -40,6 +40,7 @@ class MainEngine:
         self.state = State.SEARCH_HEADING
         self.odom = Odometry()
         self.static_color_seq = "GBYRYBG" # static color sequence
+        self.xSquare = 0
         self.color_sequence_detected = False
 
     def odomCallback(self, data):
@@ -52,6 +53,7 @@ class MainEngine:
     
         y_min_first = data.detections[0].ymin
         x_last_max = data.detections[0].xmax
+        point_x_min_id = 0
         color_seq = ""
     
         for i in range(sz):
@@ -67,12 +69,39 @@ class MainEngine:
                 color_seq += "Y"
 
             x_last_max = data.detections[i].xmax
+            if( abs(data.detections[i].point3D.x) < abs(data.detections[point_x_min_id].point3D.x)):
+                point_x_min_id = i
 
         #check if subsequence
         if color_seq in self.static_color_seq and len(color_seq) >= 3:
             rospy.loginfo("Color sequence detected: " + color_seq)
             self.color_sequence_detected = True
             self.pubGlobalSetpoint.publish(True)
+            #get square from closer point x and adjacents
+            x_square_label = data.detections[point_x_min_id].labelText
+            x_square_cont = ""
+            if point_x_min_id > 0:
+                x_square_cont = data.detections[point_x_min_id - 1].labelText + x_square_label
+            else:
+                x_square_cont = x_square_label + data.detections[point_x_min_id + 1].labelText
+
+            if x_square_label == "verde" and x_square_cont == "verdeazul":
+                self.xSquare = 1
+            elif x_square_label == "azul" and (x_square_cont == "verdeazul" or x_square_cont == "azulamarillo"):
+                self.xSquare = 2
+            elif x_square_label == "amarillo" and (x_square_cont == "azulamarillo" or x_square_cont == "rojoamarillo"):
+                self.xSquare = 3
+            elif x_square_label == "rojo":
+                self.xSquare = 4
+            elif x_square_label == "amarillo" and (x_square_cont == "rojoamarillo" or x_square_cont == "amarilloazul"):
+                self.xSquare = 5
+            elif x_square_label == "azul" and (x_square_cont == "amarilloazul" or x_square_cont == "azulverde"):
+                self.xSquare = 6
+            elif x_square_label == "verde" and x_square_cont == "azulverde":
+                self.xSquare = 7
+
+            print( "x_square: " + str(self.xSquare) )
+            
 
     def run(self):
         self.current_time = rospy.Time.now()
