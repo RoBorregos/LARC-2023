@@ -9,9 +9,9 @@ from nav_msgs.msg import Odometry
 from vision.msg import objectDetection, objectDetectionArray
 from enum import Enum
 
-import sys
+#import sys
 
-sys.path.append(str(pathlib.Path(__file__).parent) + '/../include')
+#sys.path.append(str(pathlib.Path(__file__).parent) + '/../include')
 
 class State(Enum):
     SEARCH_HEADING = 0
