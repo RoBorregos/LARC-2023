@@ -21,6 +21,7 @@ class MainEngine{
         ros::Publisher pub_elevator;
         ros::Publisher pub_warehouse;
         ros::Publisher pub_reset_odom;
+        ros::Publisher pub_global_setpoint;
 
         ros::Subscriber sub_odom;
         ros::Subscriber sub_color_detect;
@@ -33,12 +34,18 @@ class MainEngine{
         int state = 0;
 
         ros::Time last_spin_time;
+        ros::Time state_time;
         bool color_sequence_detected = false;
         bool color_detected[4] = {false, false, false, false};
         int seq_id = 0;
         float detection_max_size = 0;
         float detection_max_y = 0;
         float detection_y_pos[5] = {0, 0, 0, 0, 0};
+        string static_color_seq = "gbyrybg";
+
+        geometry_msgs::Twist twist_msg;
+        std_msgs::Int32 int_msg;
+        std_msgs::Bool bool_msg;
 
     public:
         MainEngine(){ //constructor
@@ -50,6 +57,7 @@ class MainEngine{
             pub_elevator = nh.advertise<std_msgs::Int32>("elevator", 10);
             pub_warehouse = nh.advertise<std_msgs::Int32>("warehouse", 10);
             pub_reset_odom = nh.advertise<std_msgs::Bool>("reset_odom", 5);
+            pub_global_setpoint = nh.advertise<std_msgs::Bool>("global_setpoint", 10);
 
             //init subscriber
             sub_odom = nh.subscribe("odom", 10, &MainEngine::odomCallback, this);
@@ -64,37 +72,74 @@ class MainEngine{
         void run(){
             switch( state ){
                 case 0:
-                    timedSpin();
+                    timedSpin(-1);
                     if( color_sequence_detected ){
-                        ROS_INFO(":)");
+                        ROS_INFO("0");
+                        bool_msg.data = true;
+                        pub_global_setpoint.publish(bool_msg);
+                        state_time = ros::Time::now();
                         state = 1;
+                    } 
+                    break;
+                case 1:
+                    if( ros::Time::now() - state_time >= ros::Duration(3) ){ 
+                        ROS_INFO("1");          
+                        bool_msg.data = true;
+                        pub_reset_odom.publish(bool_msg);
+
+                        target_position = make_pair(0, -0.5);
+                        target_reached = false;
+                        state = 2;
                     }
-                break;
+                    break;
+                case 2:
+                    followTarget();
+                    if( target_reached ){
+                        ROS_INFO("2");
+                        twist_msg.linear.x = 0;
+                        twist_msg.linear.y = 0;
+                        twist_msg.linear.z = 0;
+                        twist_msg.angular.x = 0;
+                        twist_msg.angular.y = 0;
+                        twist_msg.angular.z = 0;
+                        pub_cmd_vel.publish(twist_msg);
+                        state_time = ros::Time::now();
+
+                        state = 3;
+                    }
+                    break;
+                case 3:
+                    if( ros::Time::now() - state_time >= ros::Duration(3) ){                        
+                        bool_msg.data = true;
+                        pub_reset_odom.publish(bool_msg);
+                        int_msg.data = 1;
+                        pub_intake.publish(int_msg);
+
+                        target_position = make_pair(-0.2, 0);
+                        target_reached = false;
+                        state = 4;
+                    }
+                    break;
             }
         }
 
-        void timedSpin(){
-            if( ros::Time::now() - last_spin_time >= ros::Duration(10) ){
+        void timedSpin(int dir){
+            if( ros::Time::now() - last_spin_time >= ros::Duration(4) ){
                 geometry_msgs::Twist msg;
                 msg.linear.x = 0;
                 msg.linear.y = 0;
                 msg.linear.z = 0;
                 msg.angular.x = 0;
                 msg.angular.y = 0;
-                msg.angular.z = -0.5;
+                msg.angular.z = 0.5 * dir;
                 pub_cmd_vel.publish(msg);
                 last_spin_time = ros::Time::now();
-                seq_id = 5;
             }
         }
 
 
         void followTarget(){
-            if( target_reached ){
-                target_position = readTarget();
-                target_reached = false;
-            }
-            else{
+            if( !target_reached ){
                 if( abs(current_position.first - target_position.first) <= tolerance && abs(current_position.second - target_position.second) <= tolerance ){
                     target_reached = true;
                     //rosinfo target reached
@@ -144,46 +189,33 @@ class MainEngine{
         }
 
         void colorDetectCallback(const vision::objectDetectionArray::ConstPtr& msg){
-            if( seq_id == 5 ){
-                int aux = 0;
-                int auxPos = 0;
-                for(int i=0; i<4; i++){
-                    if( color_detected[i] )
-                        aux++;
-                    color_detected[i] = false;
-                }
-                for(int i=0; i<5; i++){
-                    if( abs( detection_max_y - detection_y_pos[i] ) <= 40 )
-                        auxPos++;
-                    detection_y_pos[i] = 0;
-                }
-                if( aux >= 3 && auxPos >= 3 ){
-                    color_sequence_detected = true;
-                }
-                ROS_INFO("colors: %i, pos: %i", aux, auxPos);
-                seq_id = 0;
-                detection_max_size = 0;
-                detection_max_y = 0;
+            int sz = msg->detections.size();
+            if( sz == 0 )
+                return;
+            float y_min_first = msg->detections[0].ymin;
+            float x_last_max = msg->detections[0].xmax;
+            string color_seq = "";
+            for( int i=1; i<sz; i++ ){
+                if( abs( msg->detections[i].ymin - y_min_first ) >= 50 || abs( msg->detections[i].xmin - x_last_max ) >= 50 )
+                    break;
+                if( msg->detections[i].labelText == "rojo" )
+                    color_seq += "r";
+                else if( msg->detections[i].labelText == "verde" )
+                    color_seq += "g";
+                else if( msg->detections[i].labelText == "azul" )
+                    color_seq += "b";
+                else if( msg->detections[i].labelText == "amarillo" )
+                    color_seq += "y";
+
+                x_last_max = msg->detections[i].xmax;
             }
 
-            for( auto detection : msg->detections ){
-                string color_name = detection.labelText;
-                if (color_name == "rojo")
-                    color_detected[0] = true;
-                else if(color_name == "verde")
-                    color_detected[1] = true;
-                else if(color_name == "azul")
-                    color_detected[2] = true;
-                else if(color_name == "amarillo")
-                    color_detected[3] = true;
-                
-                if( detection.xmax - detection.xmin > detection_max_size){
-                    detection_max_size = detection.xmax - detection.xmin;
-                    detection_max_y = (detection.ymax + detection.ymin) / 2;
-                }
-                detection_y_pos[seq_id] = (detection.ymax + detection.ymin) / 2;
+            //check if color sequence is subsequence of static color sequence
+            if( static_color_seq.find(color_seq) != string::npos && color_seq.size() >= 2 ){
+                color_sequence_detected = true;
             }
-            seq_id++;
+
+            ROS_INFO("colors: %s", color_seq.c_str());
         }
 
         void manualCommand(){

@@ -9,13 +9,24 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
   vision
+  message_generation
 )
 
+add_message_files(
+  DIRECTORY msg
+  FILES
+  lineSensor.msg
+)
 
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+)
 catkin_package(
   #INCLUDE_DIRS include
   CATKIN_DEPENDS roscpp rospy std_msgs vision
   DEPENDS system_lib
+  message_runtime 
 )
 
 include_directories(

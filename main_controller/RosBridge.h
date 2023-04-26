@@ -6,6 +6,7 @@
 #include "Intake.h"
 #include "Elevator.h"
 #include "Warehouse.h"
+#include "LineSensor.h"
 
 class RosBridge{
     private:
@@ -13,6 +14,7 @@ class RosBridge{
         Intake *_intake;
         Elevator *_elevator;
         Warehouse *_warehouse;
+        LineSensor *_lineSensor;
 
         //////////////////////////////////Velocity Suscriber//////////////////////////////////////
         // Receives velocity commands.
@@ -57,7 +59,7 @@ class RosBridge{
         void executeCommand(uint8_t packet_size, uint8_t command, uint8_t* buffer);
         void writeSerial(bool success, uint8_t* payload, int elements);
     public:
-        void init(Drive *drive, Intake *intake, Elevator *elevator, Warehouse *warehouse);
+        void init(Drive *drive, Intake *intake, Elevator *elevator, Warehouse *warehouse, LineSensor *lineSensor);
         void spin(unsigned long current_time);
 };
 

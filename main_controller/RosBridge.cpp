@@ -1,10 +1,11 @@
 #include "RosBridge.h"
 
-void RosBridge::init(Drive *drive, Intake *intake, Elevator *elevator, Warehouse *warehouse){
+void RosBridge::init(Drive *drive, Intake *intake, Elevator *elevator, Warehouse *warehouse, LineSensor *lineSensor){
     _drive = drive;
     _intake = intake;
     _elevator = elevator;
     _warehouse = warehouse;
+    _lineSensor = lineSensor;
 }
 
 //Read serial/////////////////////////////////////////////////////////
@@ -58,9 +59,9 @@ void RosBridge::readSerial() {
 
 //////////////////////////////////Velocity Suscriber//////////////////////////////////////
 void RosBridge::velocityCallback(float linearx, float lineary, float angularz) {
-    linearX_ = linearx * 3;
-    linearY_ = lineary * 3;
-    angularZ_ = angularz * 3;
+    linearX_ = linearx;
+    linearY_ = lineary;
+    angularZ_ = angularz;
     watchdog_timer_ = millis();
 }
 
@@ -192,6 +193,27 @@ void RosBridge::executeCommand(uint8_t packet_size, uint8_t command, uint8_t* bu
             int level;
             memcpy(&level, buffer, sizeof(level));
             warehouseCallback(level);
+            writeSerial(true, nullptr, 0);
+        }
+        break;
+        case 0x0B: // Send Line Sensor
+        if (packet_size == 1) { // Check packet size
+            char data[] = {
+                _lineSensor->lineDetected(SensorID::FrontLeft1)? '1' : '0',
+                _lineSensor->lineDetected(SensorID::FrontLeft2)? '1' : '0',
+                _lineSensor->lineDetected(SensorID::FrontRight1)? '1' : '0',
+                _lineSensor->lineDetected(SensorID::FrontRight2)? '1' : '0',
+                _lineSensor->lineDetected(SensorID::BackLeft1)? '1' : '0',
+                _lineSensor->lineDetected(SensorID::BackLeft2)? '1' : '0',
+                _lineSensor->lineDetected(SensorID::BackRight1)? '1' : '0',
+                _lineSensor->lineDetected(SensorID::BackRight2)? '1' : '0'
+            };
+            writeSerial(true, (uint8_t*)data, sizeof(data));
+        }
+        break;
+        case 0x0D: // Receive set global setpoint
+        if(packet_size == 1){
+            _drive->setGlobalSetpoint();
             writeSerial(true, nullptr, 0);
         }
         break;

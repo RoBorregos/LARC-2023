@@ -32,7 +32,17 @@ void Drive::setSpeed(float linearX, float linearY, float angularZ){
 }
 
 void Drive::setAngle(float angle){
-    this->angle = angle;
+    this->angle = angle - global_setpoint;
+    setpoint = 0;
+    //180 to -180
+    if(this->angle > 180)
+        this->angle -= 360;
+    else if(this->angle < -180)
+        this->angle += 360;
+}
+
+void Drive::setGlobalSetpoint(){
+    this->global_setpoint = angle;
 }
 
 void Drive::stop(){

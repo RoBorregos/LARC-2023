@@ -65,7 +65,7 @@ void setup() {
 
 void loop() {
     //encoder 
-    ///*
+    /*
     Serial.print("EN// E1: ");
     Serial.print(digitalRead(EN1));
     Serial.print(" ");
@@ -85,7 +85,7 @@ void loop() {
     //*/
 
     //multiplexor test
-    /*
+    ///*
     Serial.print("Li//");
     for (int i = 0; i < 16; i++) {
         digitalWrite(S0, i & 1);
@@ -94,7 +94,7 @@ void loop() {
         digitalWrite(S3, i & 8);
         //Serial.print(" ");
         //Serial.print(analogRead(SIG));
-        if( abs(analogRead(SIG)-last_value[i]) > 30){
+        if( analogRead(SIG) > 800){
             Serial.print(i);
             Serial.print(" ");
         }

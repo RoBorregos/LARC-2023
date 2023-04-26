@@ -15,6 +15,7 @@ Drive mDrive;
 Elevator mElevator;
 Intake mIntake;
 Warehouse mWarehouse;
+LineSensor mLineSensor;
 RosBridge ros;
 
 bool ENABLE_ROS = true;
@@ -51,7 +52,7 @@ void setup(){
     debug_time = current_time;
 
     if( ENABLE_ROS )
-        ros.init(&mDrive, &mIntake, &mElevator, &mWarehouse);
+        ros.init(&mDrive, &mIntake, &mElevator, &mWarehouse, &mLineSensor);
 
     //mIntake.setAction(IntakeActions::Pick);
     //mElevator.setPosition(ElevatorPosition::FirstIn);

@@ -33,6 +33,7 @@ class Drive{
         Pose2d position;
         float angle;
         float setpoint;
+        float global_setpoint = 0;
         float error;
         float last_error;
         unsigned long last_time = 0;
@@ -41,6 +42,7 @@ class Drive{
         void init();
         void setSpeed(float linearX, float linearY, float angularZ);
         void setAngle(float angle);
+        void setGlobalSetpoint();
         void stop();
         void periodicIO(unsigned long current_time);
         void encoderInterrupt(MotorID motorID);

@@ -111,7 +111,7 @@ class DetectorColores:
         for box in boxes:
             appended = False
             for i in range(len(sorted_boxes)):
-                if sorted_boxes[i][1]>box[1] and abs(sorted_boxes[i][0]-box[0])<50:
+                if sorted_boxes[i][1]>box[1] and abs(sorted_boxes[i][0]-box[0])<50 or sorted_boxes[i][0]-box[0]>50:
                     sorted_boxes.insert(i, box)
                     sorted_detections.insert(i, detections[boxes.index(box)])
                     appended = True
@@ -172,11 +172,12 @@ class DetectorColores:
         azulBajo = np.array([110,130,45],np.uint8)
         azulAlto = np.array([125,255,255],np.uint8)
 
-        verdeBajo = np.array([50,100,20],np.uint8)
-        verdeAlto = np.array([80,255,255],np.uint8)
+        verdeBajo = np.array([35,94,71],np.uint8)
+        verdeAlto = np.array([61,208,166],np.uint8)
 
         amarillobajo = np.array([15,100,20],np.uint8)
         amarilloalto = np.array([45,255,255],np.uint8) 
+
 
         font = cv2.FONT_HERSHEY_SIMPLEX
 

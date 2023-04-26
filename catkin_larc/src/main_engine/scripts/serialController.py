@@ -5,6 +5,7 @@ import rospy
 from geometry_msgs.msg import Twist
 from geometry_msgs.msg import Vector3
 from std_srvs.srv import Trigger, TriggerResponse
+from main_engine.msg import lineSensor
 import os, time
 import _thread
 
@@ -308,13 +309,12 @@ class Microcontroller:
            return self.FAIL
     
     def line_sensors(self):
-        cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x01, 0x07) + struct.pack("B", 0x08)
- 
+        cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x01, 0x0B) + struct.pack("B", 0x0C)
         if (self.execute(cmd_str))==1 and self.payload_ack == b'\x00':
-           val = struct.unpack('i', self.payload_args)
-           return  self.SUCCESS, val
+           fl1, fl2, fr1, fr2, bl1, bl2, br1, br2 = struct.unpack('8c', self.payload_args)
+           return  self.SUCCESS, fl1, fl2, fr1, fr2, bl1, bl2, br1, br2
         else:
-            return self.FAIL, 0
+            return self.FAIL, 0, 0, 0, 0, 0, 0, 0, 0
         
     def warehouse(self, level):
         cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x05, 0x0A) + struct.pack("i", level) + struct.pack("B", 0x0B)
@@ -322,6 +322,13 @@ class Microcontroller:
            return  self.SUCCESS
         else:
            return self.FAIL
+
+    def set_global_setpoint(self):
+        cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x01, 0x0D) + struct.pack("B", 0x0E)
+        if (self.execute(cmd_str))==1 and self.payload_ack == b'\x00':
+            return self.SUCCESS
+        else:
+            return self.FAIL
         
     def stop(self):
         ''' Stop both motors.
@@ -399,13 +406,15 @@ class BaseController:
         self.warehouse = 0 
         self.line_sensor = 0
 
+        self.global_setpoint = 0
         # Subscriptions
         rospy.Subscriber("cmd_vel", Twist, self.cmdVelCallback)
 
         rospy.Subscriber("intake", Int32, self.intakeCallback)
         rospy.Subscriber("elevator", Int32, self.elevatorCallback)
         rospy.Subscriber("warehouse", Int32, self.warehouseCallback)
-        self.line_sensor_pub = rospy.Publisher("line_sensors", Int32, queue_size=5)
+        rospy.Subscriber("global_setpoint", Bool, self.globalSetpointCallback)
+        self.line_sensor_pub = rospy.Publisher("line_sensors", lineSensor, queue_size=5)
         
         # Clear any old odometry info
         #self.Microcontroller.reset_encoders()
@@ -455,6 +464,11 @@ class BaseController:
             except:
                 rospy.logerr("request to reset imu exception ")
 
+    def globalSetpointCallback(self, req):
+        if req.data:
+            print("jkdsjkasjkds")
+            self.Microcontroller.set_global_setpoint()
+
     def poll(self):
         now = rospy.Time.now()
         if now > self.t_next:
@@ -493,8 +507,35 @@ class BaseController:
 
             self.odomPub.publish(odom)
 
-            #ack, self.line_sensor = self.Microcontroller.line_sensors()
-            #self.line_sensor_pub.publish(self.line_sensor)
+            """
+            fl1 = '0'
+            fl2 = '0'
+            fr1 = '0'
+            fr2 = '0'
+            bl1 = '0'
+            bl2 = '0'
+            br1 = '0'
+            br2 = '0'
+            try:
+                ack, fl1, fl2, fr1, fr2, bl1, bl2, br1, br2 = self.Microcontroller.get_line_sensors()
+                if ack==self.FAIL:
+                    rospy.logerr("get line sensors failed ")
+                    return
+            except:
+                rospy.logerr("get line sensors exception ")
+                return
+
+            line_data = lineSensor()
+            line_data.frontLeft1 = fl1
+            line_data.frontLeft2 = fl2
+            line_data.frontRight1 = fr1
+            line_data.frontRight2 = fr2
+            line_data.backLeft1 = bl1
+            line_data.backLeft2 = bl2
+            line_data.backRight1 = br1
+            line_data.backRight2 = br2
+            self.line_sensor_pub.publish(line_data)
+            """
             
             if now > (self.last_cmd_vel + rospy.Duration(self.timeout)):
                 self.v_x = 0
