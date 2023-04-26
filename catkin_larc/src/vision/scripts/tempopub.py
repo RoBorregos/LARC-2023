@@ -16,7 +16,7 @@ class tempo():
         rospy.init_node('posting', anonymous=True)
         while not rospy.is_shutdown():
 
-            img = "/home/jabv/Desktop/LARC-2023/Vision/A.png"
+            img = "/home/jabv/Desktop/LARC-2023/Vision/1.png"
             #change image to a numpy array
             img = cv2.imread(img)
 
