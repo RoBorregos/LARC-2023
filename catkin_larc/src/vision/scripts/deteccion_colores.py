@@ -27,9 +27,9 @@ class DetectorColores:
         #self.subscriberInfo = rospy.Subscriber("/zed2/zed_node/depth/camera_info", CameraInfo, self.infoImageRosCallback)
 
         self.sub = rospy.Subscriber('/camera/rgb/image_raw', Image, self.callback)
+        self.pcsubs = rospy.Subscriber("/object", Image, self.pc_callback)
         self.subscriberDepth = rospy.Subscriber("/camera/depth/image_raw", Image, self.depthImageRosCallback)
         self.subscriberInfo = rospy.Subscriber("/camera/depth/camera_info", CameraInfo, self.infoImageRosCallback)
-        self.pcsubs = rospy.Subscriber("/object", Image, self.pc_callback)
         
         
         self.pubmask = rospy.Publisher('/mask_colores', Image, queue_size=10)
@@ -38,13 +38,7 @@ class DetectorColores:
         rospy.loginfo("Subscribed to image")
         self.main()
     
-    def pc_callback(self, data):
-        try:
-            self.cv_image = self.bridge.imgmsg_to_cv2(data,desired_encoding="bgr8")
-            self.detectar_colores()
-        except CvBridgeError as e:
-            print(e)
-    
+  
     def depthImageRosCallback(self, data):
         try:
             self.depth_image = self.bridge.imgmsg_to_cv2(data, "32FC1")
@@ -56,6 +50,8 @@ class DetectorColores:
     def infoImageRosCallback(self, data):
         self.camera_info = data
         self.subscriberInfo.unregister()
+    
+   
 
     def dibujar(self,mask,color):
         frame= self.cv_image
@@ -85,23 +81,38 @@ class DetectorColores:
                 if color == (255,0,0):
                     print('azul')
                     detections.append('azul')
+                    self.pubcolor.publish('azul')
                     
                 if color == (0,255,0):
                     print('verde')
                     detections.append('verde')
+                    self.pubcolor.publish('verde')
 
                 if color == (0,0,255):
                     print('rojo')   
                     detections.append('rojo')
+                    self.pubcolor.publish('rojo')
 
                 if color == (0,255,255):
                     print('amarillo')
                     detections.append('amarillo')
+                    self.pubcolor.publish('amarillo')
 
                 cv2.drawContours(frame,[nuevoContorno],0,color,3)
                 bb.append(tempo)
-        self.get_objects(bb, detections)
+        try:
+            self.get_objects(bb, detections)
+        except:
+            pass
 
+    def pc_callback(self, data):
+        try:
+            self.cv_image = self.bridge.imgmsg_to_cv2(data,desired_encoding="bgr8")
+            self.detectar_colores()
+            self.pubcolor = rospy.Publisher('colors', String, queue_size=10)
+        except CvBridgeError as e:
+            print(e)
+    
 
     def callback(self, data):
         # rospy.loginfo(data.data)
