@@ -6,6 +6,7 @@ void Drive::init( LineSensor *lineSensor ){
     backLeft.init(Constants::kBackLeftPWM, Constants::kBackLeftA, Constants::kBackLeftB, Constants::kBackLeftEncoder);
     backRight.init(Constants::kBackRightPWM, Constants::kBackRightA, Constants::kBackRightB, Constants::kBackRightEncoder);
     this->lineSensor = lineSensor;
+    line_move = false;
 }
 
 void Drive::setSpeed(float linearX, float linearY, float angularZ){
@@ -16,21 +17,17 @@ void Drive::setSpeed(float linearX, float linearY, float angularZ){
                 frontRight.setSpeed(0.7);
                 backLeft.setSpeed(0.7);
                 backRight.setSpeed(0.7);
-            } else {
-                line_state = 2;
             }
         }
         if( line_state==2 ){
             if( !lineSensor->lineDetected(SensorID::FrontLeft1) ){
-                frontLeft.setSpeed(0.7);
-                frontRight.setSpeed(0.7);
-                backLeft.setSpeed(0.7);
-                backRight.setSpeed(0.7);
-            } else {
-                line_state = 0;
-                line_move = false;
+                frontLeft.setSpeed(0.6);
+                frontRight.setSpeed(0.6);
+                backLeft.setSpeed(0.6);
+                backRight.setSpeed(0.6);
             }
         }
+        return;
     }
 
     float wheelPosX = Constants::kWheelBase/2;
@@ -64,16 +61,16 @@ void Drive::setSpeed(float linearX, float linearY, float angularZ){
 
 void Drive::setAngle(float angle){
     this->angle = angle - global_setpoint;
+}
+
+void Drive::setGlobalSetpoint(){
+    this->global_setpoint = setpoint;
     setpoint = 0;
     //180 to -180
     if(this->angle > 180)
         this->angle -= 360;
     else if(this->angle < -180)
         this->angle += 360;
-}
-
-void Drive::setGlobalSetpoint(){
-    this->global_setpoint = angle;
 }
 
 void Drive::stop(){
@@ -161,6 +158,23 @@ void Drive::resetOdometry(){
 void Drive::periodicIO(unsigned long current_time){
     if( current_time - last_time < loop_time)
         return;
+
+    if( line_move ){
+        if( line_state==1 ){
+            if( !lineSensor->lineDetected(SensorID::FrontLeft1) )
+                line_state = 2;
+        }
+        if( line_state==2 ){
+            if( lineSensor->lineDetected(SensorID::FrontLeft1) ){
+                frontLeft.stop();
+                frontRight.stop();
+                backLeft.stop();
+                backRight.stop();
+                line_state = 0;
+                line_move = false;
+            }
+        }
+    }
 
     frontLeft.periodicIO(current_time);
     frontRight.periodicIO(current_time);

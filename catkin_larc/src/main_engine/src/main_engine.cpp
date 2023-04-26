@@ -265,7 +265,7 @@ int main(int argc, char **argv){
     MainEngine mainEngine;
 
     while (ros::ok()){
-        mainEngine.run();
+        mainEngine.manualCommand();
         ros::Rate(10).sleep();
         ros::spinOnce(); 
     }

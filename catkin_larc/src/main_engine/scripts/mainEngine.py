@@ -17,8 +17,11 @@ class State(Enum):
     SEARCH_HEADING = 0
     ROTATE_POSITIONING = 1
     POSITION_FOR_SWEEP = 2
-    PICK = 3
-    DROP = 4 
+    ROTATE_PICK = 3
+    PICK = 4
+    MOVE2PICK = 5
+    DROP = 6
+    FINISH = 7
 
 class MainEngine:
     def __init__(self):
@@ -52,13 +55,13 @@ class MainEngine:
             return
     
         y_min_first = data.detections[0].ymin
-        x_last_max = data.detections[0].xmax
+        x_last_max = data.detections[0].xmin
         point_x_min_id = 0
         color_seq = ""
     
         for i in range(sz):
             if abs(data.detections[i].ymin - y_min_first) >= 50 or abs(data.detections[i].xmin - x_last_max) >= 50:
-                break
+                continue
             if data.detections[i].labelText == "rojo":
                 color_seq += "R"
             elif data.detections[i].labelText == "verde":
@@ -73,6 +76,7 @@ class MainEngine:
                 point_x_min_id = i
 
         #check if subsequence
+        #print(color_seq)
         if color_seq in self.static_color_seq and len(color_seq) >= 3:
             rospy.loginfo("Color sequence detected: " + color_seq)
             self.color_sequence_detected = True
@@ -86,19 +90,19 @@ class MainEngine:
                 x_square_cont = x_square_label + data.detections[point_x_min_id + 1].labelText
 
             if x_square_label == "verde" and x_square_cont == "verdeazul":
-                self.xSquare = 1
+                self.xSquare = 7
             elif x_square_label == "azul" and (x_square_cont == "verdeazul" or x_square_cont == "azulamarillo"):
-                self.xSquare = 2
+                self.xSquare = 6
             elif x_square_label == "amarillo" and (x_square_cont == "azulamarillo" or x_square_cont == "rojoamarillo"):
-                self.xSquare = 3
+                self.xSquare = 5
             elif x_square_label == "rojo":
                 self.xSquare = 4
             elif x_square_label == "amarillo" and (x_square_cont == "rojoamarillo" or x_square_cont == "amarilloazul"):
-                self.xSquare = 5
+                self.xSquare = 3
             elif x_square_label == "azul" and (x_square_cont == "amarilloazul" or x_square_cont == "azulverde"):
-                self.xSquare = 6
+                self.xSquare = 2
             elif x_square_label == "verde" and x_square_cont == "azulverde":
-                self.xSquare = 7
+                self.xSquare = 1
 
             print( "x_square: " + str(self.xSquare) )
             
@@ -126,30 +130,55 @@ class MainEngine:
 
         elif self.state == State.POSITION_FOR_SWEEP:
             if (self.current_time - self.state_time).to_sec() > 4:
+                self.state = State.ROTATE_PICK
+                self.state_time = self.current_time
+                rospy.loginfo("State changed to ROTATE_PICK")
+                self.driveSpin(-1)
+        
+        elif self.state == State.ROTATE_PICK:
+            if(self.current_time - self.state_time).to_sec() > 4:
+                self.pubIntake.publish(1)
                 self.state = State.PICK
                 self.state_time = self.current_time
                 rospy.loginfo("State changed to PICK")
-                self.driveSpin(-1)
-                self.pubIntake.publish(1)
-        
+
         elif self.state == State.PICK:
             if(self.current_time - self.state_time).to_sec() > 4:
-                self.driveFwdToLine()
+                self.driveFwdTimed()
+                self.state = State.MOVE2PICK
+                self.state_time = self.current_time
+                rospy.loginfo("State changed to MOVE2PICK")
+        
+        elif self.state == State.MOVE2PICK:
+            if(self.current_time - self.state_time).to_sec() > 4:
+                self.pubElevator.publish(2)
                 self.state = State.DROP
                 self.state_time = self.current_time
                 rospy.loginfo("State changed to DROP")
+        
+        elif self.state == State.DROP:
+            if(self.current_time - self.state_time).to_sec() > 4:
+                self.pubIntake.publish(4)
+                self.state = State.FINISH
+                self.state_time = self.current_time
+                rospy.loginfo("State changed to FINISH")
 
 
     def driveSpin(self, dir):
         #publish to cmd_vel with angular velocity Z = dir * 0.5
         cmd_vel = Twist()
-        cmd_vel.angular.z = dir * 0.5
+        cmd_vel.angular.z = -dir * 0.5
         self.pubCmdVel.publish(cmd_vel)
 
     def driveFwdToLine(self):
         #publish to cmd_vel with linear velocity X = 0.5
         cmd_vel = Twist()
         cmd_vel.linear.y = 0.5
+        self.pubCmdVel.publish(cmd_vel)
+    
+    def driveFwdTimed(self):
+        cmd_vel = Twist()
+        cmd_vel.linear.x = 0.4
         self.pubCmdVel.publish(cmd_vel)
 
 if __name__ == '__main__':

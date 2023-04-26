@@ -43,7 +43,7 @@ class Drive{
         int line_state = 0;
         LineSensor *lineSensor;
     public:
-        void init(*LineSensor lineSensor);
+        void init(LineSensor *lineSensor);
         void setSpeed(float linearX, float linearY, float angularZ);
         void setAngle(float angle);
         void setGlobalSetpoint();

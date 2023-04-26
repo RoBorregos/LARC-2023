@@ -466,7 +466,6 @@ class BaseController:
 
     def globalSetpointCallback(self, req):
         if req.data:
-            print("jkdsjkasjkds")
             self.Microcontroller.set_global_setpoint()
 
     def poll(self):

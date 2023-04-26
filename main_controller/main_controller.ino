@@ -36,7 +36,7 @@ void setup(){
     Wire.begin();
     vlxSetup();
 
-    mDrive.init();
+    mDrive.init(&mLineSensor);
     mElevator.init(&mStepper);
     mWarehouse.init(current_time, &vlx[0], &vlx[1], &vlx[2]);
     Serial.begin(115200);
