@@ -1,13 +1,38 @@
 #include "Drive.h"
 
-void Drive::init(){
+void Drive::init( LineSensor *lineSensor ){
     frontLeft.init(Constants::kFrontLeftPWM, Constants::kFrontLeftA, Constants::kFrontLeftB, Constants::kFrontLeftEncoder);
     frontRight.init(Constants::kFrontRightPWM, Constants::kFrontRightA, Constants::kFrontRightB, Constants::kFrontRightEncoder);
     backLeft.init(Constants::kBackLeftPWM, Constants::kBackLeftA, Constants::kBackLeftB, Constants::kBackLeftEncoder);
     backRight.init(Constants::kBackRightPWM, Constants::kBackRightA, Constants::kBackRightB, Constants::kBackRightEncoder);
+    this->lineSensor = lineSensor;
 }
 
 void Drive::setSpeed(float linearX, float linearY, float angularZ){
+    if( line_move ){
+        if( line_state==1 ){
+            if( lineSensor->lineDetected(SensorID::FrontLeft1) ){
+                frontLeft.setSpeed(0.7);
+                frontRight.setSpeed(0.7);
+                backLeft.setSpeed(0.7);
+                backRight.setSpeed(0.7);
+            } else {
+                line_state = 2;
+            }
+        }
+        if( line_state==2 ){
+            if( !lineSensor->lineDetected(SensorID::FrontLeft1) ){
+                frontLeft.setSpeed(0.7);
+                frontRight.setSpeed(0.7);
+                backLeft.setSpeed(0.7);
+                backRight.setSpeed(0.7);
+            } else {
+                line_state = 0;
+                line_move = false;
+            }
+        }
+    }
+
     float wheelPosX = Constants::kWheelBase/2;
     float wheelPosY = Constants::kWheelTrack/2;
     if(abs( angularZ ) > 0.2 && !spin_flag){
@@ -18,6 +43,12 @@ void Drive::setSpeed(float linearX, float linearY, float angularZ){
         spin_flag = true;
     } else if( abs(angularZ) == 0 && spin_flag ){
         spin_flag = false;
+    }
+
+    if( abs(linearY) > 0.2 && !line_move ){
+        line_move = true;
+        line_state = 1;
+        return;
     }
     
     float frontLeftSpeed = linearX - linearY - angularZ*(wheelPosX + wheelPosY) - error;

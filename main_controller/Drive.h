@@ -8,6 +8,7 @@ https://research.ijcaonline.org/volume113/number3/pxc3901586.pdf
 #include "Arduino.h"
 #include "Constants.h"
 #include "Motor.h"
+#include "LineSensor.h"
 
 enum MotorID{
     FrontLeft,
@@ -38,8 +39,11 @@ class Drive{
         float last_error;
         unsigned long last_time = 0;
         bool spin_flag = false;
+        bool line_move = false;
+        int line_state = 0;
+        LineSensor *lineSensor;
     public:
-        void init();
+        void init(*LineSensor lineSensor);
         void setSpeed(float linearX, float linearY, float angularZ);
         void setAngle(float angle);
         void setGlobalSetpoint();
