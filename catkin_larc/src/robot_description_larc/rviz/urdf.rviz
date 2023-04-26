@@ -25,9 +25,10 @@ Panels:
     Name: Views
     Splitter Ratio: 0.5
   - Class: rviz/Time
+    Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: ""
+    SyncSource: Camera
 Preferences:
   PromptSaveOnExit: true
 Toolbars:
@@ -92,12 +93,91 @@ Visualization Manager:
         Expand Link Details: false
         Expand Tree: false
         Link Tree Style: Links in Alphabetic Order
+        Brazo_2:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        Elevador:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        Expand Joint Details: false
+        Expand Link Details: false
+        Expand Tree: false
+        Garra_D:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        Garra_I:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        Link Tree Style: Links in Alphabetic Order
+        Pinza:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        R1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        R2:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        R3:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        R4:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        base_footprint:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
         base_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
       Name: RobotModel
       Robot Description: robot_description
+          Value: true
+        base_scan:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        camera:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        camera_depth_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        camera_rgb_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        neck_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+      Name: RobotModel
+      Robot Description: robot_description_larc
       TF Prefix: ""
       Update Interval: 0
       Value: true

@@ -82,7 +82,7 @@
         <geometry>
           <mesh
             filename="package://robot_description_larc/meshes/Dashgo/Cam1.STL" />
-        </[ INFO] [1682501126.780497273]: ---------------------Ready to publish----geometry>
+        </geometry>
         <material
           name="">
           <color

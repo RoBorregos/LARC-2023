@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
 )
 
+#include_directories(include ${catkin_INCLUDE_DIRS})
 
 ## Find gazebo
 find_package(gazebo REQUIRED)
@@ -22,10 +23,11 @@ link_directories(${GAZEBO_LIBRARY_DIRS})
 
 ## Find Boost
 find_package(Boost REQUIRED COMPONENTS thread)
-include_directories(${Boost_INCLUDE_DIRS})
+#include_directories(${Boost_INCLUDE_DIRS})
 
 catkin_package(
     CATKIN_DEPENDS roscpp std_msgs geometry_msgs nav_msgs tf message_runtime
+    #INCLUDE_DIRS include
     LIBRARIES
 )
 
@@ -39,11 +41,11 @@ catkin_package(
 ## Install ##
 #############
 
-install(DIRECTORY include/
-  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-  FILES_MATCHING PATTERN "*.h"
-  PATTERN ".svn" EXCLUDE
-)
+#install(DIRECTORY include/
+#  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+#  FILES_MATCHING PATTERN "*.h"
+#  PATTERN ".svn" EXCLUDE
+#)
 
 # install(TARGETS
 #   nexus_ros_force_based_move
