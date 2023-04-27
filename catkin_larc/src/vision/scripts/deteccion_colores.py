@@ -33,12 +33,14 @@ class DetectorColores:
         #self.subscriberDepth = rospy.Subscriber("/camera/depth/image_raw", Image, self.depthImageRosCallback)
         #self.subscriberInfo = rospy.Subscriber("/camera/depth/camera_info", CameraInfo, self.infoImageRosCallback)
         
+        
         self.pubmask = rospy.Publisher('/mask_colores', Image, queue_size=10)
         self.mask  = None
         self.cv_image = np.array([])
         rospy.loginfo("Subscribed to image")
         self.main()
     
+  
     def depthImageRosCallback(self, data):
         try:
             self.depth_image = self.bridge.imgmsg_to_cv2(data, "32FC1")
@@ -50,6 +52,8 @@ class DetectorColores:
     def infoImageRosCallback(self, data):
         self.camera_info = data
         self.subscriberInfo.unregister()
+    
+   
 
     def dibujar(self,mask,color):
         frame= self.cv_image
@@ -76,6 +80,7 @@ class DetectorColores:
 
                 if color == (255,0,0):
                     print('azul')
+
                     self.detections.append('azul')
                     
                 if color == (0,255,0):
@@ -93,6 +98,14 @@ class DetectorColores:
                 cv2.drawContours(frame,[nuevoContorno],0,color,3)
                 self.boxes.append(temp)
 
+    def pc_callback(self, data):
+        try:
+            self.cv_image = self.bridge.imgmsg_to_cv2(data,desired_encoding="bgr8")
+            self.detectar_colores()
+            self.pubcolor = rospy.Publisher('colors', String, queue_size=10)
+        except CvBridgeError as e:
+            print(e)
+    
 
     def callback(self, data):
         # rospy.loginfo(data.data)

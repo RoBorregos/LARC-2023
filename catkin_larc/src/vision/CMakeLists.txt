@@ -167,7 +167,7 @@ include_directories(
 
 #add_executable(detector_cubos_3D src/detector_cubos_3D.cpp)
 
-#add_dependencies(detector_cubos_3D vision)
+# add_dependencies(detector_cubos_3D ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 
 ## Rename C++ executable without prefix
@@ -181,7 +181,7 @@ include_directories(
 
 
 ## Add cmake target dependencies of the executable
-## same as for the library above
+## same as for the library aboven 
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 #add_dependencies(detector_cubos_3D vision_generate_messages_cpp)

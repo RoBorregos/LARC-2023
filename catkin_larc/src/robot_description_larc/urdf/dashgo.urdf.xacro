@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot xmlns:xacro="http://ros.org/wiki/xacro" name="dashgo">
+  <link name="base_link"></link>
+
+  <xacro:include filename="$(find robot_description_larc)/urdf/camera.urdf.xacro" />
+  <xacro:load_camera name="Cam1" attach_to="base_link" x="-0.159" y="-0.01" z="1.57" r_r="0.244533" r_p="0" r_y="-1.5708" />
+   
+
+</robot>

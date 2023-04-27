@@ -1,0 +1,13 @@
+<launch>
+    <arg name="INPUT_PC" default="/zed2/zed_node/point_cloud/cloud_registered" />
+    <arg name="OUTPUT_PC" default="/zed2/zed_node/point_cloud/ds_cloud_registered" />
+    <node pkg="pc_downsample" type="DownSamplePC" name="DownSamplePC" output="screen">
+        <remap from="input/points" to="$(arg INPUT_PC)" />
+        <remap from="output/points" to="$(arg OUTPUT_PC)" />
+    </node>
+
+    <!-- Static transform map -->
+    <node pkg="tf" type="static_transform_publisher" name="map_to_cam" args="0.1 0.1 1.5325 -1.54 0.733038 0 map base_link 30" />
+    <!--node pkg="tf" type="static_transform_publisher" name="map_to_cam" args="0.133 0.1 0.4385 -1.54 0.733038 0 map base_link 30" /-->
+
+</launch>

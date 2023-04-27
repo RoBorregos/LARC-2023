@@ -1,5 +1,21 @@
 {
     "files.associations": {
+        "thread": "cpp",
+        "*.ipp": "cpp",
+        "array": "cpp",
+        "hash_map": "cpp",
+        "hash_set": "cpp",
+        "any": "cpp",
+        "string_view": "cpp",
+        "regex": "cpp",
+        "optional": "cpp",
+        "variant": "cpp"
+    },
+    "python.analysis.typeCheckingMode": "basic"
+        "cmath": "cpp",
+        "complex": "cpp"
+    },
+    "cmake.sourceDirectory": "/home/nvidia/workspace/LARC-2023/catkin_larc/build/catkin_generated/metapackages/zed_ros"
         "array": "cpp",
         "string": "cpp",
         "string_view": "cpp",

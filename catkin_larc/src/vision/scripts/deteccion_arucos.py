@@ -26,13 +26,21 @@ class DetectorAruco:
         self.sub = rospy.Subscriber('/zed2/zed_node/rgb/image_rect_color', Image, self.callback)
         self.subscriberDepth = rospy.Subscriber("/zed2/zed_node/depth/depth_registered", Image, self.depthImageRosCallback)
         self.subscriberInfo = rospy.Subscriber("/zed2/zed_node/depth/camera_info", CameraInfo, self.infoImageRosCallback)
+        self.pcsubs = rospy.Subscriber("/object", Image, self.pc_callback)
         
         self.pubmask = rospy.Publisher('/mask_aruco', Image, queue_size=10)
         self.mask  = None
         self.cv_image = np.array([])
         rospy.loginfo("Subscribed to image")
         self.main()
-
+        
+    def pc_callback(self, data):
+        try:
+            self.cv_image = self.bridge.imgmsg_to_cv2(data,desired_encoding="bgr8")
+            self.detectar_arucos()
+        except CvBridgeError as e:
+            print(e)
+    
 
         # Function to handle a ROS depth input.
     def depthImageRosCallback(self, data):
