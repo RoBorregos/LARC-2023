@@ -1,48 +1,38 @@
 #include "Warehouse.h"
 
-void Warehouse::init(unsigned long current_time, Adafruit_VL53L0X* tof1){//, Adafruit_VL53L0X* tof2, Adafruit_VL53L0X* tof3){
-    upper.fwdPin = Constants::kWarehouseUpperMotorA;
-    upper.revPin = Constants::kWarehouseUpperMotorB;
-    upper.speed = Constants::kWarehouseUpperSpeed;
-    upper.demand = 0;
-    //upper.tof = tof1;
-    upper.distance = 0;
-    upper.cube_state = CubePosition::Four;
-    upper.state_time = current_time;
+void Warehouse::init(unsigned long current_time, Adafruit_VL53L0X* tof1, Adafruit_VL53L0X* tof2, Adafruit_VL53L0X* tof3){
+    level[0].fwdPin = Constants::kWarehouseUpperMotorA;
+    level[0].revPin = Constants::kWarehouseUpperMotorB;
+    level[0].speed = Constants::kWarehouseUpperSpeed;
+    level[0].tof = tof1;
+    level[0].state_time = current_time;
 
-    mid.fwdPin = Constants::kWarehouseMidMotorA;
-    mid.revPin = Constants::kWarehouseMidMotorB;
-    mid.speed = Constants::kWarehouseMidSpeed;
-    mid.demand = 0;
-//    mid.tof = tof2;
-    mid.tof = tof1;
-    mid.distance = 0;
-    mid.cube_state = CubePosition::Four;
-    mid.state_time = current_time;
+    level[1].fwdPin = Constants::kWarehouseMidMotorA;
+    level[1].revPin = Constants::kWarehouseMidMotorB;
+    level[1].speed = Constants::kWarehouseMidSpeed;
+    level[1].tof = tof2;
+    level[1].state_time = current_time;
 
-    lower.fwdPin = Constants::kWarehouseLowerMotorA;
-    lower.revPin = Constants::kWarehouseLowerMotorB;
-    lower.speed = Constants::kWarehouseLowerSpeed;
-    lower.demand = 0;
-    //lower.tof = tof3;
-    lower.distance = 0;
-    lower.cube_state = CubePosition::Four;
-    lower.state_time = current_time;
+    level[2].pwmPin = Constants::kWarehouseLowerPWM;
+    level[2].fwdPin = Constants::kWarehouseLowerMotorA;
+    level[2].revPin = Constants::kWarehouseLowerMotorB;
+    level[2].speed = Constants::kWarehouseLowerSpeed;
+    level[2].tof = tof3;
+    level[2].state_time = current_time;
 
-    levels[0] = &upper;
-    levels[1] = &mid;
-    levels[2] = &lower;
+    for(int i=0; i<3; i++){
+        if(level[i].pwmPin != -1)
+            pinMode(level[i].pwmPin, OUTPUT);
+        pinMode(level[i].fwdPin, OUTPUT);
+        pinMode(level[i].fwdPin, OUTPUT);
+        stop( (LevelPosition)i );
+    }
 
-    pinMode(upper.fwdPin, OUTPUT);
-    pinMode(upper.revPin, OUTPUT);
-    pinMode(mid.fwdPin, OUTPUT);
-    pinMode(mid.revPin, OUTPUT);
-    pinMode(lower.fwdPin, OUTPUT);
-    pinMode(lower.revPin, OUTPUT);
+    last_time = current_time;
 }
 
 void Warehouse::cubeOut(LevelPosition pos, unsigned long current_time){
-    Level* lvl = levels[pos];
+    Level* lvl = &level[pos];
     lvl->state_time = current_time;
 
     switch( lvl->cube_state ){
@@ -61,59 +51,78 @@ void Warehouse::cubeOut(LevelPosition pos, unsigned long current_time){
             lvl->cube_state = CubePosition::Three;
             break;
     }
+
+    lvl->stopped = false;
 }
 
-CubePosition Warehouse::getCubeState(String level){
-    Level* lvl;
-    if( level == "upper" )
-        lvl = &upper;
-    else if( level == "mid" )
-        lvl = &mid;
-    else if( level == "lower" )
-        lvl = &lower;
-    else
-        return CubePosition::Empty;
+void Warehouse::reset(){
+    for(int i=0; i<3; i++){
+        level[i].demand = -level[i].speed;
+        if(level[i].pwmPin != -1)
+            analogWrite(level[i].pwmPin, abs(level[i].demand) );
+        
+        analogWrite(level[i].fwdPin, level[i].demand>0? abs(level[i].demand) : 0);
+        analogWrite(level[i].revPin, level[i].demand<0? abs(level[i].demand) : 0);
+    }
+    delay(500);
+    for(int i=0; i<3; i++){
+        stop( (LevelPosition)i );
+        level[i].cube_state = CubePosition::Four;
+        level[i].stopped = true;
+    }
+}
 
-    return lvl->cube_state;
+CubePosition Warehouse::getCubeState(LevelPosition pos){
+    return level[pos].cube_state;
 }
 
 void Warehouse::periodicIO(unsigned long current_time){
-    //upper.distance = upper.tof->readRange();
-    mid.distance = mid.tof->readRange();
-    Serial.println(mid.distance);
-    //lower.distance = lower.tof->readRange();
+    if( current_time - last_time < loop_time )
+        return;
 
-    Level* lvl = &mid;
-    //for(auto lvl : levels){
-        int error = - (lvl->distance - (int)lvl->cube_state);
-        if( lvl->cube_state == CubePosition::Four && error < -5 ){
-            lvl->demand = -lvl->speed;
-        } else if( error > 5){
-            lvl->demand = lvl->speed;
-        } else {
-            lvl->demand = 0;
+    //int i=0;
+    for(int i=0; i<3; i++){
+        if(level[i].stopped){
+            stop( (LevelPosition)i );
+            continue;
         }
 
-        if( current_time - lvl->state_time > 5000 )
-            lvl->demand = 0;
+        level[i].distance = level[i].tof->readRange();
+        Serial.print(level[i].distance);
+        Serial.print(" ");
+        int error = - (level[i].distance - (int)level[i].cube_state);
 
-        analogWrite(lvl->fwdPin, lvl->demand>0? abs(lvl->demand) : 0);
-        analogWrite(lvl->revPin, lvl->demand<0? abs(lvl->demand) : 0);
+        if( level[i].cube_state == CubePosition::Four ){
+            level[i].demand = 0;
+        } else {
+            level[i].demand = level[i].speed;
+        }
+        /*} else if( error > 15){
+            level[i].demand = level[i].speed;
+        } else {
+            level[i].demand = 0;
+        }*/
 
-    //}
+        if( current_time - level[i].state_time > 3000 )
+            level[i].demand = 0;
+
+        if(level[i].pwmPin != -1)
+            analogWrite(level[i].pwmPin, level[i].demand);
+        
+        analogWrite(level[i].fwdPin, level[i].demand>0? abs(level[i].demand) : 0);
+        analogWrite(level[i].revPin, level[i].demand<0? abs(level[i].demand) : 0);
+        
+        if( level[i].demand == 0 ){
+            level[i].stopped = true;
+            stop( (LevelPosition)i );
+        }
+    }
+
+    last_time = current_time;
 }
 
-int Warehouse::setSpeed(int a, int b, float speed){
-    bool dir = speed > 0;
-    speed = int(abs(speed));
-    //deadband
-    if( speed < 70 )
-        speed = 0;
-    else
-        speed = min( max(speed, 150) , 200 );
-
-    analogWrite(a, dir? speed : 0);
-    analogWrite(b, dir? 0 : speed);
-
-    return speed * (dir? 1 : -1);
+void Warehouse::stop(LevelPosition pos){
+    digitalWrite(level[pos].fwdPin, 0);
+    digitalWrite(level[pos].revPin, 0);
+    level[pos].demand = 0;
 }

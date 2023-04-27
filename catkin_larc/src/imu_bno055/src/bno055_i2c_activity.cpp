@@ -95,11 +95,11 @@ bool BNO055I2CActivity::start() {
     ROS_INFO("starting");
 
     if(!pub_imu_rpy) pub_imu_rpy = nh.advertise<geometry_msgs::Vector3>("imu_rpy", 1);
-    if(!pub_data) pub_data = nh.advertise<sensor_msgs::Imu>("data", 1);
-    if(!pub_raw) pub_raw = nh.advertise<sensor_msgs::Imu>("raw", 1);
-    if(!pub_mag) pub_mag = nh.advertise<sensor_msgs::MagneticField>("mag", 1);
-    if(!pub_temp) pub_temp = nh.advertise<sensor_msgs::Temperature>("temp", 1);
-    if(!pub_status) pub_status = nh.advertise<diagnostic_msgs::DiagnosticStatus>("status", 1);
+    if(!pub_data) pub_data = nh.advertise<sensor_msgs::Imu>("imu_data", 1);
+    if(!pub_raw) pub_raw = nh.advertise<sensor_msgs::Imu>("imu_raw", 1);
+    if(!pub_mag) pub_mag = nh.advertise<sensor_msgs::MagneticField>("imu_mag", 1);
+    if(!pub_temp) pub_temp = nh.advertise<sensor_msgs::Temperature>("imu_temp", 1);
+    if(!pub_status) pub_status = nh.advertise<diagnostic_msgs::DiagnosticStatus>("imu_status", 1);
 
     if(!service_calibrate) service_calibrate = nh.advertiseService(
         "calibrate",
@@ -108,7 +108,7 @@ bool BNO055I2CActivity::start() {
     );
 
     if(!service_reset) service_reset = nh.advertiseService(
-        "reset",
+        "imu_reset",
         &BNO055I2CActivity::onServiceReset,
         this
     );
