@@ -165,7 +165,7 @@ include_directories(
 ## The recommended prefix ensures that target names across packages don't collide
 # add_executable(${PROJECT_NAME}_node src/vision_node.cpp)
 
-add_executable(detector_cubos_3D src/detector_cubos_3D.cpp)
+#add_executable(detector_cubos_3D src/detector_cubos_3D.cpp)
 
 # add_dependencies(detector_cubos_3D ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
@@ -176,8 +176,8 @@ add_executable(detector_cubos_3D src/detector_cubos_3D.cpp)
 ## e.g. "rosrun someones_pkg node" instead of "rosrun someones_pkg someones_pkg_node"
 # set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME node PREFIX "")
 
-target_link_libraries(detector_cubos_3D ${catkin_LIBRARIES})
-target_link_libraries(detector_cubos_3D ${OpenCV_LIBRARIES})
+#target_link_libraries(detector_cubos_3D ${catkin_LIBRARIES})
+#target_link_libraries(detector_cubos_3D ${OpenCV_LIBRARIES})
 
 
 ## Add cmake target dependencies of the executable

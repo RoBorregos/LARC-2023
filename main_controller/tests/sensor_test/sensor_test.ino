@@ -1,8 +1,8 @@
 //encoder tests
-#define EN1 26
-#define EN2 27
-#define EN3 23
-#define EN4 12
+#define EN1 19
+#define EN2 3
+#define EN3 18
+#define EN4 2
 
 volatile long en1_count = 0;
 volatile long en2_count = 0;
@@ -31,11 +31,13 @@ void encoder4() {
 }
 
 //multiplexor tests
-#define S0 18
-#define S1 19
-#define S2 20
-#define S3 21
-#define SIG 22
+#define S0 A11
+#define S1 A12
+#define S2 A13
+#define S3 A14
+#define SIG A15
+
+int last_value[16] = {0};
 
 void setup() {
     // put your setup code here, to run once:
@@ -52,17 +54,18 @@ void setup() {
     attachInterrupt(digitalPinToInterrupt(EN4), encoder4, CHANGE);
 
     //multiplexor pinout
-    /*pinMode(S0, OUTPUT);
+    pinMode(S0, OUTPUT);
     pinMode(S1, OUTPUT);
     pinMode(S2, OUTPUT);
     pinMode(S3, OUTPUT);
-    pinMode(SIG, INPUT);*/
+    pinMode(SIG, INPUT);
     
        
 }
 
 void loop() {
-    //encoder test
+    //encoder 
+    /*
     Serial.print("EN// E1: ");
     Serial.print(digitalRead(EN1));
     Serial.print(" ");
@@ -79,18 +82,26 @@ void loop() {
     Serial.print(digitalRead(EN4));
     Serial.print(" ");
     Serial.println(en4_count);
+    //*/
 
     //multiplexor test
-    /*Serial.print("Li//");
+    ///*
+    Serial.print("Li//");
     for (int i = 0; i < 16; i++) {
         digitalWrite(S0, i & 1);
         digitalWrite(S1, i & 2);
         digitalWrite(S2, i & 4);
         digitalWrite(S3, i & 8);
-        Serial.print(" ");
-        Serial.print(analogRead(SIG));
+        //Serial.print(" ");
+        //Serial.print(analogRead(SIG));
+        if( analogRead(SIG) > 800){
+            Serial.print(i);
+            Serial.print(" ");
+        }
+        last_value[i] = analogRead(SIG);
     }
-    Serial.println();*/
+    Serial.println();
+    //*/
 
     delay(100);
 }

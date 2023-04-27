@@ -15,6 +15,9 @@ from vision_utils import *
 
 class DetectorColores:
     def __init__(self):
+        self.boxes = []
+        self.detections = []
+
         self.bridge = CvBridge()
         self.pub = rospy.Publisher('/colores_out', Image, queue_size=10)
         self.pubData = rospy.Publisher('color_detect', objectDetectionArray, queue_size=5)
@@ -22,14 +25,13 @@ class DetectorColores:
         self.posePublisher = rospy.Publisher("/test/detectionposes", PoseArray, queue_size=5)
 
         #Suscriber topics changed for simulation
-        #self.sub = rospy.Subscriber('/zed2/zed_node/rgb/image_rect_color', Image, self.callback)
-        #self.subscriberDepth = rospy.Subscriber("/zed2/zed_node/depth/depth_registered", Image, self.depthImageRosCallback)
-        #self.subscriberInfo = rospy.Subscriber("/zed2/zed_node/depth/camera_info", CameraInfo, self.infoImageRosCallback)
+        self.sub = rospy.Subscriber('/zed2/zed_node/rgb/image_rect_color', Image, self.callback)
+        self.subscriberDepth = rospy.Subscriber("/zed2/zed_node/depth/depth_registered", Image, self.depthImageRosCallback)
+        self.subscriberInfo = rospy.Subscriber("/zed2/zed_node/depth/camera_info", CameraInfo, self.infoImageRosCallback)
 
-        self.sub = rospy.Subscriber('/camera/rgb/image_raw', Image, self.callback)
-        self.pcsubs = rospy.Subscriber("/object", Image, self.pc_callback)
-        self.subscriberDepth = rospy.Subscriber("/camera/depth/image_raw", Image, self.depthImageRosCallback)
-        self.subscriberInfo = rospy.Subscriber("/camera/depth/camera_info", CameraInfo, self.infoImageRosCallback)
+        #self.sub = rospy.Subscriber('/camera/rgb/image_raw', Image, self.callback)
+        #self.subscriberDepth = rospy.Subscriber("/camera/depth/image_raw", Image, self.depthImageRosCallback)
+        #self.subscriberInfo = rospy.Subscriber("/camera/depth/camera_info", CameraInfo, self.infoImageRosCallback)
         
         
         self.pubmask = rospy.Publisher('/mask_colores', Image, queue_size=10)
@@ -57,9 +59,7 @@ class DetectorColores:
         frame= self.cv_image
         contornos,_ = cv2.findContours(mask, cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
        
-        bb = []
-        detections = []
-        tempo = []
+        temp = []
         for c in contornos:
             area = cv2.contourArea(c)
             if area > 3000:
@@ -76,34 +76,27 @@ class DetectorColores:
                 xmayor = x + w
                 ymayor = y + h
 
-                tempo =  ymenor, xmenor, ymayor, xmayor
+                temp =  ymenor, xmenor, ymayor, xmayor
 
                 if color == (255,0,0):
                     print('azul')
-                    detections.append('azul')
-                    self.pubcolor.publish('azul')
+
+                    self.detections.append('azul')
                     
                 if color == (0,255,0):
                     print('verde')
-                    detections.append('verde')
-                    self.pubcolor.publish('verde')
+                    self.detections.append('verde')
 
                 if color == (0,0,255):
                     print('rojo')   
-                    detections.append('rojo')
-                    self.pubcolor.publish('rojo')
+                    self.detections.append('rojo')
 
                 if color == (0,255,255):
                     print('amarillo')
-                    detections.append('amarillo')
-                    self.pubcolor.publish('amarillo')
+                    self.detections.append('amarillo')
 
                 cv2.drawContours(frame,[nuevoContorno],0,color,3)
-                bb.append(tempo)
-        try:
-            self.get_objects(bb, detections)
-        except:
-            pass
+                self.boxes.append(temp)
 
     def pc_callback(self, data):
         try:
@@ -120,9 +113,27 @@ class DetectorColores:
         self.cv_image = self.bridge.imgmsg_to_cv2(data,desired_encoding="bgr8")
         self.detectar_colores()
         self.pub.publish(self.bridge.cv2_to_imgmsg(self.cv_image, encoding="bgr8"))
+        self.boxes = []
+        self.detections = []
 
     def get_objects(self, boxes, detections):
         res = []
+        #sort boxes full content by first parameter, then second, and save in new obj
+        sorted_boxes = []
+        sorted_detections = []
+        for box in boxes:
+            appended = False
+            for i in range(len(sorted_boxes)):
+                if sorted_boxes[i][1]>box[1] and abs(sorted_boxes[i][0]-box[0])<50 or sorted_boxes[i][0]-box[0]>50:
+                    sorted_boxes.insert(i, box)
+                    sorted_detections.insert(i, detections[boxes.index(box)])
+                    appended = True
+                    break
+            if not appended:
+                sorted_boxes.append(box)
+                sorted_detections.append(detections[boxes.index(box)])
+        boxes = sorted_boxes
+        detections = sorted_detections
 
         pa = PoseArray()
         pa.header.frame_id = "camera_depth_frame"
@@ -174,11 +185,12 @@ class DetectorColores:
         azulBajo = np.array([110,130,45],np.uint8)
         azulAlto = np.array([125,255,255],np.uint8)
 
-        verdeBajo = np.array([50,100,20],np.uint8)
-        verdeAlto = np.array([80,255,255],np.uint8)
+        verdeBajo = np.array([35,94,71],np.uint8)
+        verdeAlto = np.array([61,208,166],np.uint8)
 
         amarillobajo = np.array([15,100,20],np.uint8)
         amarilloalto = np.array([45,255,255],np.uint8) 
+
 
         font = cv2.FONT_HERSHEY_SIMPLEX
 
@@ -193,6 +205,8 @@ class DetectorColores:
         self.dibujar(maskamarillo,(0,255,255))
         self.dibujar(maskVerde,(0,255,0))
         self.dibujar(maskred,(0,0,255))
+
+        self.get_objects(self.boxes, self.detections)
         #frame = cv2.resize(frame, (0, 0), fx = 0.3, fy = 0.3)
         #cv2.imshow('frame',frame)
         

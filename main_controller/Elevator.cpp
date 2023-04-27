@@ -13,16 +13,24 @@ Elevator::Elevator(){
     pinMode(mStepper.stepPin, OUTPUT);
 }
 
+void Elevator::init(Stepper *stepper){
+    stepperPtr = stepper;
+    stepperPtr->setSpeed(Constants::kStepperSpeed);
+}
+
 void Elevator::setSpeed(long speed){
     mStepper.step_delay = 60L * 1000L * 1000L / mStepper.number_of_steps / speed;
 }
 
-void Elevator::setSteps(int step){
-    mStepper.steps_left = abs(step);
+void Elevator::setSteps(long int step){
+    long int temp_step = abs(step);
+    steps_queued = int(temp_step / 32000);
+    mStepper.steps_left = temp_step % 32000;
     mStepper.direction = step > 0 ? 1 : 0;
 }
 
 void Elevator::setPosition(ElevatorPosition position){
+    //Serial.println(-position - current_position);
     setSteps(-position - current_position);
 }
 
@@ -31,7 +39,16 @@ bool Elevator::positionReached(){
 }
 
 void Elevator::periodicIO(){
-    if(mStepper.steps_left > 0){
+    while( mStepper.steps_left > 0 ){
+        stepperPtr->step( (mStepper.direction? 1:-1) * mStepper.steps_left);
+        current_position += (mStepper.direction? 1:-1) * mStepper.steps_left;
+        mStepper.steps_left = 0;
+        if( steps_queued > 0 ){
+            mStepper.steps_left = 32000;
+            steps_queued--;
+        }
+    }
+    /*while(mStepper.steps_left > 0){
         current_time = micros();
         if( current_time - mStepper.last_step_time > mStepper.step_delay){
             mStepper.last_step_time = current_time;
@@ -69,6 +86,13 @@ void Elevator::periodicIO(){
                     digitalWrite(mStepper.stepPin, LOW);
                     break;
             }
+        } else {
+            yield();
         }
     }
+    if( steps_queued > 0 ){
+        mStepper.steps_left = 32000;
+        steps_queued--;
+        delay(1000);
+    }*/
 }
