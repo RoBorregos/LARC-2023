@@ -39,6 +39,8 @@
 // #include <actionlib/server/simple_action_server.h>
 // #include <vision/DetectObjects3DAction.h>
 
+#include <std_msgs/Float64.h>
+
 #include <std_msgs/Int64.h>
 
 #include <geometry_msgs/Point.h>
@@ -121,6 +123,8 @@ class CubeDetect3D
     ros::Publisher pc_pub_img;
     ros::Publisher point_pub1;
     ros::Publisher point_pub2;
+    ros::Publisher pub_x_;
+    ros::Publisher pub_y_;
     sensor_msgs::CameraInfo zed_info_;
     sensor_msgs::Image zed_image_;
     cv_bridge::CvImagePtr zed_image_cv;
@@ -135,6 +139,9 @@ public:
         pc_pub_1_ = nh_.advertise<sensor_msgs::PointCloud2>("/test_pc_1", 10);
         pc_pub_2_ = nh_.advertise<sensor_msgs::PointCloud2>("/test_pc_2", 10);
         pc_pub_3_ = nh_.advertise<sensor_msgs::Image>("/test_pc_3", 10);
+
+        pub_x_ = nh_.advertise<std_msgs::Float64>("/obj_y", 10);
+        pub_y_ = nh_.advertise<std_msgs::Float64>("/obj_x",10);
 
         pc_pub_img = nh_.advertise<sensor_msgs::Image>("/object", 10);
 
@@ -581,6 +588,19 @@ public:
         ROS_WARN_STREAM("Max Z " << max_z_ << " Min Z " << min_z_);
         ROS_WARN_STREAM("Max X " << max_x_ << " Min X " << min_x_);
         ROS_WARN_STREAM("Max Y " << max_y_ << " Min Y " << min_y_);
+
+        float cent_x = (max_x_ + max_x_)/2;
+        float cent_y = (max_y_ + max_y_)/2;
+
+        std_msgs::Float64 msgX;
+        std_msgs::Float64 msgY;
+        msgX.data = cent_x;
+        msgY.data = cent_y;
+
+        pub_x_.publish(msgX);
+        pub_y_.publish(msgY);
+        
+
 
         pcl::PointXYZ centroid;
         pcl::computeCentroid(*cloud, centroid);
