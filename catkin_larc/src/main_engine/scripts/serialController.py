@@ -536,11 +536,6 @@ class BaseController:
             self.line_sensor_pub.publish(line_data)
             """
             
-            if now > (self.last_cmd_vel + rospy.Duration(self.timeout)):
-                self.v_x = 0
-                self.v_y = 0
-                self.v_th = 0
-
             # Set motor speeds in encoder ticks per PID loop
             if ((not self.stopped)):
                 self.Microcontroller.drive(self.v_x, self.v_y, self.v_th)

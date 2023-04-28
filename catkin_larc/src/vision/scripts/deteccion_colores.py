@@ -176,20 +176,20 @@ class DetectorColores:
 
     def detectar_colores(self):
         frame = self.cv_image
-        redBajo1 = np.array([0,165,115],np.uint8)
-        redAlto1 = np.array([10,245,235],np.uint8)
+        redBajo1 = np.array([0,90,120],np.uint8)
+        redAlto1 = np.array([16,255,215],np.uint8)
 
         redBajo2 = np.array([170,100,45],np.uint8)
         redAlto2 = np.array([179,255,255],np.uint8)
 
-        azulBajo = np.array([110,130,45],np.uint8)
-        azulAlto = np.array([125,255,255],np.uint8)
+        azulBajo = np.array([97,77,112],np.uint8)
+        azulAlto = np.array([136,255,255],np.uint8)
 
-        verdeBajo = np.array([35,94,71],np.uint8)
-        verdeAlto = np.array([61,208,166],np.uint8)
+        verdeBajo = np.array([35,22,25],np.uint8)
+        verdeAlto = np.array([100,250,160],np.uint8)
 
-        amarillobajo = np.array([15,100,20],np.uint8)
-        amarilloalto = np.array([45,255,255],np.uint8) 
+        amarillobajo = np.array([20,35,40],np.uint8)
+        amarilloalto = np.array([50,255,255],np.uint8) 
 
 
         font = cv2.FONT_HERSHEY_SIMPLEX

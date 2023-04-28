@@ -14,16 +14,16 @@ from enum import Enum
 #sys.path.append(str(pathlib.Path(__file__).parent) + '/../include')
 
 class State(Enum):
-    SEARCH_HEADING = 0
-    WAIT4ROTATION = 1
-    SET_SETPOINT = 2
-    ROTATE_POSITIONING = 3
-    POSITION_FOR_SWEEP = 4
-    ROTATE_PICK = 5
-    PICK = 6
-    MOVE2PICK = 7
-    DROP = 8
-    FINISH = 9
+    START = 1
+    FWD1 = 2
+    WAIT1 = 3
+    ELE1 = 4
+    STACK1 = 5
+    LINES_FWD = 6
+    OUT_EL = 7
+    OUT_WAREHOUSE = 8
+    OUT_INTAKE = 9
+    FINISH = 10
 
 class MainEngine:
     def __init__(self):
@@ -42,11 +42,17 @@ class MainEngine:
         # variables
         self.current_time = rospy.Time.now()
         self.state_time = rospy.Time.now()
-        self.state = State.SEARCH_HEADING
+        self.state = State.START
         self.odom = Odometry()
         self.static_color_seq = "GBYRYBG" # static color sequence
         self.xSquare = 0
         self.color_sequence_detected = False
+
+        self.targetReached = False
+        self.targetX = 0
+        self.targetY = 0
+        self.posTolerance = 0.02
+        self.iter = 0
 
     def odomCallback(self, data):
         self.odom = data
@@ -62,7 +68,7 @@ class MainEngine:
         color_seq = ""
     
         for i in range(sz):
-            if abs(data.detections[i].ymin - y_min_first) >= 50 or abs(data.detections[i].xmin - x_last_max) >= 50:
+            if abs(data.detections[i].ymin - y_min_first) >= 80 or abs(data.detections[i].xmin - x_last_max) >= 70:
                 continue
             if data.detections[i].labelText == "rojo":
                 color_seq += "R"
@@ -108,74 +114,114 @@ class MainEngine:
             print( "x_square: " + str(self.xSquare) )
             
 
+    def driveToTarget(self):
+        if abs( self.odom.pose.pose.position.x - self.targetX ) <= self.posTolerance and abs( self.odom.pose.pose.position.y - self.targetY ) <= self.posTolerance:
+            self.targetReached = True
+            rospy.loginfo("Target reached")
+            cmd_vel = Twist()
+            cmd_vel.linear.x = 0
+            cmd_vel.linear.y = 0
+            cmd_vel.linear.z = 0
+            cmd_vel.angular.x = 0
+            cmd_vel.angular.y = 0
+            cmd_vel.angular.z = 0
+            self.pubCmdVel.publish(cmd_vel)
+        else:
+            print( "current X: " +str(self.odom.pose.pose.position.x) + " current Y: " + str(self.odom.pose.pose.position.y) )
+            cmd_vel = Twist()
+            cmd_vel.linear.x = (self.targetX - self.odom.pose.pose.position.x) * 2.5
+            cmd_vel.linear.y = (self.targetY - self.odom.pose.pose.position.y) * 2.5
+            cmd_vel.linear.z = 0
+            cmd_vel.angular.x = 0
+            cmd_vel.angular.y = 0
+            cmd_vel.angular.z = 0
+            self.pubCmdVel.publish(cmd_vel)
+
+
     def run(self):
         self.current_time = rospy.Time.now()
 
-        if self.state == State.SEARCH_HEADING:
-            if (self.current_time - self.state_time).to_sec() > 4:
-                self.driveSpin(1)
+        if self.state == State.START:
+            if (self.current_time - self.state_time).to_sec() > 3:
+                self.state = State.FWD1
+                tx = 0.11 + self.iter*0.11
+                self.targetReached = False
+                self.setTarget(tx, 0)
+                self.pubIntake.publish(1)
                 self.state_time = self.current_time
-            if self.color_sequence_detected:
-                self.state = State.WAIT4ROTATION
-                self.state_time = self.current_time
-                rospy.loginfo("State changed to WAIT4ROTATION")
+                rospy.loginfo("State changed to FWD1")
 
-        elif self.state == State.WAIT4ROTATION:
-            if (self.current_time - self.state_time).to_sec() > 4:
-                self.state = State.SET_SETPOINT
-                self.pubGlobalSetpoint.publish(True)
+        elif self.state == State.FWD1:
+            self.driveToTarget()
+            if self.targetReached:
+                self.state = State.WAIT1
+                self.state_time = self.current_time
+                rospy.loginfo("State changed to FWD2")
+
+        elif self.state == State.WAIT1:
+            if (self.current_time - self.state_time).to_sec() > 2:
+                self.state = State.ELE1
+                if self.iter < 3:
+                    self.pubElevator.publish(2)
+                else:
+                    self.pubElevator.publish(3)
+                self.state_time = self.current_time
+                rospy.loginfo("State changed to FWD1")
+
+        elif self.state == State.ELE1:
+            if (self.current_time - self.state_time).to_sec() > 3:
+                self.state = State.STACK1
+                self.pubIntake.publish(2)
                 self.state_time = self.current_time
                 rospy.loginfo("State changed to SET_SETPOINT")
-        
-        elif self.state == State.SET_SETPOINT:
+
+        elif self.state == State.STACK1:
             if (self.current_time - self.state_time).to_sec() > 3:
-                self.driveSpin(-1)
-                self.state = State.ROTATE_POSITIONING
+                self.pubElevator.publish(1)
                 self.state_time = self.current_time
-                rospy.loginfo("State changed to ROTATE_POSITIONING")
+                self.iter += 1
+                if self.iter < 4:
+                    self.state = State.START
+                else:
+                    self.state = State.LINES_FWD
+                    self.targetReached = False
+                    self.setTarget(0.9, 0)
+                    self.iter = 0
+                rospy.loginfo("State changed to START")
+        
+        elif self.state == State.LINES_FWD:
+            self.driveToTarget()
+            if self.targetReached:
+                self.pubElevator.publish(5)
+                self.state = State.OUT_EL
+                rospy.loginfo("State changed to LINE FOLLOW")
 
-        elif self.state == State.ROTATE_POSITIONING:
+        elif self.state == State.OUT_EL:
             if (self.current_time - self.state_time).to_sec() > 4:
-                self.state = State.POSITION_FOR_SWEEP
                 self.state_time = self.current_time
-                rospy.loginfo("State changed to POSITION_FOR_SWEEP")
-                self.driveFwdToLine()
-
-        elif self.state == State.POSITION_FOR_SWEEP:
+                self.pubWarehouse.publish(3)
+                self.state = State.OUT_WAREHOUSE
+                rospy.loginfo("State changed to WAREHOUSE")
+        
+        elif self.state == State.OUT_WAREHOUSE:
             if (self.current_time - self.state_time).to_sec() > 4:
-                self.state = State.ROTATE_PICK
                 self.state_time = self.current_time
-                rospy.loginfo("State changed to ROTATE_PICK")
-                self.driveSpin(-1)
+                self.pubIntake.publish(3)
+                self.state = State.OUT_INTAKE
+                rospy.loginfo("State changed to INTAKE")
         
-        elif self.state == State.ROTATE_PICK:
-            if(self.current_time - self.state_time).to_sec() > 4:
-                self.pubIntake.publish(1)
-                self.state = State.PICK
+        elif self.state == State.OUT_INTAKE:
+            if (self.current_time - self.state_time).to_sec() > 4:
                 self.state_time = self.current_time
-                rospy.loginfo("State changed to PICK")
-
-        elif self.state == State.PICK:
-            if(self.current_time - self.state_time).to_sec() > 4:
-                self.driveFwdTimed()
-                self.state = State.MOVE2PICK
-                self.state_time = self.current_time
-                rospy.loginfo("State changed to MOVE2PICK")
-        
-        elif self.state == State.MOVE2PICK:
-            if(self.current_time - self.state_time).to_sec() > 4:
-                self.pubElevator.publish(2)
-                self.state = State.DROP
-                self.state_time = self.current_time
-                rospy.loginfo("State changed to DROP")
-        
-        elif self.state == State.DROP:
-            if(self.current_time - self.state_time).to_sec() > 4:
                 self.pubIntake.publish(4)
                 self.state = State.FINISH
-                self.state_time = self.current_time
                 rospy.loginfo("State changed to FINISH")
 
+        #jasdkjasdjkasd
+    
+    def setTarget(self, x, y):
+        self.targetX = x
+        self.targetY = y
 
     def driveSpin(self, dir):
         #publish to cmd_vel with angular velocity Z = dir * 0.5
