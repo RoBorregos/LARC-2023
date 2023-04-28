@@ -13,9 +13,9 @@ enum ElevatorPosition{
     FirstOut = 20000,
     SecondOut = 43500,
     ThirdOut = 66500,
-    FirstShelf = 6000,
+    FirstShelf = 5000,
     SecondShelf = 41500,
-    ThirdShelf = 80000
+    ThirdShelf = 77000
 };
 
 class Elevator{
