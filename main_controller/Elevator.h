@@ -7,15 +7,15 @@
 
 enum ElevatorPosition{
     PickPos = 0,
-    FirstIn = 22000,
-    SecondIn = 45500,
-    ThirdIn = 68500,
+    FirstIn = 21000,
+    SecondIn = 44500,
+    ThirdIn = 67500,
     FirstOut = 20000,
     SecondOut = 43500,
     ThirdOut = 66500,
     FirstShelf = 5000,
     SecondShelf = 41500,
-    ThirdShelf = 77000
+    ThirdShelf = 80000
 };
 
 class Elevator{

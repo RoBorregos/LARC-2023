@@ -182,8 +182,8 @@ class DetectorColores:
         redBajo2 = np.array([170,100,45],np.uint8)
         redAlto2 = np.array([179,255,255],np.uint8)
 
-        azulBajo = np.array([97,77,112],np.uint8)
-        azulAlto = np.array([136,255,255],np.uint8)
+        azulBajo = np.array([96,50,38],np.uint8)
+        azulAlto = np.array([130,220,160],np.uint8)
 
         verdeBajo = np.array([35,22,25],np.uint8)
         verdeAlto = np.array([100,250,160],np.uint8)

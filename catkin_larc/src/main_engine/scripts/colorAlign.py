@@ -15,7 +15,7 @@ from enum import Enum
 
 class State(Enum):
     START = 1
-    FWD1 = 2
+    ROTATE1 = 2
     WAIT1 = 3
     ELE1 = 4
     STACK1 = 5
@@ -149,154 +149,25 @@ class MainEngine:
         self.current_time = rospy.Time.now()
 
         if self.state == State.START:
-            if (self.current_time - self.state_time).to_sec() > 3:
+            if (self.current_time - self.state_time).to_sec() > 4:
+                self.driveSpin(1)
+                self.state_time = self.current_time
+            if self.color_sequence_detected:
                 self.state = State.FWD1
-                tx = 0.11 + self.iter*0.11
-                self.targetReached = False
-                self.setTarget(tx, 0)
-                self.pubIntake.publish(1)
+                self.color_sequence_detected = False
                 self.state_time = self.current_time
-                rospy.loginfo("State changed to FWD1")
+                rospy.loginfo("State changed to ROTATE_POSITIONING")
+                self.driveSpin(-1)
+                self.state = State.ROTATE1
+                self.iter = 0
 
-        elif self.state == State.FWD1:
-            self.driveToTarget()
-            if self.targetReached or (self.current_time - self.state_time).to_sec() > 5:
-                self.state = State.WAIT1
-                self.state_time = self.current_time
-                rospy.loginfo("State changed to WAIT")
-
-        elif self.state == State.WAIT1:
-            if (self.current_time - self.state_time).to_sec() > 1:
-                self.state = State.ELE1
-                if self.iter == 0 or self.iter == 2:
-                    self.pubElevator.publish(3)
-                elif self.iter == 1 or self.iter == 3:
-                    self.pubElevator.publish(2)
-                self.state_time = self.current_time
-                rospy.loginfo("State changed to ELE1")
-
-        elif self.state == State.ELE1:
-            if (self.current_time - self.state_time).to_sec() > 2:
-                self.state = State.STACK1
-                self.pubIntake.publish(2)
-                self.state_time = self.current_time
-                rospy.loginfo("State changed to STACK1")
-
-        elif self.state == State.STACK1:
-            if (self.current_time - self.state_time).to_sec() > 2:
-                self.pubElevator.publish(1)
+        if self.state == State.ROTATE1:
+            if (self.current_time - self.state_time).to_sec() > 3:
+                self.driveSpin(1)
                 self.state_time = self.current_time
                 self.iter += 1
-                if self.iter < 4:
-                    self.state = State.START
-                else:
-                    self.state = State.LINES_FWD
-                    self.targetReached = False
-                    self.setTarget(0.7, 0)
-                    self.iter = 0
-                rospy.loginfo("State changed to START")
-        
-        elif self.state == State.LINES_FWD:
-            self.driveToTarget()
-            if self.targetReached or (self.current_time - self.state_time).to_sec() > 8:
-                self.pubElevator.publish(5)
-                self.state = State.OUT_EL
-                rospy.loginfo("State changed to LINE FOLLOW")
-
-        elif self.state == State.OUT_EL:
-            if (self.current_time - self.state_time).to_sec() > 3:
-                self.state_time = self.current_time
-                if self.iter == 0 or self.iter == 2:
-                    self.pubWarehouse.publish(3)
-                elif self.iter == 1 or self.iter ==3:
-                    self.pubWarehouse.publish(2)
-                self.state = State.OUT_WAREHOUSE
-                rospy.loginfo("State changed to WAREHOUSE")
-        
-        elif self.state == State.OUT_WAREHOUSE:
-            if (self.current_time - self.state_time).to_sec() > 3:
-                self.state_time = self.current_time
-                self.pubIntake.publish(3)
-                self.state = State.OUT_EL_POS
-                rospy.loginfo("State changed to ELEVATOR PLACE")
-
-        elif self.state == State.OUT_EL_POS:
-            if (self.current_time - self.state_time).to_sec() > 3:
-                self.state_time = self.current_time
-                if self.iter == 0:
-                    self.pubElevator.publish(8)
-                if self.iter == 1:
-                    self.pubElevator.publish(9)
-                if self.iter == 2:
-                    self.pubElevator.publish(10)
-                if self.iter == 3:
-                    self.pubElevator.publish(1)
-                self.state = State.OUT_FWD
-                rospy.loginfo("State changed to FWD")
-        
-        elif self.state == State.OUT_FWD:
-            if (self.current_time - self.state_time).to_sec() > 4:
-                self.state_time = self.current_time
-                if self.iter == 3:
-                    self.pubIntake.publish(4)
-                    self.state = State.FINISH
-                    rospy.loginfo("State changed to FINISH")
-                else:
-                    self.targetReached = False
-                    self.setTarget(0.85, 0)
-                    self.state = State.OUT_INTAKE
-                    rospy.loginfo("State changed to INTAKE")
-
-        elif self.state == State.OUT_INTAKE:
-            self.driveToTarget()
-            if self.targetReached or (self.current_time - self.state_time).to_sec() > 8:
-                self.state_time = self.current_time
-                self.pubIntake.publish(4)
-                self.state = State.OUT_WAIT
-                rospy.loginfo("State changed to OUT WAIT")
-        
-        elif self.state == State.OUT_WAIT:
-            if (self.current_time - self.state_time).to_sec() > 4:
-                self.state_time = self.current_time
-                self.targetReached = False
-                self.setTarget(0.7, 0)
-                self.state = State.OUT_RESET
-                rospy.loginfo("State changed to RESET")
-
-        elif self.state == State.OUT_RESET:
-            self.driveToTarget()
-            if self.targetReached or (self.current_time - self.state_time).to_sec() > 8:
-                self.state_time = self.current_time
-                self.iter += 1
-                self.state = State.OUT_EL
-                if self.iter == 1:
-                    self.pubElevator.publish(6)
-                elif self.iter == 2:
-                    self.pubElevator.publish(5)
-                elif self.iter >= 3:
-                    self.rotateCount = 0
-                    self.state = State.FINISH
-                rospy.loginfo("State changed to OUT ROTATE")
-
-        elif self.state == State.ROTATE_180:
-            if (self.current_time - self.state_time).to_sec() > 5:
-                self.rotateCount += 1
-                if( self.rotateCount >= 3 ):
-                    self.targetReached = False
-                    self.setTarget(1.7, 0)
-                    self.state = State.FWD_COLOR
-                    rospy.loginfo("State changed to COLOR FWD")
-                else:
-                    self.driveSpin(1)
-                self.state_time = self.current_time
-
-        elif self.state == State.FWD_COLOR:
-            self.driveToTarget()
-            if self.targetReached or (self.current_time - self.state_time).to_sec() > 15:
-                self.state_time = self.current_time
-                self.pubIntake.publish(6)
-                self.state = State.OUT_EL
-                rospy.loginfo("State changed to OUT EL COLOR")
+            if self.iter == 2:
+                self.state = State.FWD1
 
 
         #jasdkjasdjkasd
