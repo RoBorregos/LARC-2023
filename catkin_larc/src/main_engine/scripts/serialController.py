@@ -579,7 +579,7 @@ class BaseController:
         #TODO - implement rosservice call to reset if value is nan
         #NOTE - when calling /reset service, speeds dies
         if math.isnan(req.z):
-            self.angle = 0 
+            self.angle = 500 
         else:
             self.angle = -req.z
 
