@@ -1,109 +1,128 @@
-#!/usr/bin/env python3
+import argparse
+import time
+from pathlib import Path
 
-# Asynchronous service that runs YOLOv5 model to detect clothing objects in an image
-import rospy
-import rospkg
-from humanAnalyzer.srv import imagetoAnalyze, imagetoAnalyzeResponse
-from std_msgs.msg import Bool
-from sensor_msgs.msg import Image
-from cv_bridge import CvBridge
-import tensorflow as tf
 import cv2
 import torch
-import json
+import torch.backends.cudnn as cudnn
+from numpy import random
+import os
 
-ArUcos = ['a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7', 'a8', 'a9']
+from models.experimental import attempt_load
+from utils.datasets import LoadStreams, LoadImages
+from utils.general import check_img_size, check_requirements, check_imshow, non_max_suppression, apply_classifier, \
+    scale_coords, xyxy2xywh, strip_optimizer, set_logging, increment_path
+from utils.plots import plot_one_box
+from utils.torch_utils import select_device, load_classifier, time_synchronized, TracedModel
 
-class aruco_detection:
 
-    def __init__(self):
-        rospy.init_node('aruco_detection')
-        self.doAction = False
-        # Setting as busy to initialize
-        self.statePub = rospy.Publisher("/aruco_detection", Bool, queue_size=1)
-        self.statePub.publish(True)
+def detect(source, weights, device, img_size, iou_thres, conf_thres):
 
-        # Setting up image receiver
-        self.received_image = None
-        self.bridge = CvBridge()
-        self.imageSub = rospy.Subscriber(
-            'image', Image, self.process_image, queue_size=10)
+    webcam = source.isnumeric()
+
+    set_logging()
+    #device = select_device(device)
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    half = device.type != 'cpu'  # half precision only supported on CUDA
+
+    # Load model
+    model = attempt_load(weights, map_location=device)  # load FP32 model
+    stride = int(model.stride.max())  # model stride
+    imgsz = check_img_size(img_size, s=stride)  # check img_size
+
+
+    if half:
+        model.half()  # to FP16
+
+    # Set Dataloader
+    if webcam:
+        view_img = check_imshow()
+        cudnn.benchmark = True  # set True to speed up constant image size inference
+        dataset = LoadStreams(source, img_size=imgsz, stride=stride)
+
+    # Get names and colors
+    names = model.module.names if hasattr(model, 'module') else model.names
+    colors = [[random.randint(0, 255) for _ in range(3)] for _ in names]
+
+    # Run inference
+    if device.type != 'cpu':
+        model(torch.zeros(1, 3, imgsz, imgsz).to(device).type_as(next(model.parameters())))  # run once
+
+    old_img_w = old_img_h = img_size
+    old_img_b = 1
+
+    t0 = time.perf_counter()
+
+    for path, img, im0s, vid_cap in dataset:
+        img = torch.from_numpy(img).to(device)
+        img = img.half() if half else img.float()  # uint8 to fp16/32
+        img /= 255.0  # 0 - 255 to 0.0 - 1.0
+        if img.ndimension() == 3:
+            img = img.unsqueeze(0)
+
+        # Warmup
+        if device.type != 'cpu' and (old_img_b != img.shape[0] or old_img_h != img.shape[2] or old_img_w != img.shape[3]):
+            old_img_b = img.shape[0]
+            old_img_h = img.shape[2]
+            old_img_w = img.shape[3]
         
-        # Setting up server
-        self.aruco_detection = rospy.Service('aruco_detection', imagetoAnalyze, self.handle_request)
-        
-        # Model location
-        rospack = rospkg.RosPack()
-        pkg_path = rospack.get_path('vision')
-        self.model_path = f"{pkg_path}/src/scripts/best.pt"
-        self.imgs_path = f"{pkg_path}/src/scripts/"
-        # Loading model
-        device = torch.device("gpu" if torch.cuda.is_available() else "cpu")
-        self.model = torch.hub.load("ultralytics/yolov5", "custom", self.model_path, device = "gpu")  # or yolov5n - yolov5x6, custom
+        # Inference
+        t1 = time_synchronized()
+        with torch.no_grad():   # Calculating gradients would cause a GPU memory leak
+            pred = model(img)[0]
+        t2 = time_synchronized()
 
-    # Receive image from camera
-    def process_image(self, msg):
-        try:
-            self.received_image = self.bridge.imgmsg_to_cv2(msg, "rgb8")
-        except Exception as e:
-            print("Image not received")
-            print(e)
-    
-    #-----------SERVER---------------------------------
-    def handle_request(self, req):
-        print(f"Received request from client : {req}")
-        self.req = req
-        self.doAction = True
-        return True
+        # Apply NMS
+        pred = non_max_suppression(pred, conf_thres, iou_thres)
+        t3 = time_synchronized()
 
-    
-    def tempProcess(self):
-        if self.doAction:
-            self.statePub.publish(True)
-            # Running the model
-            print("Running YOLOv7 model...")
-            # by default check the image received from the camera
-            print("Using image from webcam")
-            face_id = self.req.imagetoAnalyze.identity
-            face_x = self.req.imagetoAnalyze.x
-            face_y = self.req.imagetoAnalyze.y
-            face_w = self.req.imagetoAnalyze.w
-            face_h = self.req.imagetoAnalyze.h
-            img = self.received_image[face_y:face_y+face_h, face_x:face_x+face_w]
 
-            results = self.model(img)
-            showimg = img.copy()
-            accesories = []
-            for *xyxy, conf, cls in results.pandas().xyxy[0].itertuples(index=False):
-                if cls in ArUcos:
-                    print(f"Predicted {cls} at {[round(elem, 2) for elem in xyxy ]} with confidence {conf:.2f}.")
-                    accesories.append(cls)
-                showimg = cv2.rectangle(showimg, (int(xyxy[0]), int(xyxy[1])), (int(xyxy[2]), int(xyxy[3])), (0, 255, 0), 2)
-                showimg = cv2.putText(showimg, f"{cls} {conf:.2f}", (int(xyxy[0]), int(xyxy[1])), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-            if len(accesories) > 0:
-                data = {}
-                print(f"Found {len(accesories)} accesories.")
-                data[face_id]["Accesories"] = accesories
-                print("Accesories added to json")
-                with open(self.json_path, 'w') as outfile:
-                    json.dump(data, outfile)
-            else:
-                print("No accesories found")
-            cv2.imshow("ClothingAnalysis", showimg)
-            cv2.waitKey(0)
-            cv2.destroyAllWindows()
-            self.statePub.publish(False)
-            self.doAction = False
-            return True
+        # Process detections
+        for i, det in enumerate(pred):  # detections per image
+            #print("webcam",webcam)
+            if webcam:  # batch_size >= 1
+                p, s, im0, frame = path[i], '%g: ' % i, im0s[i].copy(), dataset.count
 
-    def run(self):
-        
-        print("Ready to receive requests")
-        while not rospy.is_shutdown():
-            self.statePub.publish(False)
-            self.tempProcess()
-            rospy.Rate(5.0).sleep()
+            #p = path(p)  # to Path
 
-# run with cpu
+            gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
+            if len(det):
+                # Rescale boxes from img_size to im0 size
+                det[:, :4] = scale_coords(img.shape[2:], det[:, :4], im0.shape).round()
 
-aruco_detection().run()
+                # Print results
+                for c in det[:, -1].unique():
+                    n = (det[:, -1] == c).sum()  # detections per class
+                    s += f"{n} {names[int(c)]}{'s' * (n > 1)}, "  # add to string
+
+                # Write results
+                for *xyxy, conf, cls in reversed(det):
+                        
+                    label = f'{names[int(cls)]} {conf:.2f}'
+                    confidece = f'{conf:.2f}'
+
+                    if(float(confidece)>0.5): #Truncate the confidence level less than 0.5
+                        print(names[int(cls)])
+                        print(confidece)
+                        
+                    plot_one_box(xyxy, im0, label=label, color=colors[int(cls)], line_thickness=1)
+
+            # Print time (inference + NMS)
+            #print(f'{s}Done. ({(1E3 * (t2 - t1)):.1f}ms) Inference, ({(1E3 * (t3 - t2)):.1f}ms) NMS')
+
+            # Stream results
+          
+        cv2.imshow("frame", im0)
+        cv2.waitKey(1) # 1 millisecond
+
+    print(f'Done. ({time.time() - t0:.3f}s)')
+
+
+if __name__ == '__main__':
+
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+    print(device)
+
+    with torch.no_grad():
+        detect("0", "/home/jabv/Desktop/LARC-2023/catkin_larc/src/vision/scripts/best.pt", device, img_size = 640, iou_thres = 0.45, conf_thres = 0.5)
