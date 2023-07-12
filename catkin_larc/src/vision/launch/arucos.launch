@@ -1,5 +1,5 @@
 <launch>
-    <node pkg="vision" type="models_ros.py" name="detect" output="screen"
+    <node pkg="vision" type="models_ros.py" name="arucos" output="screen"
     >
         <!-- Download the official weights from the original repo -->
         <param name="weights_path" type="str"

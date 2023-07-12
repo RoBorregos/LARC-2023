@@ -47,7 +47,7 @@ def create_detection_msg(img_msg: Image, detections: torch.Tensor, class_labels)
         bbox.size_y = h
 
 
-        if(float(conf)>0.5): #Truncate the confidence level less than 0.5
+        if(float(conf)>0.7): #Truncate the confidence level less than 0.5
             #print(pred[0][j])
 
             name=class_labels[int(cls)]

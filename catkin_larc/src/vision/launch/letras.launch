@@ -1,0 +1,27 @@
+<launch>
+    <node pkg="vision" type="models_ros.py" name="letras" output="screen"
+    >
+        <!-- Download the official weights from the original repo -->
+        <param name="weights_path" type="str"
+        value="/home/jabv/Desktop/LARC-2023/catkin_larc/src/vision/scripts/letras.pt"/>
+        <!-- Path to a class_labels.txt file containing your desired class labels. The i-th entry corresponds to the i-th class id. For example, in coco class label 0 corresponds to 'person'. Files for the coco and berkeley deep drive datasets are provided in the 'class_labels/' directory. If you leave it empty then no class labels are visualized.-->
+        <param name="classes_path" type="str" value="/home/jabv/Desktop/LARC-2023/catkin_larc/src/vision/clases/letras_clases.txt" />
+        <!-- topic name to subscribe to -->
+        <param name="img_topic" type="str" value="/webcam_image" />
+        <!-- topic name for the detection output -->
+        <param name="out_topic" type="str" value="letras" />
+        <!-- confidence threshold -->
+        <param name="conf_thresh" type="double" value="0.35" />
+        <!-- intersection over union threshold -->
+        <param name="iou_thresh" type="double" value="0.45" />
+        <!-- queue size for publishing -->
+        <param name="queue_size" type="int" value="1" />
+        <!-- image size to which to resize each input image before feeding into the
+        network (the final output is rescaled to the original image size) -->
+        <param name="img_size" type="int" value="640" />
+        <!-- flag whether to also publish image with the visualized detections -->
+        <param name="visualize" type="bool" value="true" />
+        <!-- 'cuda' or 'cpu' -->
+        <param name="device" type="str" value="cuda" />
+    </node>
+</launch>
