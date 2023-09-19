@@ -25,13 +25,13 @@ class DetectorColores:
         self.posePublisher = rospy.Publisher("/test/detectionposes", PoseArray, queue_size=5)
 
         #Suscriber topics changed for simulation
-        self.sub = rospy.Subscriber('/zed2/zed_node/rgb/image_rect_color', Image, self.callback)
-        self.subscriberDepth = rospy.Subscriber("/zed2/zed_node/depth/depth_registered", Image, self.depthImageRosCallback)
-        self.subscriberInfo = rospy.Subscriber("/zed2/zed_node/depth/camera_info", CameraInfo, self.infoImageRosCallback)
+        #self.sub = rospy.Subscriber('/zed2/zed_node/rgb/image_rect_color', Image, self.callback)
+        #self.subscriberDepth = rospy.Subscriber("/zed2/zed_node/depth/depth_registered", Image, self.depthImageRosCallback)
+        #self.subscriberInfo = rospy.Subscriber("/zed2/zed_node/depth/camera_info", CameraInfo, self.infoImageRosCallback)
 
-        #self.sub = rospy.Subscriber('/camera/rgb/image_raw', Image, self.callback)
-        #self.subscriberDepth = rospy.Subscriber("/camera/depth/image_raw", Image, self.depthImageRosCallback)
-        #self.subscriberInfo = rospy.Subscriber("/camera/depth/camera_info", CameraInfo, self.infoImageRosCallback)
+        self.sub = rospy.Subscriber('/camera/rgb/image_raw', Image, self.callback)
+        self.subscriberDepth = rospy.Subscriber("/camera/depth/image_raw", Image, self.depthImageRosCallback)
+        self.subscriberInfo = rospy.Subscriber("/camera/depth/camera_info", CameraInfo, self.infoImageRosCallback)
         
         
         self.pubmask = rospy.Publisher('/mask_colores', Image, queue_size=10)
@@ -176,16 +176,16 @@ class DetectorColores:
 
     def detectar_colores(self):
         frame = self.cv_image
-        redBajo1 = np.array([0,90,120],np.uint8)
-        redAlto1 = np.array([16,255,215],np.uint8)
+        redBajo1 = np.array([0, 207, 218],np.uint8)
+        redAlto1 = np.array([0, 207, 218],np.uint8)
 
         redBajo2 = np.array([170,100,45],np.uint8)
         redAlto2 = np.array([179,255,255],np.uint8)
 
-        azulBajo = np.array([96,50,38],np.uint8)
+        azulBajo = np.array([130,220,160],np.uint8)
         azulAlto = np.array([130,220,160],np.uint8)
 
-        verdeBajo = np.array([35,22,25],np.uint8)
+        verdeBajo = np.array([100,250,160],np.uint8)
         verdeAlto = np.array([100,250,160],np.uint8)
 
         amarillobajo = np.array([20,35,40],np.uint8)
