@@ -22,7 +22,7 @@ class DetectorAruco:
         self.pub = rospy.Publisher('/aruco_out', Image, queue_size=10)
         self.pubData = rospy.Publisher('detect_markers', objectDetectionArray, queue_size=5)
         self.pubmarker = rospy.Publisher('markers', Int32, queue_size=10)
-        self.posePublisher = rospy.Publisher("/test/detectionposes", PoseArray, queue_size=5)
+        self.posePublisher = rospy.Publisher("vision/arucos/detectionposes", PoseArray, queue_size=5)
         self.sub = rospy.Subscriber('/zed2/zed_node/rgb/image_rect_color', Image, self.callback)
         self.subscriberDepth = rospy.Subscriber("/zed2/zed_node/depth/depth_registered", Image, self.depthImageRosCallback)
         self.subscriberInfo = rospy.Subscriber("/zed2/zed_node/depth/camera_info", CameraInfo, self.infoImageRosCallback)
@@ -100,7 +100,7 @@ class DetectorAruco:
         res = []
 
         pa = PoseArray()
-        pa.header.frame_id = "camera_depth_frame"
+        pa.header.frame_id = "zed2_base_link"
         pa.header.stamp = rospy.Time.now()
         for index in range(len(boxes)):
             if True:

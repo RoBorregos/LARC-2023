@@ -7,7 +7,7 @@
         <!-- Path to a class_labels.txt file containing your desired class labels. The i-th entry corresponds to the i-th class id. For example, in coco class label 0 corresponds to 'person'. Files for the coco and berkeley deep drive datasets are provided in the 'class_labels/' directory. If you leave it empty then no class labels are visualized.-->
         <param name="classes_path" type="str" value="/home/jabv/Desktop/LARC-2023/catkin_larc/src/vision/clases/arucos_clases.txt" />
         <!-- topic name to subscribe to -->
-        <param name="img_topic" type="str" value="/zed2/zed_node/rgb/image_rect_color" />
+        <param name="img_topic" type="str" value="/webcam_image" /> <!--/zed2/zed_node/rgb/image_rect_color-->
         <!-- topic name for the detection output -->
         <param name="out_topic" type="str" value="arucos" />
         <!-- confidence threshold -->
