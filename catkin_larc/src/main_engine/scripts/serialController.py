@@ -251,35 +251,12 @@ class Microcontroller:
         else:
            return self.FAIL, 0, 0
 
-    def imu_angle(self, angle):
-        cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x05, 0x05) + struct.pack("f", angle) + struct.pack("B", 0x06)
-        if (self.execute(cmd_str))==1 and self.payload_ack == b'\x00':
-           return  self.SUCCESS
-        else:
-           return self.FAIL
-
-    def get_emergency_button(self):
-        cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x01, 0x15) + struct.pack("B", 0x16)
-        if (self.execute(cmd_str))==1 and self.payload_ack == b'\x00':
-           emergency_state, = struct.unpack('B', self.payload_args)
-           return  self.SUCCESS, emergency_state
-        else:
-           return self.FAIL, 0
-
     def reset_odometry(self):
         cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x01, 0x03) + struct.pack("B", 0x04)
         if (self.execute(cmd_str))==1 and self.payload_ack == b'\x00':
            return  self.SUCCESS
         else:
            return self.FAIL
-
-    def get_check_sum(self,list):
-        list_len = len(list)
-        cs = 0
-        for i in range(list_len):
-            cs += list[i]
-        cs=cs%255
-        return cs
 
     def drive(self, x, y, th):
         # data1 = struct.pack("h", x)
@@ -294,6 +271,14 @@ class Microcontroller:
         else:
            return self.FAIL
     
+    def imu_angle(self):
+        cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x01, 0x05) + struct.pack("B", 0x06)
+        if (self.execute(cmd_str))==1 and self.payload_ack == b'\x00':
+           x,y,z,w = struct.unpack('4f', self.payload_args)
+           return  self.SUCCESS, x, y, z, w
+        else:
+           return self.FAIL
+
     def intake(self, command):
         cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x05, 0x06) + struct.pack("i", command) + struct.pack("B", 0x07)
         if (self.execute(cmd_str))==1 and self.payload_ack == b'\x00':
@@ -308,6 +293,13 @@ class Microcontroller:
         else:
            return self.FAIL
     
+    def warehouse(self, level):
+        cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x05, 0x0A) + struct.pack("i", level) + struct.pack("B", 0x0B)
+        if (self.execute(cmd_str))==1 and self.payload_ack == b'\x00':
+           return  self.SUCCESS
+        else:
+           return self.FAIL
+
     def line_sensors(self):
         cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x01, 0x0B) + struct.pack("B", 0x0C)
         if (self.execute(cmd_str))==1 and self.payload_ack == b'\x00':
@@ -316,13 +308,6 @@ class Microcontroller:
         else:
             return self.FAIL, 0, 0, 0, 0, 0, 0, 0, 0
         
-    def warehouse(self, level):
-        cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x05, 0x0A) + struct.pack("i", level) + struct.pack("B", 0x0B)
-        if (self.execute(cmd_str))==1 and self.payload_ack == b'\x00':
-           return  self.SUCCESS
-        else:
-           return self.FAIL
-
     def set_global_setpoint(self):
         cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x01, 0x0D) + struct.pack("B", 0x0E)
         if (self.execute(cmd_str))==1 and self.payload_ack == b'\x00':
@@ -330,11 +315,6 @@ class Microcontroller:
         else:
             return self.FAIL
         
-    def stop(self):
-        ''' Stop both motors.
-        '''
-        return self.drive(0, 0, 0)
-
     def get_hardware_version(self):
         ''' Get the current version of the hardware.
         '''
@@ -344,6 +324,27 @@ class Microcontroller:
            return  self.SUCCESS, val
         else:
            return self.FAIL, -1, -1
+
+    def get_emergency_button(self):
+        cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x01, 0x15) + struct.pack("B", 0x16)
+        if (self.execute(cmd_str))==1 and self.payload_ack == b'\x00':
+           emergency_state, = struct.unpack('B', self.payload_args)
+           return  self.SUCCESS, emergency_state
+        else:
+           return self.FAIL, 0
+
+    def get_check_sum(self,list):
+        list_len = len(list)
+        cs = 0
+        for i in range(list_len):
+            cs += list[i]
+        cs=cs%255
+        return cs
+
+    def stop(self):
+        ''' Stop both motors.
+        '''
+        return self.drive(0, 0, 0)
 
 
 """ Class to receive Twist commands and publish Odometry data """
@@ -479,6 +480,12 @@ class BaseController:
             vx = 0.0
             vy = 0
             vth = 0
+
+            ax = 0.0
+            ay = 0.0
+            az = 0.0
+            aw = 0.0
+
             # Get odometry from the microcontroller
             try:
                 ack, vx, vy, vth, self.x, self.y  = self.Microcontroller.get_odometry()
@@ -488,6 +495,18 @@ class BaseController:
             except:
                 rospy.logerr("get odometry exception ")
                 return
+            
+            try:
+                ack, ax, ay, az, aw = self.Microcontroller.imu_angle()
+                if ack==self.FAIL:
+                    rospy.logerr("get imu angle failed ")
+                    return
+            except:
+                rospy.logerr("get imu angle exception ")
+                return
+            
+
+            self.quaternion = Quaternion(aw, ax, ay, az)
             
             odom = Odometry()
             odom.header.frame_id = "odom"
