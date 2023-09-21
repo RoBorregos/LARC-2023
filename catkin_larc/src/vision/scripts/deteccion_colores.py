@@ -177,30 +177,30 @@ class DetectorColores:
 
     def detectar_colores(self):
         frame = self.cv_image
-        redBajo1 = np.array([0, 207, 218],np.uint8)
-        redAlto1 = np.array([0, 207, 218],np.uint8)
 
-        redBajo2 = np.array([170,100,45],np.uint8)
-        redAlto2 = np.array([179,255,255],np.uint8)
+        lowerRed = np.array([0,162,122], np.uint8)
+        upperRed = np.array([5,229,154], np.uint8)
 
-        azulBajo = np.array([112,93,38], np.uint8)
-        azulAlto = np.array([128,231,167], np.uint8)
+        lowerRed2 = np.array([179,162,122], np.uint8)
+        upperRed2 = np.array([179,229,154], np.uint8)
 
-        verdeBajo = np.array([80,65,26], np.uint8)
-        verdeAlto = np.array([228,250,243], np.uint8)
+        lowerBlue = np.array([101,164,124], np.uint8)
+        upperBlue = np.array([106,216,172], np.uint8)
 
-        amarillobajo = np.array([26,209,146], np.uint8)
-        amarilloalto = np.array([31,255,255], np.uint8)
+        lowerGreen = np.array([54,93,104], np.uint8)
+        upperGreen = np.array([64,148,147], np.uint8)
 
+        lowerYellow = np.array([27,240,144], np.uint8)
+        upperYellow = np.array([29,255,182], np.uint8)
 
         font = cv2.FONT_HERSHEY_SIMPLEX
 
         frameHSV = cv2.cvtColor(frame,cv2.COLOR_BGR2HSV)
-        maskAzul = cv2.inRange(frameHSV,azulBajo,azulAlto)
-        maskVerde = cv2.inRange(frameHSV,verdeBajo,verdeAlto)
-        maskamarillo = cv2.inRange(frameHSV,amarillobajo, amarilloalto)
-        maskRed1 = cv2.inRange(frameHSV,redBajo1, redAlto1)
-        maskRed2 = cv2.inRange(frameHSV,redBajo2, redAlto2)
+        maskAzul = cv2.inRange(frameHSV, lowerBlue, upperBlue)
+        maskVerde = cv2.inRange(frameHSV, lowerGreen, upperGreen)
+        maskamarillo = cv2.inRange(frameHSV, lowerYellow, upperYellow)
+        maskRed1 = cv2.inRange(frameHSV, lowerRed, upperRed)
+        maskRed2 = cv2.inRange(frameHSV, lowerRed2, upperRed2)
         maskred = cv2.add(maskRed1,maskRed2)
         self.dibujar(maskAzul,(255,0,0))
         self.dibujar(maskamarillo,(0,255,255))
