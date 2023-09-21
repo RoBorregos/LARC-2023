@@ -10,7 +10,7 @@ def nothing(x):
 #cap = cv2.VideoCapture(0)
 
 # Cambiar a video capture para calibrar #
-cap = cv2.imread('lineas.png')
+cap = cv2.imread('auto_calib_img/test3.png')
 #cap.set(3,1280)
 #cap.set(4,720)
 
