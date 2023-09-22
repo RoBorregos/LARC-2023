@@ -1,13 +1,12 @@
 #include "Drive.h"
 
-void Drive::init(BNO *bno, LineSensor *lineSensor){
+void Drive::init(BNO *bno){
     pidControllerBNO.set(BNOKP, BNOKI, BNOKD, BNOKImax, BNOKout_min, BNOKout_max);
     frontLeft.init(Constants::kFrontLeftA, Constants::kFrontLeftB, Constants::kFrontLeftEncoder);
     frontRight.init(Constants::kFrontRightA, Constants::kFrontRightB, Constants::kFrontRightEncoder);
     backLeft.init(Constants::kBackLeftA, Constants::kBackLeftB, Constants::kBackLeftEncoder);
     backRight.init(Constants::kBackRightA, Constants::kBackRightB, Constants::kBackRightEncoder);
     this->bno = bno;
-    this->lineSensor = lineSensor;
     bno->init();
     robot_angle = bno->getOrientation().x;
     line_move = false;
