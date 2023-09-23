@@ -1,4 +1,5 @@
-#!/usr/bin/env python3
+#!/usr/bin/e
+        v python3
 import rospy
 import cv2
 import numpy as np
@@ -6,8 +7,10 @@ from sensor_msgs.msg import Image, CameraInfo
 from std_msgs.msg import String
 from cv_bridge import CvBridge, CvBridgeError
 from vision.msg import objectDetection, objectDetectionArray
+from vision.srv import DetectColorPattern, DetectColorPatternResponse
 import pathlib
 from geometry_msgs.msg import Point, PoseArray, Pose
+import actionlib
 
 import sys
 sys.path.append(str(pathlib.Path(__file__).parent) + '/../include')
@@ -17,6 +20,12 @@ class DetectorColores:
     def __init__(self):
         self.boxes = []
         self.detections = []
+
+        self.image = np.array([])
+        self.depth_image = np.array([])
+        self.camera_info = CameraInfo()
+
+        self.color_detections_data = objectDetectionArray()
 
         self.bridge = CvBridge()
         self.pub = rospy.Publisher('/colores_out', Image, queue_size=10)
@@ -34,6 +43,10 @@ class DetectorColores:
         self.subscriberDepth = rospy.Subscriber("/camera/depth/image_raw", Image, self.depthImageRosCallback)
         self.subscriberInfo = rospy.Subscriber("/camera/depth/camera_info", CameraInfo, self.infoImageRosCallback)
         """
+
+        # server for detecting color pattern
+        self.static_color_seq = "GBYRYBG" # static color sequence
+        self.color_pattern_server = rospy.Service('detect_color_pattern', DetectColorPattern, self.detect_color_pattern_cb)
         
         self.pubmask = rospy.Publisher('/mask_colores', Image, queue_size=10)
         self.mask  = None
@@ -63,7 +76,7 @@ class DetectorColores:
         temp = []
         for c in contornos:
             area = cv2.contourArea(c)
-            if area > 3000:
+            if area > 2000:
                 M = cv2.moments(c)
                 if (M["m00"]): M["m00"] = 1
                 x = int(M["m10"]/M["m00"])
@@ -102,7 +115,7 @@ class DetectorColores:
     def pc_callback(self, data):
         try:
             self.cv_image = self.bridge.imgmsg_to_cv2(data,desired_encoding="bgr8")
-            self.detectar_colores()
+            self.color_detection()
             self.pubcolor = rospy.Publisher('colors', String, queue_size=10)
         except CvBridgeError as e:
             print(e)
@@ -111,8 +124,8 @@ class DetectorColores:
     def callback(self, data):
         # rospy.loginfo(data.data)
         # implement cv_bridge
-        self.cv_image = self.bridge.imgmsg_to_cv2(data,desired_encoding="bgr8")
-        self.detectar_colores()
+        self.image = self.bridge.imgmsg_to_cv2(data,desired_encoding="bgr8")
+        self.color_detection()
         self.pub.publish(self.bridge.cv2_to_imgmsg(self.cv_image, encoding="bgr8"))
         self.boxes = []
         self.detections = []
@@ -172,11 +185,12 @@ class DetectorColores:
                 )
             self.posePublisher.publish(pa)
 
-        self.pubData.publish(objectDetectionArray(detections=res)) 
+        self.color_detections_data = objectDetectionArray(detections=res)
+        self.pubData.publish( self.color_detections_data )
         
 
-    def detectar_colores(self):
-        frame = self.cv_image
+    def color_detection(self):
+        frame = self.image
 
         lowerRed = np.array([0,162,122], np.uint8)
         upperRed = np.array([5,229,154], np.uint8)
@@ -210,6 +224,65 @@ class DetectorColores:
         self.get_objects(self.boxes, self.detections)
         #frame = cv2.resize(frame, (0, 0), fx = 0.3, fy = 0.3)
         #cv2.imshow('frame',frame)
+
+    def detect_color_pattern_cb(self, req):
+        data = self.color_detections_data
+        xTile = 0
+        sz = len(data.detections)
+        if sz == 0:
+            return xTile
+    
+        y_min_first = data.detections[0].ymin
+        x_last_max = data.detections[0].xmin
+        point_x_min_id = 0
+        color_seq = ""
+
+        color2Letter = {
+            "rojo": "R",
+            "verde": "G",
+            "azul": "B",
+            "amarillo": "Y"
+        }
+    
+        for i in range(sz):
+            if abs(data.detections[i].ymin - y_min_first) >= 80 or abs(data.detections[i].xmin - x_last_max) >= 70:
+                continue
+            color_seq += color2Letter[ data.detections[i].labelText ]
+
+            x_last_max = data.detections[i].xmax
+            if( abs(data.detections[i].point3D.x) < abs(data.detections[point_x_min_id].point3D.x)):
+                point_x_min_id = i
+
+        #check if subsequence
+        #print(color_seq)
+        if color_seq in self.static_color_seq and len(color_seq) >= 3:
+            rospy.loginfo("Color sequence detected: " + color_seq)
+            #get square from closer point x and adjacents
+            x_square_label = color2Letter[ data.detections[point_x_min_id].labelText ]
+            x_square_cont = ""
+            if point_x_min_id > 0:
+                x_square_cont = color2Letter[ data.detections[point_x_min_id - 1].labelText ] + x_square_label
+            else:
+                x_square_cont = x_square_label + color2Letter[ data.detections[point_x_min_id + 1].labelText ]
+
+            if x_square_label == "G" and x_square_cont == "GB":
+                xTile = 7
+            elif x_square_label == "B" and (x_square_cont == "GB" or x_square_cont == "BY"):
+                xTile = 6
+            elif x_square_label == "Y" and (x_square_cont == "BY" or x_square_cont == "YR"):
+                xTile = 5
+            elif x_square_label == "R":
+                xTile = 4
+            elif x_square_label == "Y" and (x_square_cont == "RY" or x_square_cont == "YB"):
+                xTile = 3
+            elif x_square_label == "B" and (x_square_cont == "YB" or x_square_cont == "BG"):
+                xTile = 2
+            elif x_square_label == "G" and x_square_cont == "BG":
+                xTile = 1
+
+            print( "x_square: " + str(xTile) )
+
+        return DetectColorPatternResponse(xTile)
         
     def main(self):
         rospy.logwarn("Starting listener")

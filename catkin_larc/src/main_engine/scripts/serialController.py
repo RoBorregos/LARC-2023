@@ -285,6 +285,13 @@ class Microcontroller:
            return  self.SUCCESS
         else:
            return self.FAIL
+    
+    def rotate(self, command):
+        cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x05, 0x07) + struct.pack("i", command) + struct.pack("B", 0x08)
+        if (self.execute(cmd_str))==1 and self.payload_ack == b'\x00':
+            return self.SUCCESS
+        else:
+            return self.FAIL
         
     def elevator(self, command):
         cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x05, 0x08) + struct.pack("i", command) + struct.pack("B", 0x09)
@@ -400,6 +407,7 @@ class BaseController:
         self.last_cmd_vel = now
 
         self.angle = 0
+        self.desired_angle = 500
         self.quaternion = Quaternion()
 
         self.intake_command = 0
@@ -415,6 +423,7 @@ class BaseController:
         rospy.Subscriber("elevator", Int32, self.elevatorCallback)
         rospy.Subscriber("warehouse", Int32, self.warehouseCallback)
         rospy.Subscriber("global_setpoint", Bool, self.globalSetpointCallback)
+        rospy.Subscriber("rotate", Int32, self.rotateCallback)
         self.line_sensor_pub = rospy.Publisher("line_sensors", lineSensor, queue_size=5)
         
         # Clear any old odometry info
@@ -468,6 +477,9 @@ class BaseController:
     def globalSetpointCallback(self, req):
         if req.data:
             self.Microcontroller.set_global_setpoint()
+    
+    def rotateCallback(self, req):
+        self.desired_angle = req.data
 
     def poll(self):
         now = rospy.Time.now()
@@ -556,6 +568,10 @@ class BaseController:
             """
             
             # Set motor speeds in encoder ticks per PID loop
+            if( self.desired_angle != 500):
+                self.Microcontroller.rotate(self.desired_angle)
+                self.desired_angle = 500
+            
             if ((not self.stopped)):
                 self.Microcontroller.drive(self.v_x, self.v_y, self.v_th)
                 self.Microcontroller.imu_angle(self.angle)

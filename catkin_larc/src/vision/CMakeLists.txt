@@ -9,6 +9,8 @@ project(vision)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  actionlib
+  actionlib_msgs
   geometry_msgs
   roscpp
   rospy
@@ -74,22 +76,21 @@ add_message_files(
 )
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+add_service_files(
+  FILES
+    DetectColorPattern.srv
+)
 
 ## Generate actions in the 'action' folder
-# add_action_files(
-#   FILES
-#   DetectObjects3D.action
-# #   Action2.action
-# )
+#add_action_files(
+#  DIRECTORY action
+#  FILES DetectColorPattern.action
+#)
 
 ## Generate added messages and services with any dependencies listed here
 generate_messages(
   DEPENDENCIES
+  actionlib_msgs
   vision
   std_msgs
   geometry_msgs
@@ -129,6 +130,8 @@ catkin_package(
   LIBRARIES
   INCLUDE_DIRS
   CATKIN_DEPENDS
+    actionlib
+    actionlib_msgs
     roscpp
     message_runtime
 )
