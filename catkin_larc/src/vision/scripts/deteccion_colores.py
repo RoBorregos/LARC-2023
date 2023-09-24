@@ -1,5 +1,4 @@
-#!/usr/bin/e
-        v python3
+#!/usr/bin/env python3
 import rospy
 import cv2
 import numpy as np
@@ -18,6 +17,8 @@ from vision_utils import *
 
 class DetectorColores:
     def __init__(self):
+        rospy.init_node('detector_colores', anonymous=True)
+
         self.boxes = []
         self.detections = []
 
@@ -34,23 +35,24 @@ class DetectorColores:
         self.posePublisher = rospy.Publisher("/test/detectionposes", PoseArray, queue_size=5)
 
         #Suscriber topics changed for simulation
+        """
         self.sub = rospy.Subscriber('/zed2/zed_node/rgb/image_rect_color', Image, self.callback)
         self.subscriberDepth = rospy.Subscriber("/zed2/zed_node/depth/depth_registered", Image, self.depthImageRosCallback)
         self.subscriberInfo = rospy.Subscriber("/zed2/zed_node/depth/camera_info", CameraInfo, self.infoImageRosCallback)
-
         """
+
+        
         self.sub = rospy.Subscriber('/camera/rgb/image_raw', Image, self.callback)
         self.subscriberDepth = rospy.Subscriber("/camera/depth/image_raw", Image, self.depthImageRosCallback)
         self.subscriberInfo = rospy.Subscriber("/camera/depth/camera_info", CameraInfo, self.infoImageRosCallback)
-        """
+        
 
         # server for detecting color pattern
         self.static_color_seq = "GBYRYBG" # static color sequence
-        self.color_pattern_server = rospy.Service('detect_color_pattern', DetectColorPattern, self.detect_color_pattern_cb)
+        self.color_pattern_server = rospy.Service('/detect_color_pattern', DetectColorPattern, self.detect_color_pattern_cb)
         
         self.pubmask = rospy.Publisher('/mask_colores', Image, queue_size=10)
         self.mask  = None
-        self.cv_image = np.array([])
         rospy.loginfo("Subscribed to image")
         self.main()
     
@@ -70,7 +72,7 @@ class DetectorColores:
    
 
     def dibujar(self,mask,color):
-        frame= self.cv_image
+        frame= self.image
         contornos,_ = cv2.findContours(mask, cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
        
         temp = []
@@ -126,7 +128,7 @@ class DetectorColores:
         # implement cv_bridge
         self.image = self.bridge.imgmsg_to_cv2(data,desired_encoding="bgr8")
         self.color_detection()
-        self.pub.publish(self.bridge.cv2_to_imgmsg(self.cv_image, encoding="bgr8"))
+        self.pub.publish(self.bridge.cv2_to_imgmsg(self.image, encoding="bgr8"))
         self.boxes = []
         self.detections = []
 
@@ -186,17 +188,17 @@ class DetectorColores:
             self.posePublisher.publish(pa)
 
         self.color_detections_data = objectDetectionArray(detections=res)
-        self.pubData.publish( self.color_detections_data )
+        self.pubData.publish( objectDetectionArray(detections=res) )
         
 
     def color_detection(self):
         frame = self.image
 
         lowerRed = np.array([0,162,122], np.uint8)
-        upperRed = np.array([5,229,154], np.uint8)
+        upperRed = np.array([5,229,254], np.uint8)
 
         lowerRed2 = np.array([179,162,122], np.uint8)
-        upperRed2 = np.array([179,229,154], np.uint8)
+        upperRed2 = np.array([179,229,254], np.uint8)
 
         lowerBlue = np.array([101,164,124], np.uint8)
         upperBlue = np.array([106,216,172], np.uint8)
@@ -286,7 +288,6 @@ class DetectorColores:
         
     def main(self):
         rospy.logwarn("Starting listener")
-        rospy.init_node('detector_colores', anonymous=True)
         rate = rospy.Rate(10)
         try:
             while not rospy.is_shutdown():

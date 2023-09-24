@@ -132,6 +132,9 @@ class MainEngine:
             # gira 90 grados
 
             rospy.wait_for_service('detect_color_pattern')
+            try:
+                detect_color_pattern = rospy.ServiceProxy('detect_color_pattern', DetectColorPattern)
+                self.x
 
         if self.state == State.START:
             if (self.current_time - self.state_time).to_sec() > 4:

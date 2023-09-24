@@ -24,6 +24,7 @@ from nav_msgs.msg import Odometry
 from std_msgs.msg import Int16, Int32, UInt16, Float32, String, Bool
 from tf.broadcaster import TransformBroadcaster
 from sensor_msgs.msg import Range, Imu
+from main_engine.srv import Intake, IntakeResponse
 
 from tf.transformations import quaternion_from_euler
 
@@ -420,6 +421,7 @@ class BaseController:
         rospy.Subscriber("cmd_vel", Twist, self.cmdVelCallback)
 
         rospy.Subscriber("intake", Int32, self.intakeCallback)
+        intakeServer = rospy.Service('/intake', Intake, self.intakeHandler)
         rospy.Subscriber("elevator", Int32, self.elevatorCallback)
         rospy.Subscriber("warehouse", Int32, self.warehouseCallback)
         rospy.Subscriber("global_setpoint", Bool, self.globalSetpointCallback)
@@ -618,8 +620,9 @@ class BaseController:
         else:
             self.angle = -req.z
 
-    def intakeCallback(self, req):
-        self.intake_command = req.data
+    def intakeHandler(self, req):
+        #TODO call service
+        self.intake_command = req.command
 
     def elevatorCallback(self, req):
         self.elevator_command = req.data

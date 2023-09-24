@@ -8,7 +8,10 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   rospy
   std_msgs
+  std_srvs
   vision
+  tf2
+  tf2_ros
   message_generation
 )
 
@@ -16,6 +19,11 @@ add_message_files(
   DIRECTORY msg
   FILES
   lineSensor.msg
+)
+
+add_service_files(
+  FILES
+    Intake.srv
 )
 
 generate_messages(
