@@ -3,11 +3,21 @@
 from pynput import keyboard
 import serial
 import time
+import argparse
+
+# receive the ACM number as an argument
+parser = argparse.ArgumentParser()
+parser.add_argument("acm", help="ACM number of the Arduino")
+args = parser.parse_args()
+
+ACM = args.acm
 
 #serial port
-ser = serial.Serial("/dev/ttyACM2", 115200, timeout=5)
+ser = serial.Serial(f"/dev/ttyACM{ACM}", 115200, timeout=5)
 ser.flush()
 def on_press(key):
+    global ACM
+    global ser
     x = 0
     y = 0
     z = 0
@@ -22,6 +32,8 @@ def on_press(key):
         key.char = 'D'
     if key == keyboard.Key.shift:
         key.char = 'S'
+    if key == keyboard.Key.enter:
+        key.char = 'I'
     try:
         # space to stop
         val = key.char
@@ -29,7 +41,15 @@ def on_press(key):
         print(e)
         print("Invalid key pressed")
     #send values to serial
-    ser.write(str.encode(val))
+    try:
+        ser.write(str.encode(val))
+    except Exception as e:
+        # try reconnecting to either ACM0 or ACM1
+        ACM = 0 if ACM == 1 else 1
+        print(e)
+        print("Trying to reconnect to serial")
+        ser = serial.Serial(f"/dev/ttyACM{ACM}", 115200, timeout=5)
+        ser.flush()
     #print(f"\nx = {x}, y = {y}, z = {z}, th = {th}, data = {val}")
     print(f"------- Sent data = {val} -----------")
 
