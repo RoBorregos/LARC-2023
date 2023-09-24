@@ -1,15 +1,10 @@
 #include "Drive.h"
 
-void Drive::init(BNO *bno, LineSensor *lineSensor){
-    pidControllerBNO.set(BNOKP, BNOKI, BNOKD, BNOKImax, BNOKout_min, BNOKout_max);
+void Drive::init(){
     frontLeft.init(Constants::kFrontLeftA, Constants::kFrontLeftB, Constants::kFrontLeftEncoder);
     frontRight.init(Constants::kFrontRightA, Constants::kFrontRightB, Constants::kFrontRightEncoder);
     backLeft.init(Constants::kBackLeftA, Constants::kBackLeftB, Constants::kBackLeftEncoder);
     backRight.init(Constants::kBackRightA, Constants::kBackRightB, Constants::kBackRightEncoder);
-    this->bno = bno;
-    this->lineSensor = lineSensor;
-    bno->init();
-    robot_angle = bno->getOrientation().x;
     line_move = false;
 }
 
@@ -34,46 +29,6 @@ void Drive::setSpeed(float linearX, float linearY, float angularZ, unsigned long
 
     if( current_time - speed_last_time < pid_time)
         return;
-    
-    float wheelPosX = Constants::kWheelBase/2;
-    float wheelPosY = Constants::kWheelTrack/2;
-    
-    float frontLeftSpeed = linearX - linearY - angularZ*(wheelPosX + wheelPosY);
-    float frontRightSpeed = linearX + linearY + angularZ*(wheelPosX + wheelPosY);
-    float backLeftSpeed = linearX + linearY - angularZ*(wheelPosX + wheelPosY);
-    float backRightSpeed = linearX - linearY + angularZ*(wheelPosX + wheelPosY);
-
-    frontLeft.setSpeed(frontLeftSpeed, current_time);
-    frontRight.setSpeed(frontRightSpeed, current_time);
-    backLeft.setSpeed(backLeftSpeed, current_time);
-    backRight.setSpeed(backRightSpeed, current_time);
-
-    speed_last_time = current_time;
-}
-
-// setSpeed with a time counter and BNO feedback
-void Drive::setSpeedOriented(float linearX, float linearY, float angularZ, unsigned long current_time){
-
-    if( current_time - speed_last_time < pid_time)
-        return;
-
-    // if an angular speed is set, update the angle
-    if(angularZ != 0){
-        robot_angle = bno->getOrientation().x;
-    }
-    
-    // get angular speed to compensate angle error, using PID
-    else {
-        float current_angle = bno->getOrientation().x;
-        // if difference is higher than a threshold, correct with angular speed
-        float angle_difference = current_angle - robot_angle;
-        if(abs(angle_difference) > Constants::kAngleTolerance){
-            float angular_speed = pidControllerBNO.calculate(robot_angle, current_angle, pid_time);
-            angularZ = -angular_speed;
-            Serial.print("Angle error: "); Serial.print(current_angle - robot_angle);
-            Serial.print("Angular speed: "); Serial.println(angular_speed);
-        }
-    }
     
     float wheelPosX = Constants::kWheelBase/2;
     float wheelPosY = Constants::kWheelTrack/2;

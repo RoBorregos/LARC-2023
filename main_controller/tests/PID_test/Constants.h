@@ -15,14 +15,6 @@ class Constants{
         static constexpr float kWheelBase = 0.155; //meters
         static constexpr float kDriveKP = 0.017;
         static constexpr float kDriveKD = 0.00;
-
-        static constexpr float kBNOKP = 0.3;
-        static constexpr float kBNOKI = 0.0;
-        static constexpr float kBNOKD = 0.1;
-        static constexpr float kBNOKImax = 0.1;
-        static constexpr float KBNOMaxAngular = 2.0;
-        static constexpr float kBNOMinAngular = -2.0;
-        static constexpr float kAngleTolerance = 3.5;
         
         //Motors (A: fwd, B: rev)
         static constexpr float kMotorsRPM = 380; //RPM
@@ -43,13 +35,11 @@ class Constants{
         static constexpr uint8_t kBackLeftEncoder = 32;
         static constexpr uint8_t kBackRightEncoder = 35;
 
-        //PID: stable off ground 16, 2, 8, max I 0.05
-        static constexpr float kMotorKP = 18.0;
-        static constexpr float kMotorKI = 3.0;
+        //PID
+        static constexpr float kMotorKP = 16.0;
+        static constexpr float kMotorKI = 2.0;
         static constexpr float kMotorKImax = 0.05;
         static constexpr float kMotorKD = 8.0;
-        static constexpr float kMotorMaxOut = 10.0;
-        static constexpr float kMotorMinOut = 0.0;
 
         // Line sensor //
         static constexpr uint8_t kLineSensorS0 = 14;
@@ -72,10 +62,10 @@ class Constants{
 
         // Elevator //
         static constexpr int kStepperSteps = 3200;
-        static constexpr uint8_t kStepperDirectionPin = 30;
-        static constexpr uint8_t kStepperStepPin = 31;
+        static constexpr uint8_t kStepperDirectionPin = 36;
+        static constexpr uint8_t kStepperStepPin = 37;
         static constexpr int kStepperSpeed = 2000; //max 4688 / > 1000 torque
-        static constexpr uint8_t kElevatorVLXxshut = 17;
+        static constexpr uint8_t kElevatorVLXxshut = 53;
 
         // Warehouse //
         static constexpr uint8_t kWarehouseUpperMotorA = 8;
@@ -84,9 +74,9 @@ class Constants{
         static constexpr uint8_t kWarehouseMidMotorB = 11;
         static constexpr uint8_t kWarehouseLowerMotorA = 29;
         static constexpr uint8_t kWarehouseLowerMotorB = 28;
-        static constexpr uint8_t kWarehouseVLXxshutUpper = 16;
-        static constexpr uint8_t kWarehouseVLXxshutMid = 15;
-        static constexpr uint8_t kWarehouseVLXxshutLower = 20;
+        static constexpr uint8_t kWarehouseVLXxshutUpper = 48;
+        static constexpr uint8_t kWarehouseVLXxshutMid = 46;
+        static constexpr uint8_t kWarehouseVLXxshutLower = 50;
         static constexpr int kWarehouseUpperSpeed = 180;
         static constexpr int kWarehouseMidSpeed = 180;
         static constexpr int kWarehouseLowerSpeed = 140;

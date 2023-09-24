@@ -2,10 +2,8 @@
 
 Intake::Intake(){
     action = IntakeActions::Stop;
-    pinMode(Constants::kIntakeMotor1PWM, OUTPUT);
     pinMode(Constants::kIntakeMotor1A, OUTPUT);
     pinMode(Constants::kIntakeMotor1B, OUTPUT);
-    pinMode(Constants::kIntakeMotor2PWM, OUTPUT);
     pinMode(Constants::kIntakeMotor2A, OUTPUT);
     pinMode(Constants::kIntakeMotor2B, OUTPUT);
     pinMode(Constants::kIntakePresence, INPUT);
@@ -16,12 +14,10 @@ void Intake::pick(unsigned long current_time){
         setAction(Stop);
         return;
     }
-    analogWrite(Constants::kIntakeMotor1PWM, Constants::kIntakePickSpeed);
-    analogWrite(Constants::kIntakeMotor2PWM, Constants::kIntakePickSpeed); 
-    digitalWrite(Constants::kIntakeMotor1A, 1);
-    digitalWrite(Constants::kIntakeMotor1B, 0);
-    digitalWrite(Constants::kIntakeMotor2A, 0);
-    digitalWrite(Constants::kIntakeMotor2B, 1);
+    analogWrite(Constants::kIntakeMotor1A, Constants::kIntakePickSpeed);
+    analogWrite(Constants::kIntakeMotor1B, 0);
+    analogWrite(Constants::kIntakeMotor2A, Constants::kIntakePickSpeed);
+    analogWrite(Constants::kIntakeMotor2B, 0);
 }
 
 void Intake::in(unsigned long current_time){
@@ -29,12 +25,10 @@ void Intake::in(unsigned long current_time){
         setAction(Stop);
         return;
     }
-    analogWrite(Constants::kIntakeMotor1PWM, Constants::kIntakeInSpeed);
-    analogWrite(Constants::kIntakeMotor2PWM, Constants::kIntakeInSpeed);
-    digitalWrite(Constants::kIntakeMotor1A, 1);
-    digitalWrite(Constants::kIntakeMotor1B, 0);
-    digitalWrite(Constants::kIntakeMotor2A, 0);
-    digitalWrite(Constants::kIntakeMotor2B, 1);
+    analogWrite(Constants::kIntakeMotor1A, Constants::kIntakePickSpeed);
+    analogWrite(Constants::kIntakeMotor1B, 0);
+    analogWrite(Constants::kIntakeMotor2A, Constants::kIntakePickSpeed);
+    analogWrite(Constants::kIntakeMotor2B, 0);
 }
 
 void Intake::out(unsigned long current_time){
@@ -42,12 +36,10 @@ void Intake::out(unsigned long current_time){
         setAction(Stop);
         return;
     }
-    analogWrite(Constants::kIntakeMotor1PWM, Constants::kIntakeOutSpeed);
-    analogWrite(Constants::kIntakeMotor2PWM, Constants::kIntakeOutSpeed);
-    digitalWrite(Constants::kIntakeMotor1A, 0);
-    digitalWrite(Constants::kIntakeMotor1B, 1);
-    digitalWrite(Constants::kIntakeMotor2A, 1);
-    digitalWrite(Constants::kIntakeMotor2B, 0);
+    analogWrite(Constants::kIntakeMotor1A, 0);
+    analogWrite(Constants::kIntakeMotor1B, Constants::kIntakePickSpeed);
+    analogWrite(Constants::kIntakeMotor2A, 0);
+    analogWrite(Constants::kIntakeMotor2B, Constants::kIntakePickSpeed);
 }
 
 void Intake::drop(unsigned long current_time){
@@ -55,19 +47,17 @@ void Intake::drop(unsigned long current_time){
         setAction(Stop);
         return;
     }
-    analogWrite(Constants::kIntakeMotor1PWM, Constants::kIntakeDropSpeed);
-    analogWrite(Constants::kIntakeMotor2PWM, Constants::kIntakeDropSpeed);
-    digitalWrite(Constants::kIntakeMotor1A, 0);
-    digitalWrite(Constants::kIntakeMotor1B, 1);
-    digitalWrite(Constants::kIntakeMotor2A, 1);
-    digitalWrite(Constants::kIntakeMotor2B, 0);
+    analogWrite(Constants::kIntakeMotor1A, 0);
+    analogWrite(Constants::kIntakeMotor1B, Constants::kIntakePickSpeed);
+    analogWrite(Constants::kIntakeMotor2A, 0);
+    analogWrite(Constants::kIntakeMotor2B, Constants::kIntakePickSpeed);
 }
 
 void Intake::stop(){
-    digitalWrite(Constants::kIntakeMotor1A, 0);
-    digitalWrite(Constants::kIntakeMotor1B, 0);
-    digitalWrite(Constants::kIntakeMotor2A, 0);
-    digitalWrite(Constants::kIntakeMotor2B, 0);
+    analogWrite(Constants::kIntakeMotor1A, 0);
+    analogWrite(Constants::kIntakeMotor1B, 0);
+    analogWrite(Constants::kIntakeMotor2A, 0);
+    analogWrite(Constants::kIntakeMotor2B, 0);
 }
 
 bool Intake::getPresence(){

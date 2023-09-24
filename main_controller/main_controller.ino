@@ -1,5 +1,6 @@
 #include <Wire.h>
 #include <Adafruit_VL53L0X.h>
+#include <Adafruit_BNO055.h>
 #include <Stepper.h>
 
 #include "Constants.h"
@@ -11,12 +12,15 @@
 #include "LineSensor.h"
 #include "Warehouse.h"
 
+
 Drive mDrive;
 Elevator mElevator;
 Intake mIntake;
 Warehouse mWarehouse;
 LineSensor mLineSensor;
 RosBridge ros;
+Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28, &Wire2);
+BNO mbno = BNO(&bno);
 
 bool ENABLE_ROS = true;
 
@@ -36,7 +40,7 @@ void setup(){
     Wire.begin();
     vlxSetup();
 
-    mDrive.init(&mLineSensor);
+    mDrive.init(&mbno, &mLineSensor);
     mElevator.init(&mStepper);
     mWarehouse.init(current_time, &vlx[0], &vlx[1], &vlx[2]);
     Serial.begin(115200);

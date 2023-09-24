@@ -10,7 +10,6 @@ https://research.ijcaonline.org/volume113/number3/pxc3901586.pdf
 #include "Motor.h"
 #include "BNO.h"
 #include "PID.h"
-#include "LineSensor.h"
 
 enum MotorID{
     FrontLeft,
@@ -42,7 +41,6 @@ class Drive{
         bool line_move = false;
         int line_state = 0;
         bool verbose = false;
-        LineSensor *lineSensor;
         BNO *bno;
         float BNOKP = Constants::kBNOKP;
         float BNOKI = Constants::kBNOKI;
@@ -52,7 +50,7 @@ class Drive{
         float BNOKout_max = Constants::KBNOMaxAngular;
         PID pidControllerBNO;
     public:
-        void init(BNO *bno, LineSensor *line_sensor);
+        void init(BNO *bno);
         Motor frontLeft;
         Motor frontRight;
         Motor backLeft;

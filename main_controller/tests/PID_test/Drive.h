@@ -8,9 +8,6 @@ https://research.ijcaonline.org/volume113/number3/pxc3901586.pdf
 #include "Arduino.h"
 #include "Constants.h"
 #include "Motor.h"
-#include "BNO.h"
-#include "PID.h"
-#include "LineSensor.h"
 
 enum MotorID{
     FrontLeft,
@@ -42,24 +39,14 @@ class Drive{
         bool line_move = false;
         int line_state = 0;
         bool verbose = false;
-        LineSensor *lineSensor;
-        BNO *bno;
-        float BNOKP = Constants::kBNOKP;
-        float BNOKI = Constants::kBNOKI;
-        float BNOKD = Constants::kBNOKD;
-        float BNOKImax = Constants::kBNOKImax;
-        float BNOKout_min = Constants::kBNOMinAngular;
-        float BNOKout_max = Constants::KBNOMaxAngular;
-        PID pidControllerBNO;
     public:
-        void init(BNO *bno, LineSensor *line_sensor);
+        void init();
         Motor frontLeft;
         Motor frontRight;
         Motor backLeft;
         Motor backRight;
         void setSpeed(float linearX, float linearY, float angularZ);
         void setSpeed(float linearX, float linearY, float angularZ, unsigned long current_time);
-        void setSpeedOriented(float linearX, float linearY, float angularZ, unsigned long current_time);
         void setAngle(float angle);
         void setGlobalSetpoint();
         void stop();
@@ -72,9 +59,6 @@ class Drive{
         Pose2d getChassisSpeeds();
         Pose2d getPosition();
         void resetOdometry();
-
-        // current angle the robot should be facing
-        float robot_angle = 0;
 };
 
 #endif

@@ -4,7 +4,6 @@ Motor::Motor(){
     this->pinA = 0;
     this->pinB = 0;
     this->encoder = 0;
-    pidController.set(Constants::kMotorKP, Constants::kMotorKI, Constants::kMotorKD, Constants::kMotorKImax, Constants::kMotorMinOut, Constants::kMotorMaxOut);
 }
 
 void Motor::init(int pinA, int pinB, int encoder){
