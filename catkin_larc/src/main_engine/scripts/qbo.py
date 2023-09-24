@@ -3,15 +3,19 @@
 import rospy
 import tf_conversions
 import tf2_ros
+import actionlib
 from vision.msg import objectDetection, objectDetectionArray
 import geometry_msgs.msg
 from geometry_msgs.msg import Point, Pose
 from main_engine.srv import Intake, IntakeResponse
+from nav_main.msg import Drive2TargetAction, Drive2TargetGoal, Drive2TargetResult, Drive2TargetFeedback
 
 FIND_INIT_POS = "find_init_pos"
 ROTATE_TO_CUBES = "rotate_to_cubes"
 PICK_CUBE_TARGET = "pick_cube_target"
 DRIVE_TO_TARGET = "drive_to_target"
+PICK_CUBE = "pick_cube"
+FINISH = "finish"
 
 class MainEngine:
     def __init__(self):
@@ -20,11 +24,12 @@ class MainEngine:
         self.target_success = False
         self.selected_target = Point()
 
-        self.subColorDetect = rospy.Subscriber('/color_detect', objectDetectionArray, self.colorDetectCb)
-
         self.br = tf2_ros.TransformBroadcaster()
         self.tfBuffer = tf2_ros.Buffer()
         self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
+
+        self.subColorDetect = rospy.Subscriber('/color_detect', objectDetectionArray, self.colorDetectCb)
+        self.driveTargetClient = actionlib.SimpleActionClient("drive_to_target", Drive2TargetAction)
 
 
     def colorDetectCb(self, data):
@@ -54,7 +59,7 @@ class MainEngine:
             if self.target_success:
                 self.state = DRIVE_TO_TARGET
 
-        if self.state == DRIVE_TO_TARGET:
+        elif self.state == DRIVE_TO_TARGET:
             t = geometry_msgs.msg.TransformStamped()
 
             t.header.stamp = rospy.Time.now()
@@ -71,13 +76,34 @@ class MainEngine:
 
             self.br.sendTransform(t)
 
-            rospy.Rate(5.0).sleep()
+            rospy.Rate(0.5).sleep()
             
             tfIntake = self.tfBuffer.lookup_transform('intake', 'qbo1', rospy.Time())
-
             print(tfIntake)
 
-            rospy.Rate(20.0).sleep()
+            self.driveTargetClient.wait_for_server()
+
+            target_point = Point()
+            target_point.x = tfIntake.transform.translation.x
+            target_point.y = tfIntake.transform.translation.y
+            target_point.z = 0
+            goal = Drive2TargetGoal( target=target_point )
+
+            self.driveTargetClient.send_goal(goal)
+            self.driveTargetClient.wait_for_result()
+            print(self.driveTargetClient.get_result())
+
+            if self.driveTargetClient.get_result():
+                self.state = PICK_CUBE
+
+        elif self.state == PICK_CUBE:
+            rospy.wait_for_service('intake')
+            try:
+                intake_client = rospy.ServiceProxy('intake', Intake)
+                print( intake_client(1) )
+            except rospy.ServiceException as e:
+                print("Service call failed: %s"%e)
+            self.state = FINISH
 
 
 

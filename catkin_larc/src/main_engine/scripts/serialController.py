@@ -420,8 +420,8 @@ class BaseController:
         # Subscriptions
         rospy.Subscriber("cmd_vel", Twist, self.cmdVelCallback)
 
-        rospy.Subscriber("intake", Int32, self.intakeCallback)
-        intakeServer = rospy.Service('/intake', Intake, self.intakeHandler)
+        #rospy.Subscriber("intake", Int32, self.intakeCallback)
+        intakeServer = rospy.Service('intake', Intake, self.intakeHandler)
         rospy.Subscriber("elevator", Int32, self.elevatorCallback)
         rospy.Subscriber("warehouse", Int32, self.warehouseCallback)
         rospy.Subscriber("global_setpoint", Bool, self.globalSetpointCallback)
@@ -621,7 +621,8 @@ class BaseController:
             self.angle = -req.z
 
     def intakeHandler(self, req):
-        #TODO call service
+        return self.Microcontroller.intake( req.command ) == self.SUCCESS
+
         self.intake_command = req.command
 
     def elevatorCallback(self, req):
