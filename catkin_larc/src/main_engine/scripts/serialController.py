@@ -501,6 +501,7 @@ class BaseController:
             aw = 0.0
 
             # Get odometry from the microcontroller
+            
             try:
                 ack, vx, vy, vth, self.x, self.y  = self.Microcontroller.get_odometry()
                 if ack==self.FAIL:
@@ -510,6 +511,7 @@ class BaseController:
                 rospy.logerr("get odometry exception ")
                 return
             
+            """
             try:
                 ack, ax, ay, az, aw = self.Microcontroller.imu_angle()
                 if ack==self.FAIL:
@@ -521,6 +523,9 @@ class BaseController:
             
 
             self.quaternion = Quaternion(aw, ax, ay, az)
+            """
+
+            self.quaternion = quaternion_from_euler(0, 0, 0)
             
             odom = Odometry()
             odom.header.frame_id = "odom"
@@ -529,7 +534,7 @@ class BaseController:
             odom.pose.pose.position.x = self.x
             odom.pose.pose.position.y = self.y
             odom.pose.pose.position.z = 0
-            odom.pose.pose.orientation = self.quaternion
+            odom.pose.pose.orientation = Quaternion(*self.quaternion)
             odom.twist.twist.linear.x = vx
             odom.twist.twist.linear.y = vy
             odom.twist.twist.angular.z = vth
@@ -576,7 +581,7 @@ class BaseController:
             
             if ((not self.stopped)):
                 self.Microcontroller.drive(self.v_x, self.v_y, self.v_th)
-                self.Microcontroller.imu_angle(self.angle)
+                #self.Microcontroller.imu_angle(self.angle)
                 
             if(self.intake_command != 0):
                 self.Microcontroller.intake(self.intake_command)

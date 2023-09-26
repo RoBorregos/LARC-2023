@@ -35,16 +35,16 @@ class DetectorColores:
         self.posePublisher = rospy.Publisher("/test/detectionposes", PoseArray, queue_size=5)
 
         #Suscriber topics changed for simulation
-        """
+        
         self.sub = rospy.Subscriber('/zed2/zed_node/rgb/image_rect_color', Image, self.callback)
         self.subscriberDepth = rospy.Subscriber("/zed2/zed_node/depth/depth_registered", Image, self.depthImageRosCallback)
         self.subscriberInfo = rospy.Subscriber("/zed2/zed_node/depth/camera_info", CameraInfo, self.infoImageRosCallback)
-        """
 
-        
+        """
         self.sub = rospy.Subscriber('/camera/rgb/image_raw', Image, self.callback)
         self.subscriberDepth = rospy.Subscriber("/camera/depth/image_raw", Image, self.depthImageRosCallback)
         self.subscriberInfo = rospy.Subscriber("/camera/depth/camera_info", CameraInfo, self.infoImageRosCallback)
+        """
         
 
         # server for detecting color pattern
@@ -193,12 +193,12 @@ class DetectorColores:
 
     def color_detection(self):
         frame = self.image
+        
+        lowerRed = np.array([0,151,88], np.uint8)
+        upperRed = np.array([7,255,142], np.uint8)
+        lowerRed2 = np.array([179,151,88], np.uint8)
+        upperRed2 = np.array([179,255,142], np.uint8)
 
-        lowerRed = np.array([0,162,122], np.uint8)
-        upperRed = np.array([5,229,254], np.uint8)
-
-        lowerRed2 = np.array([179,162,122], np.uint8)
-        upperRed2 = np.array([179,229,254], np.uint8)
 
         lowerBlue = np.array([101,164,124], np.uint8)
         upperBlue = np.array([106,216,172], np.uint8)

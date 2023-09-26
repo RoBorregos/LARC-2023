@@ -19,6 +19,7 @@ FINISH = "finish"
 
 class MainEngine:
     def __init__(self):
+        rospy.loginfo("MainEngine init")
         self.current_time = rospy.Time.now()
         self.state = PICK_CUBE_TARGET
         self.target_success = False
@@ -34,6 +35,7 @@ class MainEngine:
 
     def colorDetectCb(self, data):
         if self.state == PICK_CUBE_TARGET:
+            #NOTE invert x and y
             sz = len(data.detections)
             if sz == 0:
                 return
@@ -58,6 +60,7 @@ class MainEngine:
         if self.state == PICK_CUBE_TARGET:
             if self.target_success:
                 self.state = DRIVE_TO_TARGET
+                rospy.loginfo("Target selected")
 
         elif self.state == DRIVE_TO_TARGET:
             t = geometry_msgs.msg.TransformStamped()
@@ -75,6 +78,7 @@ class MainEngine:
             t.transform.rotation.w = q[3]
 
             self.br.sendTransform(t)
+            rospy.loginfo("Target sent")
 
             rospy.Rate(0.5).sleep()
             
@@ -95,6 +99,8 @@ class MainEngine:
 
             if self.driveTargetClient.get_result():
                 self.state = PICK_CUBE
+
+            rospy.loginfo("Target reached")
 
         elif self.state == PICK_CUBE:
             rospy.wait_for_service('intake')

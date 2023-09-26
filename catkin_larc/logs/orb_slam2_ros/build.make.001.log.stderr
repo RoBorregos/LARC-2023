@@ -1,0 +1,6 @@
+/usr/bin/ld: warning: libopencv_calib3d.so.4.5, needed by /home/nvidia/workspace/LARC-2023/catkin_larc/src/orb_slam_2_ros/orb_slam2/lib/liborb_slam2_ros.so, may conflict with libopencv_calib3d.so.4.2
+/usr/bin/ld: warning: libopencv_imgcodecs.so.4.2, needed by /opt/ros/noetic/lib/libcv_bridge.so, may conflict with libopencv_imgcodecs.so.4.5
+/usr/bin/ld: warning: libopencv_calib3d.so.4.5, needed by /home/nvidia/workspace/LARC-2023/catkin_larc/src/orb_slam_2_ros/orb_slam2/lib/liborb_slam2_ros.so, may conflict with libopencv_calib3d.so.4.2
+/usr/bin/ld: warning: libopencv_imgcodecs.so.4.2, needed by /opt/ros/noetic/lib/libcv_bridge.so, may conflict with libopencv_imgcodecs.so.4.5
+/usr/bin/ld: warning: libopencv_calib3d.so.4.5, needed by /home/nvidia/workspace/LARC-2023/catkin_larc/src/orb_slam_2_ros/orb_slam2/lib/liborb_slam2_ros.so, may conflict with libopencv_calib3d.so.4.2
+/usr/bin/ld: warning: libopencv_imgcodecs.so.4.2, needed by /opt/ros/noetic/lib/libcv_bridge.so, may conflict with libopencv_imgcodecs.so.4.5

@@ -75,8 +75,7 @@ add_action_files(
 
 ## Generate added messages and services with any dependencies listed here
 generate_messages(
-  DEPENDENCIES
-    std_msgs actionlib_msgs geometry_msgs nav_msgs
+  DEPENDENCIES std_msgs actionlib_msgs geometry_msgs nav_msgs
 )
 
 ################################################
@@ -110,8 +109,10 @@ generate_messages(
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
   #INCLUDE_DIRS include
-  #LIBRARIES nav_main
-  CATKIN_DEPENDS roscpp rospy std_msgs actionlib_msgs geometry_msgs
+  LIBRARIES nav_main
+  CATKIN_DEPENDS roscpp rospy std_msgs actionlib actionlib_msgs geometry_msgs
+  DEPENDS system_lib
+  message_runtime 
   #DEPENDS system_lib
 )
 

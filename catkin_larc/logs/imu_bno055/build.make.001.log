@@ -1,0 +1,6 @@
+[35m[1mScanning dependencies of target bno055_i2c_node[0m
+[ 25%] [32mBuilding CXX object CMakeFiles/bno055_i2c_node.dir/src/bno055_i2c_activity.cpp.o[0m
+[ 50%] [32mBuilding CXX object CMakeFiles/bno055_i2c_node.dir/src/bno055_i2c_node.cpp.o[0m
+[ 75%] [32mBuilding CXX object CMakeFiles/bno055_i2c_node.dir/src/watchdog.cpp.o[0m
+[100%] [32m[1mLinking CXX executable /home/nvidia/workspace/LARC-2023/catkin_larc/devel/.private/imu_bno055/lib/imu_bno055/bno055_i2c_node[0m
+[100%] Built target bno055_i2c_node
