@@ -13,17 +13,19 @@ class NavMain:
         self.drive_target_as.start()
         self.drive_target_feedback = Drive2TargetFeedback()
         self.drive_target_result = Drive2TargetResult()
-        self.distance_acc_tolerance = 0.01
-        self.pos_kP = 2.0
+        self.distance_acc_tolerance = 0.04
+        self.pos_kP = 2.3
         self.rate = rospy.Rate(10)
 
         self.pubCmdVel = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
         self.subOdom = rospy.Subscriber('/odom', Odometry, self.odomCb)
         self.nav_odom = Odometry()
 
+        self.run()
+
     def ex_cb_drive_target(self, goal):
-        nav_target_x = goal.target.x + self.nav_odom.pose.pose.position.x
-        nav_target_y = goal.target.y + self.nav_odom.pose.pose.position.y
+        nav_target_x = - goal.target.x + self.nav_odom.pose.pose.position.y
+        nav_target_y = goal.target.y + self.nav_odom.pose.pose.position.x
         distance_x = abs(goal.target.x)
         distance_y = abs(goal.target.y)
         
@@ -41,7 +43,7 @@ class NavMain:
                 self.drive_target_as.set_preempted()
                 success = False
                 break
-            error_x = nav_target_x - self.nav_odom.pose.pose.position.x
+            error_x = nav_target_x - self.nav_odom.pose.pose.position.y
             msg = Twist()
             msg.linear.y = error_x * self.pos_kP
             self.pubCmdVel.publish( msg )
@@ -61,7 +63,7 @@ class NavMain:
                 self.drive_target_as.set_preempted()
                 success = False
                 break
-            error_y = nav_target_y - self.nav_odom.pose.pose.position.y
+            error_y = nav_target_y - self.nav_odom.pose.pose.position.x
             msg = Twist()
             msg.linear.x = error_y * self.pos_kP
             self.pubCmdVel.publish( msg )
@@ -78,13 +80,20 @@ class NavMain:
         if success:
             self.drive_target_result.success = True
             self.drive_target_as.set_succeeded( self.drive_target_result )
+            rospy.loginfo('Reached target')
 
 
     def odomCb(self, data):
         self.nav_odom = data
 
+    def run(self):
+        try:
+            while not rospy.is_shutdown():
+                self.rate.sleep()
+        except KeyboardInterrupt:
+            rospy.logwarn("Keyboard interrupt detected, stopping listener")
+
 
 if __name__ == '__main__':
     rospy.init_node('main_nav')
     nav_main = NavMain()
-    rospy.spin()

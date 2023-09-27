@@ -194,11 +194,10 @@ class DetectorColores:
     def color_detection(self):
         frame = self.image
         
-        lowerRed = np.array([0,151,88], np.uint8)
+        lowerRed = np.array([0,190,92], np.uint8)
         upperRed = np.array([7,255,142], np.uint8)
-        lowerRed2 = np.array([179,151,88], np.uint8)
+        lowerRed2 = np.array([179,190,92], np.uint8)
         upperRed2 = np.array([179,255,142], np.uint8)
-
 
         lowerBlue = np.array([101,164,124], np.uint8)
         upperBlue = np.array([106,216,172], np.uint8)

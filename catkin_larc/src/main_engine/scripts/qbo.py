@@ -77,6 +77,8 @@ class MainEngine:
             t.transform.rotation.z = q[2]
             t.transform.rotation.w = q[3]
 
+            print(t)
+
             self.br.sendTransform(t)
             rospy.loginfo("Target sent")
 
@@ -88,8 +90,10 @@ class MainEngine:
             self.driveTargetClient.wait_for_server()
 
             target_point = Point()
-            target_point.x = tfIntake.transform.translation.x
-            target_point.y = tfIntake.transform.translation.y
+            #target_point.x = tfIntake.transform.translation.x
+            #target_point.y = tfIntake.transform.translation.y
+            target_point.x = t.transform.translation.x
+            target_point.y = t.transform.translation.z
             target_point.z = 0
             goal = Drive2TargetGoal( target=target_point )
 
