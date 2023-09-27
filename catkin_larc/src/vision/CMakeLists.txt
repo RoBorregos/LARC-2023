@@ -91,6 +91,7 @@ add_message_files(
 ## Generate added messages and services with any dependencies listed here
 generate_messages(
   DEPENDENCIES
+  actionlib_msgs
   vision
   std_msgs
   geometry_msgs
@@ -130,6 +131,8 @@ catkin_package(
   LIBRARIES
   INCLUDE_DIRS
   CATKIN_DEPENDS
+    actionlib
+    actionlib_msgs
     roscpp
     message_runtime
 )
