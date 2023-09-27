@@ -7,6 +7,7 @@ import ultralytics
 import cv2
 import time
 import numpy as np
+from std_msgs.msg import Bool
 from sensor_msgs.msg import Image, CameraInfo
 from cv_bridge import CvBridge, CvBridgeError
 from vision.msg import objectDetection, objectDetectionArray
@@ -19,8 +20,8 @@ from vision_utils import *
 
 class letras_yolov8:
         def __init__(self):
-            self.model = ultralytics.YOLO("/home/nvidia/Desktop/LARC-2023/catkin_larc/src/vision/scripts/yolov8n.pt")
-            #self.model = ultralytics.YOLO("larc_yolov8_test4.pt")
+            #self.model = ultralytics.YOLO("/home/nvidia/Desktop/LARC-2023/catkin_larc/src/vision/scripts/yolov8n.pt")
+            self.model = ultralytics.YOLO("/home/nvidia/Desktop/LARC-2023/catkin_larc/src/vision/scripts/larc5000n3.pt")
             self.bridge = CvBridge()
 
             self.pubdata = rospy.Publisher('vision/letras/info', objectDetectionArray, queue_size=5)
@@ -30,6 +31,7 @@ class letras_yolov8:
             self.sub = rospy.Subscriber('/zed2/zed_node/rgb/image_rect_color', Image, self.callback)
             self.subscriberDepth = rospy.Subscriber("/zed2/zed_node/depth/depth_registered", Image, self.depthImageRosCallback)
             self.subscriberInfo = rospy.Subscriber("/zed2/zed_node/rgb/camera_info", CameraInfo, self.infoImageRosCallback)
+            self.flagsubs = rospy.Subscriber("flag", Bool, self.callback_flag)
 
             self.cv_image = np.array([])
             rospy.loginfo("letras_yolov8 initialized")
@@ -56,8 +58,14 @@ class letras_yolov8:
             # rospy.loginfo(data.data)
             # implement cv_bridge
             self.cv_image = self.bridge.imgmsg_to_cv2(data,desired_encoding="bgr8")
-            self.lector()
-            self.pubimg.publish(self.bridge.cv2_to_imgmsg(self.cv_image, encoding="bgr8"))
+            if flag:
+                self.lector()
+                self.pubimg.publish(self.bridge.cv2_to_imgmsg(self.cv_image, encoding="bgr8"))
+        
+        def callback_flag(self, data):
+            global flag
+            flag = data.data
+            #rospy.loginfo(flag)
         
         def lector(self):
             
@@ -70,7 +78,7 @@ class letras_yolov8:
 
             #prevtime = time.time()
             results = self.model(frame, verbose=False)
-            boxes, confidences, classids = self.generate_boxes_confidences_classids_v8(results, 0.65)
+            boxes, confidences, classids = self.generate_boxes_confidences_classids_v8(results, 0.85)
             #print(f"Prediction done in {time.time() - prevtime} seconds")
             # Draw results
             bb = []
