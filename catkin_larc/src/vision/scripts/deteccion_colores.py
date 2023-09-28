@@ -78,7 +78,7 @@ class DetectorColores:
         temp = []
         for c in contornos:
             area = cv2.contourArea(c)
-            if area > 2000:
+            if area > 1000:
                 M = cv2.moments(c)
                 if (M["m00"]): M["m00"] = 1
                 x = int(M["m10"]/M["m00"])
@@ -194,18 +194,18 @@ class DetectorColores:
     def color_detection(self):
         frame = self.image
         
-        lowerRed = np.array([0,190,92], np.uint8)
-        upperRed = np.array([7,255,142], np.uint8)
-        lowerRed2 = np.array([179,190,92], np.uint8)
-        upperRed2 = np.array([179,255,142], np.uint8)
+        lowerRed = np.array([0,180,92], np.uint8)
+        upperRed = np.array([7,255,255], np.uint8)
+        lowerRed2 = np.array([179,180,92], np.uint8)
+        upperRed2 = np.array([179,255,255], np.uint8)
 
-        lowerBlue = np.array([101,164,124], np.uint8)
-        upperBlue = np.array([106,216,172], np.uint8)
+        lowerBlue = np.array([106,71,43], np.uint8)
+        upperBlue = np.array([124,216,172], np.uint8)
 
-        lowerGreen = np.array([54,93,104], np.uint8)
-        upperGreen = np.array([64,148,147], np.uint8)
+        lowerGreen = np.array([54,35,27], np.uint8)
+        upperGreen = np.array([99,179,147], np.uint8)
 
-        lowerYellow = np.array([25,242,126], np.uint8)
+        lowerYellow = np.array([25,223,82], np.uint8)
         upperYellow = np.array([30,255,255], np.uint8)
 
         font = cv2.FONT_HERSHEY_SIMPLEX

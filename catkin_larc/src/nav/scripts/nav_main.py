@@ -3,6 +3,7 @@
 import rospy
 import actionlib
 from geometry_msgs.msg import Twist, Point
+from std_msgs.msg import Bool
 from nav_msgs.msg import Odometry
 from nav.msg import Drive2TargetAction, Drive2TargetGoal, Drive2TargetResult, Drive2TargetFeedback
 
@@ -13,21 +14,27 @@ class NavMain:
         self.drive_target_as.start()
         self.drive_target_feedback = Drive2TargetFeedback()
         self.drive_target_result = Drive2TargetResult()
-        self.distance_acc_tolerance = 0.04
-        self.min_speed = 0.2
-        self.pos_kP = 1.5
-        self.pos_kD = 1.0
+        self.distance_acc_tolerance = 0.02
+        self.min_speed = 0.125
+        self.pos_kP = 0.8
+        self.pos_kD = 7.0
         self.rate = rospy.Rate(10)
+        self.nav_target_x = 0
+        self.nav_target_y = 0
+        self.intake_presence = False
 
         self.pubCmdVel = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
         self.subOdom = rospy.Subscriber('/odom', Odometry, self.odomCb)
+        rospy.Subscriber('/target_point_fb', Point, self.targetPointFbCb)
+        rospy.Subscriber('/intake_presence', Bool, self.intakePresenceCb)
         self.nav_odom = Odometry()
 
         self.run()
 
     def ex_cb_drive_target(self, goal):
-        nav_target_x = - goal.target.x + self.nav_odom.pose.pose.position.y
-        nav_target_y = goal.target.y + self.nav_odom.pose.pose.position.x
+        self.intake_presence = False
+        self.nav_target_x = - goal.target.x + self.nav_odom.pose.pose.position.y
+        self.nav_target_y = goal.target.y + self.nav_odom.pose.pose.position.x
         distance_x = abs(goal.target.x)
         distance_y = abs(goal.target.y)
         last_error_x = 0
@@ -42,14 +49,14 @@ class NavMain:
         rospy.loginfo('Starting drive to target')
 
         while distance_x > self.distance_acc_tolerance:
-            if self.drive_target_as.is_preempt_requested():
+            if self.drive_target_as.is_preempt_requested() or self.intake_presence:
                 rospy.loginfo('Preempted')
                 self.drive_target_as.set_preempted()
                 msg = Twist()
                 self.pubCmdVel.publish( msg )
                 success = False
                 break
-            error_x = nav_target_x - self.nav_odom.pose.pose.position.y
+            error_x = self.nav_target_x - self.nav_odom.pose.pose.position.y
             msg = Twist()
             msg.linear.y = error_x * self.pos_kP + (error_x - last_error_x) * self.pos_kD
             if abs(msg.linear.y) < self.min_speed:
@@ -67,12 +74,14 @@ class NavMain:
         rospy.loginfo('Reached X target')
 
         while distance_y > self.distance_acc_tolerance:
-            if self.drive_target_as.is_preempt_requested() or not success:
+            if self.drive_target_as.is_preempt_requested() or not success or self.intake_presence:
                 rospy.loginfo('Preempted')
                 self.drive_target_as.set_preempted()
+                msg = Twist()
+                self.pubCmdVel.publish( msg )
                 success = False
                 break
-            error_y = nav_target_y - self.nav_odom.pose.pose.position.x
+            error_y = self.nav_target_y - self.nav_odom.pose.pose.position.x
             msg = Twist()
             msg.linear.x = error_y * self.pos_kP + (error_y - last_error_y) * self.pos_kD
             if abs(msg.linear.x) < self.min_speed:
@@ -97,6 +106,28 @@ class NavMain:
 
     def odomCb(self, data):
         self.nav_odom = data
+    
+    def intakePresenceCb(self, data):
+        self.intake_presence = data.data
+        if data.data == True:
+            self.drive_target_as.set_preempted()
+            print("intake presence")
+            msg = Twist()
+            msg.linear.x = 0
+            msg.linear.y = 0
+            msg.linear.z = 0
+            msg.angular.x = 0
+            msg.angular.y = 0
+            msg.angular.z = 0
+            self.pubCmdVel.publish(msg)
+
+
+    def targetPointFbCb(self, data):
+        if abs(-data.x + self.nav_odom.pose.pose.position.y - self.nav_target_x) > 0.15 or abs(data.y + self.nav_odom.pose.pose.position.x - self.nav_target_y) > 0.15:
+            return
+        self.nav_target_x = - data.x + self.nav_odom.pose.pose.position.y
+        self.nav_target_y = data.y + self.nav_odom.pose.pose.position.x
+
 
     def run(self):
         try:

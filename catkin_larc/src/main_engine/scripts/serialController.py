@@ -64,6 +64,7 @@ class Microcontroller:
     
     def __init__(self, port="/dev/ttyUSB0", baudrate=115200, timeout=0.5):
         self.port = port
+        self.port_name = port
         self.baudrate = baudrate
         self.timeout = timeout
         self.encoder_count = 0
@@ -115,6 +116,30 @@ class Microcontroller:
             traceback.print_exc(file=sys.stdout)
             print("Cannot connect to Microcontroller!")
             os._exit(1)
+
+    def reconnect(self):
+        self.port.close()
+        try:
+            print("Reconnecting to Microcontroller on port", self.port, "...")
+            self.port = Serial(port=self.port_name, baudrate=self.baudrate, timeout=self.timeout, writeTimeout=self.writeTimeout)
+            # The next line is necessary to give the firmware time to wake up.
+            time.sleep(1)
+            state_, val = self.get_baud()
+            if val != self.baudrate:
+                state_, val  = self.get_baud()
+                if val != self.baudrate:
+                    raise SerialException
+            
+            print("Connected at", self.baudrate)
+            print("Microcontroller is ready.")
+        
+        except SerialException:
+            print("Serial Exception:")
+            print(sys.exc_info())
+            print("Traceback follows:")
+            traceback.print_exc(file=sys.stdout)
+            print("Cannot connect to Microcontroller!")
+
 
     def open(self): 
         ''' Open the serial port.
@@ -293,7 +318,7 @@ class Microcontroller:
            presence = struct.unpack('c', self.payload_args)
            return  self.SUCCESS, presence
         else:
-           return self.FAIL, 0
+           return self.FAIL
     
         
     def elevator(self, command):
@@ -427,8 +452,6 @@ class BaseController:
         self.desired_angle = 500
         self.quaternion = Quaternion()
 
-        self.intake_command = -1
-        self.elevator_command = -1
         self.warehouse = 0 
         self.line_sensor = 0
 
@@ -512,14 +535,16 @@ class BaseController:
 
             try:
                 ack, presence = self.Microcontroller.intake_presence()
+                #print(presence)
+                # change presence var to char type
+                char_presence = presence[0]
                 if ack==self.FAIL:
                     rospy.logerr("get intake presence failed ")
-                    return
-                if presence == '1':
+                if char_presence == b'1':
                     self.intake_presence_pub.publish(True)
             except:
                 rospy.logerr("get intake presence exception ")
-                return
+                self.Microcontroller.reconnect()
 
             vx = 0.0
             vy = 0
@@ -536,10 +561,9 @@ class BaseController:
                 ack, vx, vy, vth, self.x, self.y  = self.Microcontroller.get_odometry()
                 if ack==self.FAIL:
                     rospy.logerr("get odometry failed ")
-                    return
             except:
                 rospy.logerr("get odometry exception ")
-                return
+                self.Microcontroller.reconnect()
             
             """
             try:
@@ -613,14 +637,6 @@ class BaseController:
                 self.Microcontroller.drive(self.v_x, self.v_y, self.v_th)
                 #self.Microcontroller.imu_angle(self.angle)
                 
-            if(self.intake_command != -1):
-                self.Microcontroller.intake(self.intake_command)
-                self.intake_command = -1
-
-            if(self.elevator_command != -1):
-                self.Microcontroller.elevator(self.elevator_command)
-                self.elevator_command = -1
-
             if(self.warehouse != 0):
                 self.Microcontroller.warehouse(self.warehouse)
                 self.warehouse = 0
@@ -657,15 +673,10 @@ class BaseController:
 
     def intakeHandler(self, req):
         return self.Microcontroller.intake( req.command ) == self.SUCCESS
-
-        self.intake_command = req.command
-
+    
     def elevatorHandler(self, req):
         return self.Microcontroller.elevator( req.command ) == self.SUCCESS
 
-    def elevatorCallback(self, req):
-        self.elevator_command = req.data
-    
     def resetOdomCallback(self, req):
         if req.data:
             self.Microcontroller.reset_odometry()
@@ -683,7 +694,7 @@ class MicroControllerROS():
         # Cleanup when termniating the node
         rospy.on_shutdown(self.shutdown)
         
-        self.port = rospy.get_param("~port", default="/dev/ttyACM0")
+        self.port = rospy.get_param("~port", default="/dev/teensy")
         self.baud = int(rospy.get_param("~baud", 115200))
         self.timeout = rospy.get_param("~timeout", 0.5)
         self.base_frame = rospy.get_param("~base_frame", 'base_link')
