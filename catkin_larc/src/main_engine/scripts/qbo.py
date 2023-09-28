@@ -19,16 +19,17 @@ PICK_CUBE = "pick_cube"
 ACTIVATE_ELEVATOR_TO_STORE = "activate_elevator_to_store"
 STORE_CUBE = "store_cube"
 MOVE_BACK_TO_DETECT = "move_back_to_detect"
+RESET_ELEVATOR = "reset_elevator"
 FINISH = "finish"
 
 class MainEngine:
     def __init__(self):
         rospy.loginfo("MainEngine init")
         self.current_time = rospy.Time.now()
-        self.state = PICK_CUBE_TARGET
+        self.state = RESET_ELEVATOR
         self.target_success = False
         self.selected_target = objectDetection()
-        self.dis_to_intake = 0.13
+        self.dis_to_intake = 0.10
 
         self.br = tf2_ros.TransformBroadcaster()
         self.tfBuffer = tf2_ros.Buffer()
@@ -50,11 +51,11 @@ class MainEngine:
             y_lowest = data.detections[0].ymin
             y_lowest_id = 0
             for i in range(sz):
-                if data.detections[i].ymin - y_lowest >= 80:
+                if data.detections[i].ymin - y_lowest >= 30:
                     y_lowest = data.detections[i].ymin
                     y_lowest_id = i
                     point_x_min_id = i
-                elif abs(data.detections[i].ymin - y_lowest) < 80:
+                elif abs(data.detections[i].ymin - y_lowest) < 30:
                     if( abs(data.detections[i].point3D.x) < abs(data.detections[point_x_min_id].point3D.x)):
                         point_x_min_id = i
 
@@ -67,7 +68,7 @@ class MainEngine:
             if sz == 0:
                 return
             for i in range(sz):
-                if data.detections[i].labelText == self.selected_target.labelText and abs(data.detections[i].point3D.x - self.selected_target.point3D.x) < 0.15 and abs(data.detections[i].point3D.z - self.selected_target.point3D.z) < 0.15:
+                if data.detections[i].labelText == self.selected_target.labelText: #and abs(data.detections[i].point3D.x - self.selected_target.point3D.x) < 0.15 and abs(data.detections[i].point3D.z - self.selected_target.point3D.z) < 0.15:
                     self.selected_target = data.detections[i]
                     target_point_fb = Point()
                     target_point_fb.x = self.selected_target.point3D.x
@@ -88,8 +89,12 @@ class MainEngine:
     def run(self):
         self.current_time = rospy.Time.now()
 
-        if self.state == PICK_CUBE_TARGET:
+        if self.state == RESET_ELEVATOR:
             self.mechanismCommandSvr('elevator', 0)
+            rospy.Rate(0.3).sleep()
+            self.state = PICK_CUBE_TARGET
+
+        if self.state == PICK_CUBE_TARGET:
             if self.target_success:
                 self.state = DRIVE_TO_TARGET
                 rospy.loginfo("Target selected")
@@ -168,9 +173,11 @@ class MainEngine:
             self.driveTargetClient.wait_for_result()
             print(self.driveTargetClient.get_result())
 
+            rospy.Rate(1.0).sleep()
+
             self.target_success = False
             
-            self.state = PICK_CUBE_TARGET
+            self.state = RESET_ELEVATOR
 
         
 if __name__ == '__main__':

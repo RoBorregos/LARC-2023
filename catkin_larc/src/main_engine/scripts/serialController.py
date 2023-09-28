@@ -122,8 +122,6 @@ class Microcontroller:
         try:
             print("Reconnecting to Microcontroller on port", self.port, "...")
             self.port = Serial(port=self.port_name, baudrate=self.baudrate, timeout=self.timeout, writeTimeout=self.writeTimeout)
-            # The next line is necessary to give the firmware time to wake up.
-            time.sleep(1)
             state_, val = self.get_baud()
             if val != self.baudrate:
                 state_, val  = self.get_baud()
