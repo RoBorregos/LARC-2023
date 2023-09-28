@@ -8,12 +8,14 @@
 #include "Motor.h"
 #include "Plot.h"
 #include "BNO.h"
+#include "VLX.h"
 
 #include <Stepper.h> 
 
 #include <Adafruit_VL53L0X.h>
 
 Adafruit_VL53L0X vlx[4];
+VLX vlxs;
 
 #define STEPS 3200
 
@@ -33,10 +35,10 @@ struct elevatorLevel{
 // Define stepper motor connections and motor interface type. Motor interface type must be set to 1 when using a driver
 Stepper stepper(STEPS, 30, 31); // Pin 2 connected to DIRECTION & Pin 3 connected to STEP Pin of Driver
 // Elevator heights: Pick: 70mm; Level1: 155; Level2: 225; Level3: 295
-struct elevatorLevel elevatorLevel = {61, 145, 215, 290};
+struct elevatorLevel elevatorLevel = {61, 140, 212, 285};
 int elevatorTolerance = 1;
 int STEPS_PER_MM = 315;
-int INTAKESPEED = 200;
+int INTAKESPEED = 255;
 #define motorInterfaceType 1
 
 Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28,&Wire2);
@@ -56,7 +58,7 @@ bool DRIVE_TEST = false; //move forward, right, backward, left
 
 long unsigned int DRIVE_TEST_MOVEMENT_TIME = 1500;
 
-float SPEED = 0.3;
+float SPEED = 0.5;
 long STEPPER_SPEED = 500;
 long STEPPER_STEPS = 1;
 
@@ -81,7 +83,7 @@ void moveElevatorToHeight_MM(uint height, uint tolerance){
   current_height = readVLX(3);
 
   steps = STEPS_PER_MM/2;
-  while (abs(height - current_height) > tolerance){
+  /*while (abs(height - current_height) > tolerance){
     if (height > current_height){
       stepper.step(-steps);
     }
@@ -91,7 +93,7 @@ void moveElevatorToHeight_MM(uint height, uint tolerance){
     current_height = readVLX(3);
     Serial.print("Initializing, current height: ");
     Serial.println(current_height);
-  }
+  }*/
 }
 
 // function to read and filter the value from the vlx
@@ -103,33 +105,35 @@ uint readVLX(uint sensorID){
     return range;
 }
 
-void setup(){
+void initRobot(){
     current_time = millis();
-
     mDrive.init(&mbno);
-    Serial.begin(115200);
     pinMode(INTAKEPRESENCE, INPUT);
 
+    stepper.setSpeed(STEPPER_SPEED);
+    vlxs.initSensors(&vlx[0], &vlx[1], &vlx[2], &vlx[3]);
+
+    state_time = current_time;
+    loop_time = current_time;
+    debug_time = current_time;
+}
+
+void setup(){
+   
+    Serial.begin(115200);
     //Serial.write("<target>");
     attachInterrupt(digitalPinToInterrupt(Constants::kFrontLeftEncoder), interruptFL, CHANGE);
     attachInterrupt(digitalPinToInterrupt(Constants::kFrontRightEncoder), interruptFR, CHANGE);
     attachInterrupt(digitalPinToInterrupt(Constants::kBackLeftEncoder), interruptBL, CHANGE);
     attachInterrupt(digitalPinToInterrupt(Constants::kBackRightEncoder), interruptBR, CHANGE);
 
-    stepper.setSpeed(STEPPER_SPEED);
-    vlxSetup();
-
-    state_time = current_time;
-    loop_time = current_time;
-    debug_time = current_time;
-
+    initRobot();
     delay(3000);
 
     //mIntake.setAction(IntakeActions::Pick);
     //mElevator.setPosition(ElevatorPosition::FirstIn);
     //mWarehouse.cubeOut(LevelPosition::Upper, current_time);
 }
-
 
 int STATE = 0;
 
@@ -138,6 +142,10 @@ bool logged2 = false;
 bool logged3 = false;
 bool logged4 = false;
 bool logged5 = false;
+bool pick = false;
+bool store = false;
+bool out = false;
+
 
 char c = 'x';
 
@@ -193,46 +201,24 @@ void loop(){
         }
         // Intake
         else if (c=='i'){
-            // only if intake is not occupied
-            if (digitalRead(INTAKEPRESENCE) == LOW){
-                analogWrite(intake1.pwmA, INTAKESPEED);
-                analogWrite(intake1.pwmB, 0);
-                analogWrite(intake2.pwmA, INTAKESPEED);
-                analogWrite(intake2.pwmB, 0);
-            }
-            else{
-                analogWrite(intake1.pwmA, 0);
-                analogWrite(intake1.pwmB, 0);
-                analogWrite(intake2.pwmA, 0);
-                analogWrite(intake2.pwmB, 0);
-            }
+            pick = true;
+            store = false;
+            out = false;
         }
         else if (c=='I'){
-            // only if intake is not occupied
-            if (digitalRead(INTAKEPRESENCE) == HIGH){
-                analogWrite(intake1.pwmA, INTAKESPEED);
-                analogWrite(intake1.pwmB, 0);
-                analogWrite(intake2.pwmA, INTAKESPEED);
-                analogWrite(intake2.pwmB, 0);
-            }
-            else{
-                analogWrite(intake1.pwmA, 0);
-                analogWrite(intake1.pwmB, 0);
-                analogWrite(intake2.pwmA, 0);
-                analogWrite(intake2.pwmB, 0);
-            }
+            pick = false;
+            store = true;
+            out = false;
         }
         else if (c=='o'){
-            analogWrite(intake1.pwmA, 0);
-            analogWrite(intake1.pwmB, INTAKESPEED);
-            analogWrite(intake2.pwmA, 0);
-            analogWrite(intake2.pwmB, INTAKESPEED);
+            pick = false;
+            store = false;
+            out = true;
         }
         else if (c=='p'){
-            analogWrite(intake1.pwmA, 0);
-            analogWrite(intake1.pwmB, 0);
-            analogWrite(intake2.pwmA, 0);
-            analogWrite(intake2.pwmB, 0);
+            pick = false;
+            store = false;
+            out = false;
         }
         // Stepper, U up, D down, S stop
         else if (c=='U'){
@@ -258,6 +244,14 @@ void loop(){
             moveElevatorToHeight_MM(elevatorLevel.level3, elevatorTolerance);
             c = '-';
         }
+        else if (c=='/'){
+            //restart robot
+            xspeed = 0;
+            yspeed = 0;
+            zspeed = 0;
+            mDrive.setSpeedOriented(xspeed, yspeed, zspeed, current_time);
+            initRobot();
+        }
         // keep current settings
         else if (c=='-'){
             // do nothing
@@ -267,6 +261,46 @@ void loop(){
             xspeed = 0;
             yspeed = 0;
             zspeed = 0;
+        }
+        if (pick){
+            if (!digitalRead(INTAKEPRESENCE)){
+                analogWrite(intake1.pwmA, INTAKESPEED);
+                analogWrite(intake1.pwmB, 0);
+                analogWrite(intake2.pwmA, INTAKESPEED);
+                analogWrite(intake2.pwmB, 0);
+            }
+            else{
+                analogWrite(intake1.pwmA, 0);
+                analogWrite(intake1.pwmB, 0);
+                analogWrite(intake2.pwmA, 0);
+                analogWrite(intake2.pwmB, 0);
+            }
+        }
+        else if (store){
+            if (digitalRead(INTAKEPRESENCE)){
+                analogWrite(intake1.pwmA, INTAKESPEED);
+                analogWrite(intake1.pwmB, 0);
+                analogWrite(intake2.pwmA, INTAKESPEED);
+                analogWrite(intake2.pwmB, 0);
+            }
+            else{
+                analogWrite(intake1.pwmA, 0);
+                analogWrite(intake1.pwmB, 0);
+                analogWrite(intake2.pwmA, 0);
+                analogWrite(intake2.pwmB, 0);
+            }
+        }
+        else if (out){
+            analogWrite(intake1.pwmA, 0);
+            analogWrite(intake1.pwmB, INTAKESPEED);
+            analogWrite(intake2.pwmA, 0);
+            analogWrite(intake2.pwmB, INTAKESPEED);
+        }
+        else{
+            analogWrite(intake1.pwmA, 0);
+            analogWrite(intake1.pwmB, 0);
+            analogWrite(intake2.pwmA, 0);
+            analogWrite(intake2.pwmB, 0);
         }
         
 
