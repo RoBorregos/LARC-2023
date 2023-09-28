@@ -3,7 +3,7 @@ from PIL import Image, ImageDraw, ImageFont
 import random
 
 # Tamaño de la imagen
-for i in range(1000):
+for i in range(10):
     print(i)
     width = 500
     height = 500
@@ -19,7 +19,7 @@ for i in range(1000):
 
     # Crear objeto de fuente con Arial y el tamaño aleatorio
     #print("aaa")
-    font = ImageFont.truetype("C:\\Windows\\Fonts\\\Arial.ttf", font_size)
+    font = ImageFont.truetype("/usr/share/fonts/truetype/msttcorefonts/Arial.ttf", font_size)
     img = Image.new('RGB', (width, height), color = (255, 255, 255))
     
     d = ImageDraw.Draw(img)
@@ -39,7 +39,7 @@ for i in range(1000):
     img = img.rotate(angle, expand=True)
 
     # Guardar la imagen
-    img.save("D:\\UsX\\Escritorio\\letras_dataset3\\A\\imagen_A" + str(i) + ".png")
+    img.save("/home/jabv/Desktop/tempo/A" + str(i) + ".png")
     
     img = Image.new('RGB', (width, height), color = (255, 255, 255))
     
@@ -60,7 +60,7 @@ for i in range(1000):
     img = img.rotate(angle, expand=True)
 
     # Guardar la imagen
-    img.save("D:\\UsX\\Escritorio\\letras_dataset3\\B\\imagen_B" + str(i) + ".png")
+    img.save("/home/jabv/Desktop/tempo/B" + str(i) + ".png")
     
     img = Image.new('RGB', (width, height), color = (255, 255, 255))
     
@@ -79,7 +79,7 @@ for i in range(1000):
     img = img.rotate(angle, expand=True)
 
     # Guardar la imagen
-    img.save("D:\\UsX\\Escritorio\\letras_dataset3\\C\\imagen_C" + str(i) + ".png")
+    img.save("/home/jabv/Desktop/tempo/C" + str(i) + ".png")
     
     img = Image.new('RGB', (width, height), color = (255, 255, 255))
     
@@ -98,7 +98,7 @@ for i in range(1000):
     img = img.rotate(angle, expand=True)
 
     # Guardar la imagen
-    img.save("D:\\UsX\\Escritorio\\letras_dataset3\\D\\imagen_D" + str(i) + ".png")
+    img.save("/home/jabv/Desktop/tempo/D" + str(i) + ".png")
     
     img = Image.new('RGB', (width, height), color = (255, 255, 255))
     
@@ -118,7 +118,7 @@ for i in range(1000):
     img = img.rotate(angle, expand=True)
 
     # Guardar la imagen
-    img.save("D:\\UsX\\Escritorio\\letras_dataset3\\E\\imagen_E" + str(i) + ".png")
+    img.save("/home/jabv/Desktop/tempo/E" + str(i) + ".png")
     
     img = Image.new('RGB', (width, height), color = (255, 255, 255))
     
@@ -137,7 +137,7 @@ for i in range(1000):
     img = img.rotate(angle, expand=True)
 
     # Guardar la imagen
-    img.save("D:\\UsX\\Escritorio\\letras_dataset3\\F\\imagen_F" + str(i) + ".png")
+    img.save("/home/jabv/Desktop/tempo/F" + str(i) + ".png")
     
     img = Image.new('RGB', (width, height), color = (255, 255, 255))
     
@@ -157,7 +157,7 @@ for i in range(1000):
     img = img.rotate(angle, expand=True)
 
     # Guardar la imagen
-    img.save("D:\\UsX\\Escritorio\\letras_dataset3\\G\\imagen_G" + str(i) + ".png")
+    img.save("/home/jabv/Desktop/tempo/G" + str(i) + ".png")
     
     img = Image.new('RGB', (width, height), color = (255, 255, 255))
     
@@ -178,7 +178,7 @@ for i in range(1000):
     img = img.rotate(angle, expand=True)
 
     # Guardar la imagen
-    img.save("D:\\UsX\\Escritorio\\letras_dataset3\\H\\imagen_H" + str(i) + ".png")
+    img.save("/home/jabv/Desktop/tempo/H" + str(i) + ".png")
     
     img = Image.new('RGB', (width, height), color = (255, 255, 255))
     
@@ -198,5 +198,5 @@ for i in range(1000):
     img = img.rotate(angle, expand=True)
 
     # Guardar la imagen
-    img.save("D:\\UsX\\Escritorio\\letras_dataset3\\I\\imagen_I" + str(i) + ".png")
+    img.save("/home/jabv/Desktop/tempo/I" + str(i) + ".png")
     

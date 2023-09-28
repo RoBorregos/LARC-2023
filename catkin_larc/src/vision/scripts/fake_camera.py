@@ -10,7 +10,7 @@ def webcam_publisher():
     rospy.init_node('webcam_publisher')
 
     # Create a publisher to publish the image on the topic "webcam_image"
-    pub = rospy.Publisher('webcam_image', Image, queue_size=10)
+    pub = rospy.Publisher('/webcam_image', Image, queue_size=10)
 
     # Create a CvBridge object to convert between OpenCV images and ROS images
     bridge = CvBridge()
