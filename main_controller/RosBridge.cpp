@@ -90,7 +90,7 @@ void RosBridge::intakeCallback(int command) {
 }
 
 void RosBridge::elevatorCallback(int command) {
-    ElevatorPosition postions[] = {
+    ElevatorPosition positions[] = {
         ElevatorPosition::PickPos,
         ElevatorPosition::PickPos,
         ElevatorPosition::FirstIn,
@@ -103,7 +103,7 @@ void RosBridge::elevatorCallback(int command) {
         ElevatorPosition::SecondShelf,
         ElevatorPosition::ThirdShelf
     };
-    _elevator->setPosition(postions[command]);
+    _elevator->setPosition(positions[command]);
 }
 
 void RosBridge::warehouseCallback(int level){
@@ -243,12 +243,12 @@ void RosBridge::spin(unsigned long current_time){
     current_time_ = current_time;
 
     readSerial();
-    if((millis() - watchdog_timer_) > kWatchdogPeriod) {
+    /*if((millis() - watchdog_timer_) > kWatchdogPeriod) {
         linearX_ = 0.0;
         linearY_ = 0.0;
         angularZ_ = 0.0;        
         watchdog_timer_ = millis();
-    }
-    _drive->setSpeed(linearX_, linearY_, angularZ_);
+    }*/
+    _drive->setSpeedOriented(linearX_, linearY_, angularZ_, current_time_);
     _drive->setAngle(angle_);
 }

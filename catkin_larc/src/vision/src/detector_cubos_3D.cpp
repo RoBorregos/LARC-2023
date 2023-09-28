@@ -163,7 +163,7 @@ public:
 
             cloudCB(t_pc);
             // Wait 3 segs.
-            ros::Duration(3).sleep();
+            //ros::Duration(3).sleep();
         }
 
         // ROS_INFO_STREAM("Action Server Detect3D - Initialized");
@@ -395,7 +395,7 @@ public:
 
     void cropImage(cv::Mat &img, ObjectParams obj)
     {
-        ROS_INFO_STREAM("---------------------Entreeeee a crop---------------------");
+        ROS_INFO_STREAM("---------------------Entreeeejkajadsjkasjkaskdje a crop---------------------");
         float margin = 0.04; // 5cm
         // Get Points and Project Points To Pixel
         float pixel_left_up[2];
@@ -591,6 +591,7 @@ public:
 
         float cent_x = (max_x_ + max_x_)/2;
         float cent_y = (max_y_ + max_y_)/2;
+        ROS_INFO_STREAM("cent x: " << cent_x << " cent y: " << cent_y);
 
         std_msgs::Float64 msgX;
         std_msgs::Float64 msgY;
@@ -774,9 +775,10 @@ public:
         }
 
         // Crop n Image to n objects and save them.
+
         for (int i = 0; i < objects.size(); i++)
         {
-            cropImage(zed_image_cv->image, objects[i]);
+            //cropImage(zed_image_cv->image, objects[i]);
         }
 
         // for(int j = 0; j < cloud_rgb->width; j++)

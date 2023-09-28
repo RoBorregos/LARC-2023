@@ -1,0 +1,4 @@
+Symlinking /home/nvidia/workspace/LARC-2023/catkin_larc/devel/share/zed_wrapper/cmake/zed_wrapperConfig-version.cmake
+Symlinking /home/nvidia/workspace/LARC-2023/catkin_larc/devel/share/zed_wrapper/cmake/zed_wrapperConfig.cmake
+Symlinking /home/nvidia/workspace/LARC-2023/catkin_larc/devel/lib/pkgconfig/zed_wrapper.pc
+Symlinking /home/nvidia/workspace/LARC-2023/catkin_larc/devel/lib/zed_wrapper/zed_wrapper_node

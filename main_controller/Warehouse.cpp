@@ -13,7 +13,6 @@ void Warehouse::init(unsigned long current_time, Adafruit_VL53L0X* tof1, Adafrui
     level[1].tof = tof2;
     level[1].state_time = current_time;
 
-    level[2].pwmPin = Constants::kWarehouseLowerPWM;
     level[2].fwdPin = Constants::kWarehouseLowerMotorA;
     level[2].revPin = Constants::kWarehouseLowerMotorB;
     level[2].speed = Constants::kWarehouseLowerSpeed;
@@ -21,8 +20,6 @@ void Warehouse::init(unsigned long current_time, Adafruit_VL53L0X* tof1, Adafrui
     level[2].state_time = current_time;
 
     for(int i=0; i<3; i++){
-        if(level[i].pwmPin != -1)
-            pinMode(level[i].pwmPin, OUTPUT);
         pinMode(level[i].fwdPin, OUTPUT);
         pinMode(level[i].fwdPin, OUTPUT);
         stop( (LevelPosition)i );
@@ -58,8 +55,6 @@ void Warehouse::cubeOut(LevelPosition pos, unsigned long current_time){
 void Warehouse::reset(){
     for(int i=0; i<3; i++){
         level[i].demand = -level[i].speed;
-        if(level[i].pwmPin != -1)
-            analogWrite(level[i].pwmPin, abs(level[i].demand) );
         
         analogWrite(level[i].fwdPin, level[i].demand>0? abs(level[i].demand) : 0);
         analogWrite(level[i].revPin, level[i].demand<0? abs(level[i].demand) : 0);
@@ -105,9 +100,6 @@ void Warehouse::periodicIO(unsigned long current_time){
 
         if( current_time - level[i].state_time > 3000 )
             level[i].demand = 0;
-
-        if(level[i].pwmPin != -1)
-            analogWrite(level[i].pwmPin, level[i].demand);
         
         analogWrite(level[i].fwdPin, level[i].demand>0? abs(level[i].demand) : 0);
         analogWrite(level[i].revPin, level[i].demand<0? abs(level[i].demand) : 0);

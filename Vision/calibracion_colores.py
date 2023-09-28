@@ -15,6 +15,10 @@ def callback(x):
 	V_low = cv2.getTrackbarPos('low V','controls')
 	V_high = cv2.getTrackbarPos('high V','controls')
 
+# Cambiar a video capture para calibrar #
+cap = cv2.imread('auto_calib_img/test3.png')
+#cap.set(3,1280)
+#cap.set(4,720)
 
 #create a seperate window named 'controls' for trackbar
 cv2.namedWindow('controls',2)

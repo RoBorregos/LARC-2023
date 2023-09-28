@@ -1,5 +1,0 @@
-<launch>
-    <!-- launch node cluster extraction test -->
-    <node pkg="nav_main" type="cluster_extraction_test" name="cluster_extraction_test" args="$(find nav_main)/src/cluster_extraction_test.py" />
-
-</launch>

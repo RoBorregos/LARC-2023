@@ -1,47 +1,27 @@
 #include "Drive.h"
 
-void Drive::init( LineSensor *lineSensor ){
-    frontLeft.init(Constants::kFrontLeftPWM, Constants::kFrontLeftA, Constants::kFrontLeftB, Constants::kFrontLeftEncoder);
-    frontRight.init(Constants::kFrontRightPWM, Constants::kFrontRightA, Constants::kFrontRightB, Constants::kFrontRightEncoder);
-    backLeft.init(Constants::kBackLeftPWM, Constants::kBackLeftA, Constants::kBackLeftB, Constants::kBackLeftEncoder);
-    backRight.init(Constants::kBackRightPWM, Constants::kBackRightA, Constants::kBackRightB, Constants::kBackRightEncoder);
+void Drive::init(BNO *bno, LineSensor *lineSensor){
+    pidControllerBNO.set(BNOKP, BNOKI, BNOKD, BNOKImax, BNOKout_min, BNOKout_max);
+    frontLeft.init(Constants::kFrontLeftA, Constants::kFrontLeftB, Constants::kFrontLeftEncoder);
+    frontRight.init(Constants::kFrontRightA, Constants::kFrontRightB, Constants::kFrontRightEncoder);
+    backLeft.init(Constants::kBackLeftA, Constants::kBackLeftB, Constants::kBackLeftEncoder);
+    backRight.init(Constants::kBackRightA, Constants::kBackRightB, Constants::kBackRightEncoder);
+    this->bno = bno;
     this->lineSensor = lineSensor;
+    bno->init();
+    robot_angle = bno->getOrientation().x;
     line_move = false;
 }
 
 void Drive::setSpeed(float linearX, float linearY, float angularZ){
-    if( line_move ){
-        if( !lineSensor->lineDetected(SensorID::BackLeft1) && !lineSensor->lineDetected(SensorID::BackRight2) ){
-            frontLeft.setSpeed(0.4);
-            frontRight.setSpeed(0.4);
-            backLeft.setSpeed(0.4);
-            backRight.setSpeed(0.4);
-        }
-        return;
-    }
 
     float wheelPosX = Constants::kWheelBase/2;
     float wheelPosY = Constants::kWheelTrack/2;
-    if(abs( angularZ ) > 0.2 && !spin_flag){
-        if( angularZ < 0 )
-            setpoint += 90;
-        else
-            setpoint -= 90;
-        spin_flag = true;
-    } else if( abs(angularZ) == 0 && spin_flag ){
-        spin_flag = false;
-    }
-
-    if( abs(linearY) == 0.4 && !line_move ){
-        line_move = true;
-        line_state = 1;
-        return;
-    }
     
-    float frontLeftSpeed = linearX - linearY - angularZ*(wheelPosX + wheelPosY) - error;
-    float frontRightSpeed = linearX + linearY + angularZ*(wheelPosX + wheelPosY) + error;
-    float backLeftSpeed = linearX + linearY - angularZ*(wheelPosX + wheelPosY) - error;
-    float backRightSpeed = linearX - linearY + angularZ*(wheelPosX + wheelPosY) + error;
+    float frontLeftSpeed = linearX - linearY - angularZ*(wheelPosX + wheelPosY);
+    float frontRightSpeed = linearX + linearY + angularZ*(wheelPosX + wheelPosY);
+    float backLeftSpeed = linearX + linearY - angularZ*(wheelPosX + wheelPosY);
+    float backRightSpeed = linearX - linearY + angularZ*(wheelPosX + wheelPosY);
 
     frontLeft.setSpeed(frontLeftSpeed);
     frontRight.setSpeed(frontRightSpeed);
@@ -49,7 +29,73 @@ void Drive::setSpeed(float linearX, float linearY, float angularZ){
     backRight.setSpeed(backRightSpeed);
 }
 
+// setSpeed with a time counter
+void Drive::setSpeed(float linearX, float linearY, float angularZ, unsigned long current_time){
+
+    if( current_time - speed_last_time < pid_time)
+        return;
+    
+    float wheelPosX = Constants::kWheelBase/2;
+    float wheelPosY = Constants::kWheelTrack/2;
+    
+    float frontLeftSpeed = linearX - linearY - angularZ*(wheelPosX + wheelPosY);
+    float frontRightSpeed = linearX + linearY + angularZ*(wheelPosX + wheelPosY);
+    float backLeftSpeed = linearX + linearY - angularZ*(wheelPosX + wheelPosY);
+    float backRightSpeed = linearX - linearY + angularZ*(wheelPosX + wheelPosY);
+
+    frontLeft.setSpeed(frontLeftSpeed, current_time);
+    frontRight.setSpeed(frontRightSpeed, current_time);
+    backLeft.setSpeed(backLeftSpeed, current_time);
+    backRight.setSpeed(backRightSpeed, current_time);
+
+    speed_last_time = current_time;
+}
+
+// setSpeed with a time counter and BNO feedback
+void Drive::setSpeedOriented(float linearX, float linearY, float angularZ, unsigned long current_time){
+
+    if( current_time - speed_last_time < pid_time)
+        return;
+
+    // if an angular speed is set, update the angle
+    if(angularZ != 0){
+        robot_angle = bno->getOrientation().x;
+    }
+    
+    // get angular speed to compensate angle error, using PID
+    else {
+        float current_angle = bno->getOrientation().x;
+        // if difference is higher than a threshold, correct with angular speed
+        float angle_difference = current_angle - robot_angle;
+        if(abs(angle_difference) > Constants::kAngleTolerance){
+            float angular_speed = pidControllerBNO.calculate(robot_angle, current_angle, pid_time);
+            angularZ = -angular_speed;
+            Serial.print("Angle error: "); Serial.print(current_angle - robot_angle);
+            Serial.print("Angular speed: "); Serial.println(angular_speed);
+        }
+    }
+    
+    float wheelPosX = Constants::kWheelBase/2;
+    float wheelPosY = Constants::kWheelTrack/2;
+    
+    float frontLeftSpeed = linearX - linearY - angularZ*(wheelPosX + wheelPosY);
+    float frontRightSpeed = linearX + linearY + angularZ*(wheelPosX + wheelPosY);
+    float backLeftSpeed = linearX + linearY - angularZ*(wheelPosX + wheelPosY);
+    float backRightSpeed = linearX - linearY + angularZ*(wheelPosX + wheelPosY);
+
+    frontLeft.setSpeed(frontLeftSpeed, current_time);
+    frontRight.setSpeed(frontRightSpeed, current_time);
+    backLeft.setSpeed(backLeftSpeed, current_time);
+    backRight.setSpeed(backRightSpeed, current_time);
+
+    speed_last_time = current_time;
+}
+
 void Drive::setAngle(float angle){
+    if(angle == 500){
+        this->angle = setpoint;
+        return;
+    }
     this->angle = angle - global_setpoint;
     if(this->angle > 180)
         this->angle -= 360;
@@ -67,6 +113,13 @@ void Drive::stop(){
     frontRight.stop();
     backLeft.stop();
     backRight.stop();
+}
+
+void Drive::hardStop(){
+    frontLeft.hardStop();
+    frontRight.hardStop();
+    backLeft.hardStop();
+    backRight.hardStop();
 }
 
 void Drive::encoderInterrupt(MotorID motorID){
@@ -148,17 +201,6 @@ void Drive::periodicIO(unsigned long current_time){
     if( current_time - last_time < loop_time)
         return;
 
-    if( line_move ){
-        if( lineSensor->lineDetected(SensorID::BackLeft1) || lineSensor->lineDetected(SensorID::BackRight2) ){
-            frontLeft.stop();
-            frontRight.stop();
-            backLeft.stop();
-            backRight.stop();
-            line_state = 0;
-            line_move = false;
-        }
-    }
-
     frontLeft.periodicIO(current_time);
     frontRight.periodicIO(current_time);
     backLeft.periodicIO(current_time);
@@ -170,6 +212,8 @@ void Drive::periodicIO(unsigned long current_time){
 
     unsigned long delta_time = current_time - last_time;
     float angleRad = angle * PI/180;
+    // Serial.print("X velocity: "); Serial.print(velocity.x); Serial.print(" Y velocity: "); Serial.print(velocity.y); Serial.print(" Theta velocity: "); Serial.println(velocity.theta);
+    // Serial.print("FL PWM: "); Serial.print(frontLeft.getPWM()); Serial.print(" FR PWM: "); Serial.print(frontRight.getPWM()); Serial.print(" BL PWM: "); Serial.print(backLeft.getPWM()); Serial.print(" BR PWM: "); Serial.println(backRight.getPWM());
     position.x += velocity.x  * (delta_time * 0.001);
     position.y += velocity.y  * (delta_time * 0.001);
     position.theta = angle;
@@ -184,4 +228,13 @@ void Drive::periodicIO(unsigned long current_time){
     error = error * Constants::kDriveKP + (error - last_error)/delta_time * Constants::kDriveKD;
 
     last_time = current_time;
+}
+
+void Drive::setVerbose(bool verbose){
+    this->verbose = verbose;
+    // set motors to verbose
+    frontLeft.setVerbose(verbose);
+    frontRight.setVerbose(verbose);
+    backLeft.setVerbose(verbose);
+    backRight.setVerbose(verbose);
 }

@@ -1,0 +1,8 @@
+#goal definition
+bool run
+---
+#result definition
+bool found
+---
+#feedback
+bool image_detected
