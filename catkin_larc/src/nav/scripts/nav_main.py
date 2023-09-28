@@ -14,7 +14,9 @@ class NavMain:
         self.drive_target_feedback = Drive2TargetFeedback()
         self.drive_target_result = Drive2TargetResult()
         self.distance_acc_tolerance = 0.04
-        self.pos_kP = 2.3
+        self.min_speed = 0.2
+        self.pos_kP = 1.5
+        self.pos_kD = 1.0
         self.rate = rospy.Rate(10)
 
         self.pubCmdVel = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
@@ -28,6 +30,8 @@ class NavMain:
         nav_target_y = goal.target.y + self.nav_odom.pose.pose.position.x
         distance_x = abs(goal.target.x)
         distance_y = abs(goal.target.y)
+        last_error_x = 0
+        last_error_y = 0
         
         self.drive_target_feedback.distance_to_target = Point()
         self.drive_target_feedback.distance_to_target.x = distance_x
@@ -41,11 +45,16 @@ class NavMain:
             if self.drive_target_as.is_preempt_requested():
                 rospy.loginfo('Preempted')
                 self.drive_target_as.set_preempted()
+                msg = Twist()
+                self.pubCmdVel.publish( msg )
                 success = False
                 break
             error_x = nav_target_x - self.nav_odom.pose.pose.position.y
             msg = Twist()
-            msg.linear.y = error_x * self.pos_kP
+            msg.linear.y = error_x * self.pos_kP + (error_x - last_error_x) * self.pos_kD
+            if abs(msg.linear.y) < self.min_speed:
+                msg.linear.y = self.min_speed * msg.linear.y / abs(msg.linear.y)
+            last_error_x = error_x
             self.pubCmdVel.publish( msg )
 
             distance_x = abs(error_x)
@@ -65,7 +74,10 @@ class NavMain:
                 break
             error_y = nav_target_y - self.nav_odom.pose.pose.position.x
             msg = Twist()
-            msg.linear.x = error_y * self.pos_kP
+            msg.linear.x = error_y * self.pos_kP + (error_y - last_error_y) * self.pos_kD
+            if abs(msg.linear.x) < self.min_speed:
+                msg.linear.x = self.min_speed * msg.linear.x / abs(msg.linear.x)
+            last_error_y = error_y
             self.pubCmdVel.publish( msg )
 
             distance_y = abs(error_y)

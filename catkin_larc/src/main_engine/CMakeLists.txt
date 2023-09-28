@@ -23,7 +23,7 @@ add_message_files(
 
 add_service_files(
   FILES
-    Intake.srv
+    MechanismCommand.srv
 )
 
 generate_messages(

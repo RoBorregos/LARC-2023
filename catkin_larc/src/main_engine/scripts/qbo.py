@@ -6,8 +6,9 @@ import tf2_ros
 import actionlib
 from vision.msg import objectDetection, objectDetectionArray
 import geometry_msgs.msg
+from std_msgs.msg import Int32, Bool
 from geometry_msgs.msg import Point, Pose
-from main_engine.srv import Intake, IntakeResponse
+from main_engine.srv import MechanismCommand, MechanismCommandResponse
 from nav_main.msg import Drive2TargetAction, Drive2TargetGoal, Drive2TargetResult, Drive2TargetFeedback
 
 FIND_INIT_POS = "find_init_pos"
@@ -15,6 +16,7 @@ ROTATE_TO_CUBES = "rotate_to_cubes"
 PICK_CUBE_TARGET = "pick_cube_target"
 DRIVE_TO_TARGET = "drive_to_target"
 PICK_CUBE = "pick_cube"
+ACTIVATE_ELEVATOR = "activate_elevator"
 FINISH = "finish"
 
 class MainEngine:
@@ -24,18 +26,20 @@ class MainEngine:
         self.state = PICK_CUBE_TARGET
         self.target_success = False
         self.selected_target = Point()
+        self.dis_to_intake = 19.0
 
         self.br = tf2_ros.TransformBroadcaster()
         self.tfBuffer = tf2_ros.Buffer()
         self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
 
-        self.subColorDetect = rospy.Subscriber('/color_detect', objectDetectionArray, self.colorDetectCb)
+        rospy.Subscriber('/intake_presence', Bool, self.intakePresenceCb)
+        rospy.Subscriber('/color_detect', objectDetectionArray, self.colorDetectCb)
         self.driveTargetClient = actionlib.SimpleActionClient("drive_to_target", Drive2TargetAction)
 
 
     def colorDetectCb(self, data):
         if self.state == PICK_CUBE_TARGET:
-            #NOTE invert x and y
+            #NOTE inverted x and y
             sz = len(data.detections)
             if sz == 0:
                 return
@@ -54,10 +58,25 @@ class MainEngine:
             self.target_success = True
             self.selected_target = data.detections[point_x_min_id].point3D
 
+    def intakePresenceCb(self, data):
+        if self.state == DRIVE_TO_TARGET:
+            if data.data == True:
+                self.driveTargetClient.cancel_goal()
+
+    def mechanismCommandSvr(self, srv, command):
+        rospy.wait_for_service(srv)
+        try:
+            client = rospy.ServiceProxy(srv, MechanismCommand)
+            print( client(command) )
+        except rospy.ServiceException as e:
+            print("Service call failed: %s"%e)
+
+
     def run(self):
         self.current_time = rospy.Time.now()
 
         if self.state == PICK_CUBE_TARGET:
+            self.mechanismCommandSvr('elevator', 0)
             if self.target_success:
                 self.state = DRIVE_TO_TARGET
                 rospy.loginfo("Target selected")
@@ -86,6 +105,8 @@ class MainEngine:
             
             tfIntake = self.tfBuffer.lookup_transform('intake', 'qbo1', rospy.Time())
             print(tfIntake)
+            
+            self.mechanismCommandSvr('intake', 1)
 
             self.driveTargetClient.wait_for_server()
 
@@ -93,7 +114,7 @@ class MainEngine:
             #target_point.x = tfIntake.transform.translation.x
             #target_point.y = tfIntake.transform.translation.y
             target_point.x = t.transform.translation.x
-            target_point.y = t.transform.translation.z
+            target_point.y = t.transform.translation.z - self.dis_to_intake
             target_point.z = 0
             goal = Drive2TargetGoal( target=target_point )
 
@@ -107,13 +128,12 @@ class MainEngine:
             rospy.loginfo("Target reached")
 
         elif self.state == PICK_CUBE:
-            rospy.wait_for_service('intake')
-            try:
-                intake_client = rospy.ServiceProxy('intake', Intake)
-                print( intake_client(1) )
-            except rospy.ServiceException as e:
-                print("Service call failed: %s"%e)
+            self.state = ACTIVATE_ELEVATOR
+
+        elif self.state == ACTIVATE_ELEVATOR:
+            self.mechanismCommandSvr('elevator', 2)
             self.state = FINISH
+
 
 
 

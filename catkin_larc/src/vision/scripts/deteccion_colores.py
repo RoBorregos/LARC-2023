@@ -205,8 +205,8 @@ class DetectorColores:
         lowerGreen = np.array([54,93,104], np.uint8)
         upperGreen = np.array([64,148,147], np.uint8)
 
-        lowerYellow = np.array([27,240,144], np.uint8)
-        upperYellow = np.array([29,255,182], np.uint8)
+        lowerYellow = np.array([25,242,126], np.uint8)
+        upperYellow = np.array([30,255,255], np.uint8)
 
         font = cv2.FONT_HERSHEY_SIMPLEX
 

@@ -24,7 +24,7 @@ from nav_msgs.msg import Odometry
 from std_msgs.msg import Int16, Int32, UInt16, Float32, String, Bool
 from tf.broadcaster import TransformBroadcaster
 from sensor_msgs.msg import Range, Imu
-from main_engine.srv import Intake, IntakeResponse
+from main_engine.srv import MechanismCommand, MechanismCommandResponse 
 
 from tf.transformations import quaternion_from_euler
 
@@ -286,13 +286,15 @@ class Microcontroller:
            return  self.SUCCESS
         else:
            return self.FAIL
-    
-    def rotate(self, command):
-        cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x05, 0x07) + struct.pack("i", command) + struct.pack("B", 0x08)
+        
+    def intake_presence(self):
+        cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x01, 0x07) + struct.pack("B", 0x08)
         if (self.execute(cmd_str))==1 and self.payload_ack == b'\x00':
-            return self.SUCCESS
+           presence = struct.unpack('c', self.payload_args)
+           return  self.SUCCESS, presence
         else:
-            return self.FAIL
+           return self.FAIL, 0
+    
         
     def elevator(self, command):
         cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x05, 0x08) + struct.pack("i", command) + struct.pack("B", 0x09)
@@ -333,6 +335,13 @@ class Microcontroller:
         else:
            return self.FAIL, -1, -1
 
+    def rotate(self, command):
+        cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x05, 0x14) + struct.pack("f", command) + struct.pack("B", 0x15)
+        if (self.execute(cmd_str))==1 and self.payload_ack == b'\x00':
+            return self.SUCCESS
+        else:
+            return self.FAIL
+
     def get_emergency_button(self):
         cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x01, 0x15) + struct.pack("B", 0x16)
         if (self.execute(cmd_str))==1 and self.payload_ack == b'\x00':
@@ -340,6 +349,13 @@ class Microcontroller:
            return  self.SUCCESS, emergency_state
         else:
            return self.FAIL, 0
+        
+    def reset_jetson_port(self):
+        cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x01, 0xF0) + struct.pack("B", 0xF1)
+        if (self.execute(cmd_str))==1 and self.payload_ack == b'\x00':
+           return  self.SUCCESS
+        else:
+           return self.FAIL
 
     def get_check_sum(self,list):
         list_len = len(list)
@@ -411,8 +427,8 @@ class BaseController:
         self.desired_angle = 500
         self.quaternion = Quaternion()
 
-        self.intake_command = 0
-        self.elevator_command = 0
+        self.intake_command = -1
+        self.elevator_command = -1
         self.warehouse = 0 
         self.line_sensor = 0
 
@@ -421,12 +437,15 @@ class BaseController:
         rospy.Subscriber("cmd_vel", Twist, self.cmdVelCallback)
 
         #rospy.Subscriber("intake", Int32, self.intakeCallback)
-        intakeServer = rospy.Service('intake', Intake, self.intakeHandler)
-        rospy.Subscriber("elevator", Int32, self.elevatorCallback)
+        intakeServer = rospy.Service('intake', MechanismCommand, self.intakeHandler)
+        elevatorServer = rospy.Service('elevator', MechanismCommand, self.elevatorHandler)
         rospy.Subscriber("warehouse", Int32, self.warehouseCallback)
         rospy.Subscriber("global_setpoint", Bool, self.globalSetpointCallback)
-        rospy.Subscriber("rotate", Int32, self.rotateCallback)
+        rospy.Subscriber("/rotate", Float32, self.rotateCallback)
+        self.intake_presence_pub = rospy.Publisher("/intake_presence", Bool, queue_size=5)
         self.line_sensor_pub = rospy.Publisher("line_sensors", lineSensor, queue_size=5)
+
+        jetson_port_reset = rospy.Service('reset_jetson_port', MechanismCommand, self.resetJetsonPortHandler)
         
         # Clear any old odometry info
         #self.Microcontroller.reset_encoders()
@@ -490,6 +509,17 @@ class BaseController:
             dt = now - self.then
             self.then = now
             dt = dt.to_sec()
+
+            try:
+                ack, presence = self.Microcontroller.intake_presence()
+                if ack==self.FAIL:
+                    rospy.logerr("get intake presence failed ")
+                    return
+                if presence == '1':
+                    self.intake_presence_pub.publish(True)
+            except:
+                rospy.logerr("get intake presence exception ")
+                return
 
             vx = 0.0
             vy = 0
@@ -583,13 +613,13 @@ class BaseController:
                 self.Microcontroller.drive(self.v_x, self.v_y, self.v_th)
                 #self.Microcontroller.imu_angle(self.angle)
                 
-            if(self.intake_command != 0):
+            if(self.intake_command != -1):
                 self.Microcontroller.intake(self.intake_command)
-                self.intake_command = 0
+                self.intake_command = -1
 
-            if(self.elevator_command != 0):
+            if(self.elevator_command != -1):
                 self.Microcontroller.elevator(self.elevator_command)
-                self.elevator_command = 0
+                self.elevator_command = -1
 
             if(self.warehouse != 0):
                 self.Microcontroller.warehouse(self.warehouse)
@@ -630,6 +660,9 @@ class BaseController:
 
         self.intake_command = req.command
 
+    def elevatorHandler(self, req):
+        return self.Microcontroller.elevator( req.command ) == self.SUCCESS
+
     def elevatorCallback(self, req):
         self.elevator_command = req.data
     
@@ -640,6 +673,8 @@ class BaseController:
     def warehouseCallback(self, req):
         self.warehouse = req.data
 
+    def resetJetsonPortHandler(self, req):
+        return self.Microcontroller.reset_jetson_port() == self.SUCCESS
 
 class MicroControllerROS():
     def __init__(self):
