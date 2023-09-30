@@ -1,11 +1,12 @@
 #include "RosBridge.h"
 
-void RosBridge::init(Drive *drive, Intake *intake, Elevator *elevator, Warehouse *warehouse, LineSensor *lineSensor){
+void RosBridge::init(Drive *drive, Intake *intake, Elevator *elevator, Warehouse *warehouse, LineSensor *lineSensor, VLX *vlxs){
     _drive = drive;
     _intake = intake;
     _elevator = elevator;
     _warehouse = warehouse;
     _lineSensor = lineSensor;
+    _vlxs = vlxs;
 }
 
 //Read serial/////////////////////////////////////////////////////////
@@ -55,6 +56,9 @@ void RosBridge::readSerial() {
             packet_size = 0;
         }
     }
+    // if serial is not available, start a counter to stop the robot if nothing is received in a time frame
+    // unactive_time_ = millis();
+
 }
 
 //////////////////////////////////Velocity Suscriber//////////////////////////////////////
@@ -63,6 +67,10 @@ void RosBridge::velocityCallback(float linearx, float lineary, float angularz) {
     linearY_ = lineary;
     angularZ_ = angularz;
     watchdog_timer_ = millis();
+}
+
+void RosBridge::driveAngleCallback(float angle){
+    _drive->setAngle(angle);
 }
 
 void RosBridge::imuCallback(float angle) {
@@ -92,7 +100,6 @@ void RosBridge::intakeCallback(int command) {
 void RosBridge::elevatorCallback(int command) {
     ElevatorPosition positions[] = {
         ElevatorPosition::PickPos,
-        ElevatorPosition::PickPos,
         ElevatorPosition::FirstIn,
         ElevatorPosition::SecondIn,
         ElevatorPosition::ThirdIn,
@@ -103,7 +110,9 @@ void RosBridge::elevatorCallback(int command) {
         ElevatorPosition::SecondShelf,
         ElevatorPosition::ThirdShelf
     };
-    _elevator->setPosition(positions[command]);
+    //_elevator->setPosition(positions[command]);
+    //_elevator->setLevel(command);
+    _elevator->setSteps(positions[command]);
 }
 
 void RosBridge::warehouseCallback(int level){
@@ -124,46 +133,63 @@ void RosBridge::getOdometry() {
     posY = pos.y;
 }
 
+//////////////////////////////Robot Reset//////////////////////////////////////////////
+void RosBridge::resetRobot() {
+    _intake->setAction(IntakeActions::Stop);
+    _drive->resetOdometry();
+    _drive->restart();
+    _vlxs->restart();
+    _elevator->setSteps(0);
+}
+
 //Execute command/////////////////////////////////////////////////
 void RosBridge::executeCommand(uint8_t packet_size, uint8_t command, uint8_t* buffer) {
     switch (command) {
-        case 0x04: // Velocity command
-        if (packet_size == 13) { // Check packet size
-            float x, y, angular;
-            memcpy(&x, buffer, sizeof(x));
-            memcpy(&y, buffer + sizeof(x), sizeof(y));
-            memcpy(&angular, buffer + sizeof(x) + sizeof(y), sizeof(angular));
-            velocityCallback(x, y, angular);
-            writeSerial(true, nullptr, 0);
-            //digitalWrite(13, !digitalRead(13));
-        }
-        break;
         case 0x13: // Hardware Version 
-        if (packet_size == 1) { // Check packet size
-            uint32_t version[] = {1};
-            writeSerial(true, (uint8_t*)version, sizeof(version));
-        }
+            if (packet_size == 1) { // Check packet size
+                uint32_t version[] = {1};
+                writeSerial(true, (uint8_t*)version, sizeof(version));
+            }
         break;
         case 0x00: // Baud
-        if (packet_size == 1) { // Check packet size
-            uint32_t baud[] = {115200};
-            writeSerial(true, (uint8_t*)baud, sizeof(baud));
-        }
-        break;
+            if (packet_size == 1) { // Check packet size
+                uint32_t baud[] = {115200};
+                writeSerial(true, (uint8_t*)baud, sizeof(baud));
+            }
+            break;
         case 0x02: // Get Odometry
-        if (packet_size == 1) { // Check packet size
-            getOdometry();
-            float data[] = {velX, velY, velTheta, posX, posY};
-            writeSerial(true, (uint8_t*)data, sizeof(data));
-        }
-        break;
+            if (packet_size == 1) { // Check packet size
+                getOdometry();
+                float data[] = {velX, velY, velTheta, posX, posY};
+                writeSerial(true, (uint8_t*)data, sizeof(data));
+            }
+            break;
         case 0x03: // Reset odometry
-        if (packet_size == 1) { // Check packet size
-            _drive->resetOdometry();
-            writeSerial(true, nullptr, 0);
-        }
+            if (packet_size == 1) { // Check packet size
+                _drive->resetOdometry();
+                writeSerial(true, nullptr, 0);
+            }
         break;
-        case 0x05: // Send IMU
+        case 0x04: // Velocity command
+            if (packet_size == 13) { // Check packet size
+                float x, y, angular;
+                memcpy(&x, buffer, sizeof(x));
+                memcpy(&y, buffer + sizeof(x), sizeof(y));
+                memcpy(&angular, buffer + sizeof(x) + sizeof(y), sizeof(angular));
+                velocityCallback(x, y, angular);
+                writeSerial(true, nullptr, 0);
+                //digitalWrite(13, !digitalRead(13));
+            }
+            break;
+        case 0x14: // set angle command
+            if (packet_size == 5) { // Check packet size
+                float angle;
+                memcpy(&angle, buffer, sizeof(angle));
+                driveAngleCallback(angle);
+                writeSerial(true, nullptr, 0);
+                //digitalWrite(13, !digitalRead(13));
+            }
+        case 0x05: // Send IMU from Jetson
         if (packet_size == 5) { // Check packet size
             float angle;
             memcpy(&angle, buffer, sizeof(angle));
@@ -180,14 +206,23 @@ void RosBridge::executeCommand(uint8_t packet_size, uint8_t command, uint8_t* bu
             writeSerial(true, nullptr, 0);
         }
         break;
+
+        case 0x07: // Send Intake Presence to IMU
+            if (packet_size == 1) { // Check packet size
+                char data[] = {_intake->getPresence()? '1' : '0'};
+                writeSerial(true, (uint8_t*)data, sizeof(data));
+            }
+            break;
+
         case 0x08: // Send Elevator}
-        if (packet_size == 5) { // Check packet size
-            int command;
-            memcpy(&command, buffer, sizeof(command));
-            elevatorCallback(command);
-            writeSerial(true, nullptr, 0);
-        }
-        break;
+            if (packet_size == 5) { // Check packet size
+                int command;
+                memcpy(&command, buffer, sizeof(command));
+                writeSerial(true, nullptr, 0);
+                elevatorCallback(command);
+            }
+            break;
+
         case 0x0A: // Send Warehouse 
         if (packet_size == 5) { // Check packet size
             int level;
@@ -196,6 +231,7 @@ void RosBridge::executeCommand(uint8_t packet_size, uint8_t command, uint8_t* bu
             writeSerial(true, nullptr, 0);
         }
         break;
+
         case 0x0B: // Send Line Sensor
         if (packet_size == 1) { // Check packet size
             char data[] = {
@@ -217,6 +253,26 @@ void RosBridge::executeCommand(uint8_t packet_size, uint8_t command, uint8_t* bu
             writeSerial(true, nullptr, 0);
         }
         break;
+        case 0x0F: // Send IMU to Jetson
+            if (packet_size == 1) { // Check packet size
+                float curr_angle = _drive->getAngleX();
+                typedef union
+                {
+                float number;
+                uint8_t bytes[4];
+                } FLOATUNION_t;
+                FLOATUNION_t angle;
+                angle.number = curr_angle;
+                writeSerial(true, angle.bytes, sizeof(angle.bytes));
+            }
+            break;
+        case 0xF0:
+            //reset robot
+            if (packet_size == 1) { // Check packet size
+                resetRobot();
+                writeSerial(true, nullptr, 0);
+            }
+            break;
         default:
         break;
     }

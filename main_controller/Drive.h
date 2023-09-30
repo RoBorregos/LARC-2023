@@ -42,6 +42,7 @@ class Drive{
         bool line_move = false;
         int line_state = 0;
         bool verbose = false;
+        float kMinSpeed = Constants::kMinSpeed;
         LineSensor *lineSensor;
         BNO *bno;
         float BNOKP = Constants::kBNOKP;
@@ -51,12 +52,18 @@ class Drive{
         float BNOKout_min = Constants::kBNOMinAngular;
         float BNOKout_max = Constants::KBNOMaxAngular;
         PID pidControllerBNO;
+        float curr_angle_x;
+        uint16_t hard_stop_current = 0;
+        uint16_t hard_stop_time = Constants::kHardStopTime;
+        uint8_t intake_presence = Constants::kIntakePresence;
     public:
         void init(BNO *bno, LineSensor *line_sensor);
+        void restart();
         Motor frontLeft;
         Motor frontRight;
         Motor backLeft;
         Motor backRight;
+        float getAngleX();
         void setSpeed(float linearX, float linearY, float angularZ);
         void setSpeed(float linearX, float linearY, float angularZ, unsigned long current_time);
         void setSpeedOriented(float linearX, float linearY, float angularZ, unsigned long current_time);

@@ -5,7 +5,11 @@ BNO::BNO(Adafruit_BNO055 *bno){
 }
 
 bool BNO::init(){
-    return bno->begin();
+    while(!bno->begin()){
+        Serial.println("BNO055 not found");
+        delay(500);
+    }
+    return true;
 }
 
 Orientation BNO::getOrientation(){

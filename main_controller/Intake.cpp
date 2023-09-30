@@ -1,4 +1,5 @@
 #include "Intake.h"
+#include "Constants.h"
 
 Intake::Intake(){
     action = IntakeActions::Stop;
@@ -10,7 +11,7 @@ Intake::Intake(){
 }
 
 void Intake::pick(unsigned long current_time){
-    if( presence && current_time - presence_detection_time > 1000){
+    if( presence && current_time - presence_detection_time > Constants::kIntakePickPresenceTime){
         setAction(Stop);
         return;
     }
@@ -21,7 +22,7 @@ void Intake::pick(unsigned long current_time){
 }
 
 void Intake::in(unsigned long current_time){
-    if( !presence && current_time - presence_detection_time > 1000){
+    if( !presence && current_time - presence_detection_time > Constants::kIntakeInPresenceTime){
         setAction(Stop);
         return;
     }
@@ -43,7 +44,7 @@ void Intake::out(unsigned long current_time){
 }
 
 void Intake::drop(unsigned long current_time){
-    if( !presence && current_time - presence_detection_time > 1000){
+    if( !presence && current_time - presence_detection_time > Constants::kIntakeOutPresenceTime){
         setAction(Stop);
         return;
     }
