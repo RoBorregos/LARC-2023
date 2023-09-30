@@ -21,7 +21,7 @@ from vision_utils import *
 class letras_yolov8:
         def __init__(self):
             #self.model = ultralytics.YOLO("/home/nvidia/Desktop/LARC-2023/catkin_larc/src/vision/scripts/yolov8n.pt")
-            self.model = ultralytics.YOLO("/home/nvidia/Desktop/LARC-2023/catkin_larc/src/vision/scripts/larc5000n3.pt")
+            self.model = ultralytics.YOLO("/home/nvidia/Desktop/LARC-2023/catkin_larc/src/vision/scripts/estantes_yolov8.pt")
             self.bridge = CvBridge()
 
             self.pubdata = rospy.Publisher('vision/letras/info', objectDetectionArray, queue_size=5)
