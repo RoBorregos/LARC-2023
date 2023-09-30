@@ -18,15 +18,15 @@ import sys
 sys.path.append(str(pathlib.Path(__file__).parent) + '/../include')
 from vision_utils import *
 
-class letras_yolov8:
+class estantes_yolov8:
         def __init__(self):
             #self.model = ultralytics.YOLO("/home/nvidia/Desktop/LARC-2023/catkin_larc/src/vision/scripts/yolov8n.pt")
             self.model = ultralytics.YOLO("/home/nvidia/Desktop/LARC-2023/catkin_larc/src/vision/scripts/estantes_yolov8.pt")
             self.bridge = CvBridge()
 
-            self.pubdata = rospy.Publisher('vision/letras/info', objectDetectionArray, queue_size=5)
-            self.pubimg = rospy.Publisher('vision/letras/image', Image, queue_size=10)
-            self.posePublisher = rospy.Publisher("vision/letras/detectionposes", PoseArray, queue_size=5)
+            self.pubdata = rospy.Publisher('vision/estantes/info', objectDetectionArray, queue_size=5)
+            self.pubimg = rospy.Publisher('vision/estantes/image', Image, queue_size=10)
+            self.posePublisher = rospy.Publisher("vision/estantes/detectionposes", PoseArray, queue_size=5)
 
             self.sub = rospy.Subscriber('/zed2/zed_node/rgb/image_rect_color', Image, self.callback)
             self.subscriberDepth = rospy.Subscriber("/zed2/zed_node/depth/depth_registered", Image, self.depthImageRosCallback)
@@ -38,7 +38,7 @@ class letras_yolov8:
             self.main()
 
             rospy.loginfo("Loading model...")
-            rospy.loginfo("letras_yolov8 lectura")
+            rospy.loginfo("estantes_yolov8 lectura")
             self.yolov8_warmup(self.model, 10, False)
 
 
@@ -196,7 +196,7 @@ class letras_yolov8:
                 rospy.logwarn("Keyboard interrupt detected, stopping listener")
 
 if __name__ == '__main__':
-    letras_yolov8()
+    estantes_yolov8()
 
 
 #--------------------------------------------------------------------------------------------------------------
