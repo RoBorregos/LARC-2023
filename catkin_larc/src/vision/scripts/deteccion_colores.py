@@ -3,7 +3,7 @@ import rospy
 import cv2
 import numpy as np
 from sensor_msgs.msg import Image, CameraInfo
-from std_msgs.msg import String
+from std_msgs.msg import String, Bool
 from cv_bridge import CvBridge, CvBridgeError
 from vision.msg import objectDetection, objectDetectionArray
 from vision.srv import DetectColorPattern, DetectColorPatternResponse
@@ -20,6 +20,8 @@ class DetectorColores:
         rospy.init_node('detector_colores', anonymous=True)
 
         self.boxes = []
+        self.cx = 0.0
+        self.cy = 0.0
         self.detections = []
 
         self.image = np.array([])
@@ -30,9 +32,11 @@ class DetectorColores:
 
         self.bridge = CvBridge()
         self.pub = rospy.Publisher('/colores_out', Image, queue_size=10)
-        self.pubData = rospy.Publisher('color_detect', objectDetectionArray, queue_size=5)
+        self.pubData = rospy.Publisher('/vision/color_detect', objectDetectionArray, queue_size=5)
         self.pubcolor = rospy.Publisher('colors', String, queue_size=10)
         self.posePublisher = rospy.Publisher("/test/detectionposes", PoseArray, queue_size=5)
+        self.flagsubs = rospy.Subscriber("flag", Bool, self.callback_flag)
+        self.flag = False
 
         #Suscriber topics changed for simulation
         
@@ -56,7 +60,11 @@ class DetectorColores:
         rospy.loginfo("Subscribed to image")
         self.main()
     
-  
+    def callback_flag(self, data):
+        self.flag = data.data
+        rospy.loginfo(self.flag)
+
+
     def depthImageRosCallback(self, data):
         try:
             self.depth_image = self.bridge.imgmsg_to_cv2(data, "32FC1")
@@ -80,7 +88,11 @@ class DetectorColores:
             area = cv2.contourArea(c)
             if area > 1000:
                 M = cv2.moments(c)
-                if (M["m00"]): M["m00"] = 1
+                self.cx = int(M["m10"]/M["m00"]) / self.image.shape[1]
+                self.cy = int(M['m01']/M["m00"]) / self.image.shape[0]
+
+                if (M["m00"]):
+                    M["m00"] = 1
                 x = int(M["m10"]/M["m00"])
                 y = int(M['m01']/M["m00"])
                 nuevoContorno = cv2.convexHull(c)
@@ -127,8 +139,9 @@ class DetectorColores:
         # rospy.loginfo(data.data)
         # implement cv_bridge
         self.image = self.bridge.imgmsg_to_cv2(data,desired_encoding="bgr8")
-        self.color_detection()
-        self.pub.publish(self.bridge.cv2_to_imgmsg(self.image, encoding="bgr8"))
+        if self.flag:
+            self.color_detection()
+            self.pub.publish(self.bridge.cv2_to_imgmsg(self.image, encoding="bgr8"))
         self.boxes = []
         self.detections = []
 
@@ -168,16 +181,18 @@ class DetectorColores:
                 if len(self.depth_image) != 0:
                     depth = get_depth(self.depth_image, point2D)
                     point3D_ = deproject_pixel_to_point(self.camera_info, point2D, depth)
-                    point3D.x = point3D_[0]
+                    point3D.x = point3D_[0] - 0.05
                     point3D.y = point3D_[1]
                     point3D.z = point3D_[2]
                     pa.poses.append(Pose(position=point3D))
                     res.append(
                     objectDetection(
-
                         label = int(index), # 1
                         labelText = str(detections[index]), # "H"
+                        category = str('color'),
                         #score = float(0.0),
+                        cx = float(self.cx),
+                        cy = float(self.cy),
                         ymin = float(boxes[index][0]),
                         xmin = float(boxes[index][1]),
                         ymax = float(boxes[index][2]),

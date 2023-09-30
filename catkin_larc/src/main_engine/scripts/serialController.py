@@ -466,7 +466,7 @@ class BaseController:
         self.intake_presence_pub = rospy.Publisher("/intake_presence", Bool, queue_size=5)
         self.line_sensor_pub = rospy.Publisher("line_sensors", lineSensor, queue_size=5)
 
-        jetson_port_reset = rospy.Service('reset_jetson_port', MechanismCommand, self.resetJetsonPortHandler)
+        jetson_port_reset = rospy.Service('reset_teensy', MechanismCommand, self.resetJetsonPortHandler)
         
         # Clear any old odometry info
         #self.Microcontroller.reset_encoders()
