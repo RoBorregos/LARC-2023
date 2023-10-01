@@ -142,7 +142,7 @@ class MainEngine:
                     rospy.loginfo(f"Tile Y: {self.y_tile}")
                     if self.y_tile > 4 and (self.x_tile == 2 or self.x_tile == 3 or self.x_tile == 5 or self.x_tile == 6):
                         self.state = X_MOVE_TO_PICK_POS1
-                    elif self.y_tile > 2:
+                    elif self.y_tile > 1:
                         self.state = Y_MOVE_TO_PICK_POS
                     else:
                         self.state = X_MOVE_TO_PICK_POS2
@@ -188,7 +188,7 @@ class MainEngine:
         elif self.state == Y_MOVE_TO_PICK_POS:
             rospy.loginfo("Moving to y pick pos")
             current_odom_x = self.nav_odom.pose.pose.position.x
-            target_odom_x = current_odom_x + (self.y_tile-1) * 0.3
+            target_odom_x = current_odom_x + (self.y_tile-1) * 0.33
             print(f"Current odom y: {current_odom_x}")
             print(f"Max odom y: {target_odom_x}")
             
@@ -202,6 +202,7 @@ class MainEngine:
             msg = Twist()
             self.cmd_vel_pub.publish(msg) # stop
             rospy.sleep(1)
+            self.y_tile = 1
             self.state = X_MOVE_TO_PICK_POS2
 
         elif self.state == X_MOVE_TO_PICK_POS2:
@@ -238,6 +239,9 @@ class MainEngine:
 
         elif self.state == ROTATE_TO_CUBES:
             self.current_angle += 180
+            if self.current_angle > 270:
+                self.current_angle -= 360
+
             print( self.current_angle )
             msg_f = Float32()
             msg_f.data = float(self.current_angle)

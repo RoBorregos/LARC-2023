@@ -5,6 +5,7 @@ import tf_conversions
 import tf2_ros
 import actionlib
 from vision.msg import objectDetection, objectDetectionArray
+from vision.srv import DetectColorPattern, DetectColorPatternResponse
 import geometry_msgs.msg
 from std_msgs.msg import Int32, Bool, Float32
 from geometry_msgs.msg import Point, Pose, Twist
@@ -24,6 +25,9 @@ RESET_ELEVATOR = "reset_elevator"
 PARTIAL_PICK_FINISH = "partial_pick_finish"
 PICK_FINISH = "pick_finish"
 PICK_UNLOAD_TARGET = "pick_unload_target"
+FIND_UPLOAD_TILE = "find_upload_tile"
+MOVE_Y_UPLOAD_TILE = "move_y_upload_tile"
+MOVE_X_UPLOAD_TILE = "move_x_upload_tile"
 DRIVE_TO_COLOR_AREA = "drive_to_color_area"
 MOVE_BACK_TO_UNLOAD_COLOR = "move_back_to_unload_color"
 PARTIAL_FINISH = "partial_finish"
@@ -46,7 +50,7 @@ class MainEngine:
     def __init__(self):
         rospy.loginfo("MainEngine init")
         self.current_time = rospy.Time.now()
-        self.state = RESET_ELEVATOR
+        self.state = FIND_UPLOAD_TILE 
         self.pick_result = PARTIAL_PICK_FINISH
         self.target_success = [False, False, False]
         self.detected_targets= [objectDetection(), objectDetection(), objectDetection()]
@@ -62,13 +66,16 @@ class MainEngine:
         self.search_tries = 0
 
         self.categoryDict = { 'color': 0, 'aruco': 1, 'letter': 2 }
-        self.color_stack = []
+        self.color_stack = ["verde","rojo", "amarillo"]
         self.aruco_stack = []
         self.letter_stack = []
         self.nav_odom = Odometry()
-
-
-        self.cmd_vel_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
+        
+        self.x_tile = 0
+        self.y_tile = 0
+        self.current_angle = 0.0
+        self.color_target_to_align = ""
+        self.color_target_dis = 5000
 
         rospy.Subscriber('/vision/color_detect', objectDetectionArray, self.colorDetectCb)
         rospy.Subscriber('/vision/aruco_detect', objectDetectionArray, self.arucoDetectCb)
@@ -127,20 +134,24 @@ class MainEngine:
                     self.selected_target = data.detections[i]
                     return
         
-        if self.state == PICK_UNLOAD_TARGET:
-             # check if target is still in sight, based on the bounding pixels, then obtain the target's 3D position
+    def colorDetectCb(self, data):
+        self.cubeTargetsHandler(data)
+        if self.state == MOVE_X_UPLOAD_TILE or self.state == MOVE_Y_UPLOAD_TILE:
             sz = len(data.detections)
             if sz == 0:
                 return
+            y_min_first = data.detections[0].ymin
+            point_x_min_id = 0
+
             for i in range(sz):
-                if data.detections[i].labelText == self.selected_target.labelText:
-                    self.selected_target = data.detections[i]
-                    return
-
-        
-
-    def colorDetectCb(self, data):
-        self.cubeTargetsHandler(data)
+                if abs(data.detections[i].ymin - y_min_first) >= 120 or data.detections[i].labelText != self.color_target_to_align:
+                    continue
+                if( abs(data.detections[i].point3D.x) < abs(data.detections[point_x_min_id].point3D.x)):
+                    point_x_min_id = i
+            if self.state == MOVE_X_UPLOAD_TILE:
+                self.color_target_dis = data.detections[point_x_min_id].point3D.x
+            elif self.state == MOVE_Y_UPLOAD_TILE:
+                self.color_target_dis = data.detections[point_x_min_id].point3D.z
                 
     def arucoDetectCb(self, data):
         self.cubeTargetsHandler(data)
@@ -427,23 +438,100 @@ class MainEngine:
             rotate_msg.data = 180
             self.rotate_pub.publish(rotate_msg)
             rospy.sleep(2)
-            self.state = PICK_UNLOAD_TARGET
-            
+            self.state = FIND_UPLOAD_TILE 
+        
         elif self.state == PICK_UNLOAD_TARGET:
             # Obtain selected target from the color stack
-            self.selected_target = objectDetection()
             if len(self.color_stack) > 0:
-                self.selected_target.category = 'color'
-                self.selected_target.labelText = self.color_stack.pop()
-                rospy.loginfo(f"Cube to unload: {self.selected_target.labelText}")
+                self.color_target_to_align = self.color_stack.pop()
+                rospy.loginfo(f"Cube to unload: {self.color_target_to_align}")
             else:
                 self.state = FINISH
                 return
             # Wait for detections
             rospy.sleep(1)
-            self.state = DRIVE_TO_COLOR_AREA
-
+            self.state = MOVE_Y_UPLOAD_TILE
             
+        elif self.state == FIND_UPLOAD_TILE:
+            self.flag_pub.publish(True)
+            rospy.sleep(2)
+            rospy.wait_for_service('/detect_color_pattern')
+            try:
+                client = rospy.ServiceProxy('/detect_color_pattern', DetectColorPattern)
+                resp = client()
+                if resp.tileX != 0 and resp.tileY != 0:
+                    self.x_tile = resp.tileX
+                    self.y_tile = resp.tileY
+                    rospy.loginfo(f"Tile X: {self.x_tile}")
+                    rospy.loginfo(f"Tile Y: {self.y_tile}")
+                    self.state = PICK_UNLOAD_TARGET
+            except rospy.ServiceException as e:
+                print("Pattern call failed: %s"%e)
+
+        elif self.state == MOVE_Y_UPLOAD_TILE:
+            rospy.loginfo("Moving to y pick pos")
+            current_odom_x = self.nav_odom.pose.pose.position.x
+            target_odom_x = current_odom_x + (self.y_tile-1) * 0.34
+            print(f"Current odom y: {current_odom_x}")
+            print(f"Max odom y: {target_odom_x}")
+            
+            # While no cube is detected and the limit has not been reached, move back
+            while target_odom_x - current_odom_x > 0.05:
+                msg = Twist()
+                msg.linear.x = 0.2
+                self.cmd_vel_pub.publish(msg)
+                current_odom_x = self.nav_odom.pose.pose.position.x
+            
+            while self.color_target_dis == 5000:
+                print("Waiting for color target dis")
+                pass
+
+            while abs(self.color_target_dis) > 0.52:
+                msg = Twist()
+                msg.linear.x = 0.15
+                self.cmd_vel_pub.publish(msg)
+
+            msg = Twist()
+            self.cmd_vel_pub.publish(msg) # stop
+            self.color_target_dis = 5000
+            rospy.sleep(2)
+            self.y_tile = 1
+            self.state = MOVE_X_UPLOAD_TILE
+
+        elif self.state == MOVE_X_UPLOAD_TILE:
+            color2tile = {'rojo': 4, 'verde': 1, 'azul': 2, 'amarillo': 3}
+
+            rospy.loginfo("Moving to x pick pos 1")
+            current_odom_y = self.nav_odom.pose.pose.position.y
+            target_odom_y = current_odom_y + (color2tile[self.color_target_to_align] - self.x_tile) * 0.3
+            sign = (color2tile[self.color_target_to_align]-self.x_tile) / abs(color2tile[self.color_target_to_align]-self.x_tile)
+            print(f"Current odom x: {current_odom_y}")
+            print(f"Max odom x: {target_odom_y}")
+            
+            # While no cube is detected and the limit has not been reached, move back
+            while abs(current_odom_y - target_odom_y) > 0.1:
+                msg = Twist()
+                msg.linear.y = 0.2 * sign
+                self.cmd_vel_pub.publish(msg)
+                current_odom_y = self.nav_odom.pose.pose.position.y
+            
+            while self.color_target_dis == 5000:
+                print("Waiting for color target dis")
+                pass
+
+            while abs(self.color_target_dis) > self.tolerance:
+                msg = Twist()
+                msg.linear.y = - 0.11 * self.color_target_dis / abs(self.color_target_dis)
+                self.cmd_vel_pub.publish(msg)
+
+            msg = Twist()
+            self.cmd_vel_pub.publish(msg) # stop
+            self.color_target_dis = 5000
+            rospy.sleep(2)
+            self.x_tile = color2tile[self.color_target_to_align]
+            self.state = PICK_UNLOAD_TARGET 
+
+
         elif self.state == DRIVE_TO_COLOR_AREA:
             # Obtain 3D point of area
             target_point = Point()
@@ -484,11 +572,17 @@ class MainEngine:
                 msg.linear.x = -0.2
                 self.cmd_vel_pub.publish(msg)
                 current_odom_x = self.nav_odom.pose.pose.position.x
+                print(f"Current odom x: {current_odom_x}")
+                print(f"Target odom x: {target_odom_x}")
+                print("------------------")
             while current_odom_x > target_odom_x:
                 msg = Twist()
                 msg.linear.x = 0.2
                 self.cmd_vel_pub.publish(msg)
                 current_odom_x = self.nav_odom.pose.pose.position.x
+                print(f"Current odom x: {current_odom_x}")
+                print(f"Target odom x: {target_odom_x}")
+                print("------------------")
             msg = Twist()
             self.cmd_vel_pub.publish(msg) # stop
             rospy.loginfo("Reached X target of Unloading area")
