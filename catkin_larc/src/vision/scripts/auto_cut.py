@@ -14,6 +14,7 @@ import cv2
 import os
 import matplotlib.pyplot as plt
 import numpy as np
+import imutils
 from pathlib import Path
 
 def remove_background_biggest_contour(image):
@@ -112,8 +113,8 @@ def find_extreme_points(img):
 
     return topmost, rightmost, bottommost, leftmost
 
-pathtoimage = "Dataset_final_yolo_resize_png/rojo"
-resultspath = "Dataset_croppeado/rojo"
+pathtoimage = "/home/jabv/Desktop/Dataset_final_yolo_resize_png/A"
+resultspath = "/home/jabv/Desktop/DS_letras_se/A"
 if not os.path.exists(resultspath):
   os.makedirs(resultspath)
 cutobject = "soap"
@@ -165,7 +166,7 @@ i=0
 
 for imgPath in imgPaths:
   print(f"Processing image: {imgPath}")
-  img = cv2.imread(f"{pathtoimage}/{imgPath}")
+  img = imutils.resize((cv2.imread(f"{pathtoimage}/{imgPath}")), width=640)
   if img is None:
     continue
   
