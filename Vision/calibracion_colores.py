@@ -46,7 +46,7 @@ cv2.createTrackbar('high V','controls',255,255,callback)
 
 while(1):
 	#read source image
-	img=cv2.imread("/home/jabv/Desktop/Dataset_final_yolov8_png/IMG_1907.png")
+	img=imutils.resize(cv2.imread("/home/jabv/Desktop/Dataset_final_yolo_resize_png/amarillo/IMG_2205.png"), width=640)
 	img = imutils.resize(img, width=720)
 	#convert sourece image to HSC color mode
 	hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
