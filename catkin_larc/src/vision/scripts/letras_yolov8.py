@@ -83,7 +83,7 @@ class letras_yolov8:
             #prevtime = time.time()
             try:
                 results = self.model(frame, verbose=False)
-                boxes, confidences, classids = self.generate_boxes_confidences_classids_v8(results, 0.5)
+                boxes, confidences, classids = self.generate_boxes_confidences_classids_v8(results, 0.85)
                 #print(f"Prediction done in {time.time() - prevtime} seconds")
                 # Draw results
                 bb = []

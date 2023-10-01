@@ -197,6 +197,7 @@ class DetectorColores:
                         xmin = float(boxes[index][1]),
                         ymax = float(boxes[index][2]),
                         xmax = float(boxes[index][3]),
+                        depth = float(depth),
                         point3D = point3D
                     )
                 )
@@ -209,18 +210,20 @@ class DetectorColores:
     def color_detection(self):
         frame = self.image
         
-        lowerRed = np.array([0,180,92], np.uint8)
-        upperRed = np.array([7,255,255], np.uint8)
-        lowerRed2 = np.array([179,180,92], np.uint8)
-        upperRed2 = np.array([179,255,255], np.uint8)
+        lowerRed = np.array([0,157,71], np.uint8)
+        upperRed = np.array([7,255,178], np.uint8)
+        lowerRed2 = np.array([174,157,71], np.uint8)
+        upperRed2 = np.array([179,255,178], np.uint8)
 
-        lowerBlue = np.array([106,71,43], np.uint8)
-        upperBlue = np.array([124,216,172], np.uint8)
+        lowerBlue = np.array([116,144,49], np.uint8)
+        upperBlue = np.array([126,255,135], np.uint8)
 
-        lowerGreen = np.array([54,35,27], np.uint8)
-        upperGreen = np.array([99,179,147], np.uint8)
+        #lowerGreen = np.array([96,39,26], np.uint8)
+        #upperGreen = np.array([120,123,50], np.uint8)
+        lowerGreen = np.array([54,107,33], np.uint8)
+        upperGreen = np.array([70,255,131], np.uint8)
 
-        lowerYellow = np.array([25,223,82], np.uint8)
+        lowerYellow = np.array([21,163,82], np.uint8)
         upperYellow = np.array([30,255,255], np.uint8)
 
         font = cv2.FONT_HERSHEY_SIMPLEX
@@ -242,11 +245,17 @@ class DetectorColores:
         #cv2.imshow('frame',frame)
 
     def detect_color_pattern_cb(self, req):
+        print("detect_color_pattern_cb")
         data = self.color_detections_data
         xTile = 0
+        yTile = 0
+        cTile = DetectColorPatternResponse()
+        cTile.tileX = xTile
+        cTile.tileY = yTile
+
         sz = len(data.detections)
         if sz == 0:
-            return xTile
+            return cTile
     
         y_min_first = data.detections[0].ymin
         x_last_max = data.detections[0].xmin
@@ -261,7 +270,7 @@ class DetectorColores:
         }
     
         for i in range(sz):
-            if abs(data.detections[i].ymin - y_min_first) >= 80 or abs(data.detections[i].xmin - x_last_max) >= 70:
+            if abs(data.detections[i].ymin - y_min_first) >= 120 or abs(data.detections[i].xmin - x_last_max) >= 120:
                 continue
             color_seq += color2Letter[ data.detections[i].labelText ]
 
@@ -270,7 +279,7 @@ class DetectorColores:
                 point_x_min_id = i
 
         #check if subsequence
-        #print(color_seq)
+        print(color_seq)
         if color_seq in self.static_color_seq and len(color_seq) >= 3:
             rospy.loginfo("Color sequence detected: " + color_seq)
             #get square from closer point x and adjacents
@@ -296,9 +305,27 @@ class DetectorColores:
             elif x_square_label == "G" and x_square_cont == "BG":
                 xTile = 1
 
-            print( "x_square: " + str(xTile) )
+            y_point = data.detections[point_x_min_id].point3D.z
+            if y_point < 0.52:
+                yTile = 1
+            elif y_point < 0.78:
+                yTile = 2
+            elif y_point < 0.96:
+                yTile = 3
+            elif y_point < 1.23:
+                yTile = 4
+            elif y_point < 1.5:
+                yTile = 5
+            elif y_point < 1.76:
+                yTile = 6
 
-        return DetectColorPatternResponse(xTile)
+            print("xTile: " + str(xTile) + ", yTile: " + str(yTile))
+
+        cTile = DetectColorPatternResponse()
+        cTile.tileX = xTile
+        cTile.tileY = yTile
+
+        return cTile
         
     def main(self):
         rospy.logwarn("Starting listener")

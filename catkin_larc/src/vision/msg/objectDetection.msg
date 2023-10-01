@@ -9,4 +9,5 @@ float32 ymin
 float32 xmin
 float32 ymax
 float32 xmax
+float32 depth
 geometry_msgs/Point point3D
