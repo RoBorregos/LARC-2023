@@ -181,7 +181,7 @@ class DetectorColores:
                 if len(self.depth_image) != 0:
                     depth = get_depth(self.depth_image, point2D)
                     point3D_ = deproject_pixel_to_point(self.camera_info, point2D, depth)
-                    point3D.x = point3D_[0] - 0.05
+                    point3D.x = point3D_[0] - 0.04
                     point3D.y = point3D_[1]
                     point3D.z = point3D_[2]
                     pa.poses.append(Pose(position=point3D))
@@ -215,13 +215,13 @@ class DetectorColores:
         lowerRed2 = np.array([174,157,71], np.uint8)
         upperRed2 = np.array([179,255,178], np.uint8)
 
-        lowerBlue = np.array([116,144,49], np.uint8)
+        lowerBlue = np.array([114,99,49], np.uint8)
         upperBlue = np.array([126,255,135], np.uint8)
 
-        #lowerGreen = np.array([96,39,26], np.uint8)
-        #upperGreen = np.array([120,123,50], np.uint8)
-        lowerGreen = np.array([54,107,33], np.uint8)
-        upperGreen = np.array([70,255,131], np.uint8)
+        lowerGreen = np.array([51,90,29], np.uint8)
+        upperGreen = np.array([72,255,168], np.uint8)
+        lowerGreen2 = np.array([71,30,26], np.uint8)
+        upperGreen2 = np.array([107,191,66], np.uint8)
 
         lowerYellow = np.array([21,163,82], np.uint8)
         upperYellow = np.array([30,255,255], np.uint8)
@@ -230,14 +230,16 @@ class DetectorColores:
 
         frameHSV = cv2.cvtColor(frame,cv2.COLOR_BGR2HSV)
         maskAzul = cv2.inRange(frameHSV, lowerBlue, upperBlue)
-        maskVerde = cv2.inRange(frameHSV, lowerGreen, upperGreen)
+        maskVerde1 = cv2.inRange(frameHSV, lowerGreen, upperGreen)
+        maskVerde2 = cv2.inRange(frameHSV, lowerGreen2, upperGreen2)
         maskamarillo = cv2.inRange(frameHSV, lowerYellow, upperYellow)
         maskRed1 = cv2.inRange(frameHSV, lowerRed, upperRed)
         maskRed2 = cv2.inRange(frameHSV, lowerRed2, upperRed2)
         maskred = cv2.add(maskRed1,maskRed2)
+        maskverde = cv2.add(maskVerde1,maskVerde2)
         self.dibujar(maskAzul,(255,0,0))
         self.dibujar(maskamarillo,(0,255,255))
-        self.dibujar(maskVerde,(0,255,0))
+        self.dibujar(maskverde,(0,255,0))
         self.dibujar(maskred,(0,0,255))
 
         self.get_objects(self.boxes, self.detections)
@@ -270,7 +272,7 @@ class DetectorColores:
         }
     
         for i in range(sz):
-            if abs(data.detections[i].ymin - y_min_first) >= 120 or abs(data.detections[i].xmin - x_last_max) >= 120:
+            if abs(data.detections[i].ymin - y_min_first) >= 50 or abs(data.detections[i].xmin - x_last_max) >= 90:
                 continue
             color_seq += color2Letter[ data.detections[i].labelText ]
 

@@ -28,10 +28,12 @@ MOVE_BACK_TO_DETECT = "move_back_to_detect"
 RESET_ELEVATOR = "reset_elevator"
 PARTIAL_PICK_FINISH = "partial_pick_finish"
 PICK_FINISH = "pick_finish"
+
 PICK_UNLOAD_TARGET = "pick_unload_target"
 FIND_UPLOAD_TILE = "find_upload_tile"
 MOVE_Y_UPLOAD_TILE = "move_y_upload_tile"
 MOVE_X_UPLOAD_TILE = "move_x_upload_tile"
+UNLOAD_CUBE = "unload_cube"
 DRIVE_TO_COLOR_AREA = "drive_to_color_area"
 MOVE_BACK_TO_UNLOAD_COLOR = "move_back_to_unload_color"
 PARTIAL_FINISH = "partial_finish"
@@ -43,10 +45,10 @@ Y_TARGET = "y_target"
 ELEVATOR_SMALLSTEPDOWN_COMMAND = 50
 
 MOVE_BACK_TO_DETECT_LIMIT = 0.5 # Xcm maximum to go back from cube
-MOVE_BACK_TO_DETECT_MINIMUM = 0.55 # Xcm minimum to go back from cube
+MOVE_BACK_TO_DETECT_MINIMUM = 0.45 # Xcm minimum to go back from cube
 MOVE_LEFT_TO_DETECT_LIMIT = 1.0 # 1m maximum to go left when not finding a cube
 
-NUMBER_OF_CUBES = 11
+NUMBER_OF_CUBES = 12
 
 
 
@@ -54,7 +56,7 @@ class MainEngine:
     def __init__(self):
         rospy.loginfo("MainEngine init")
         self.current_time = rospy.Time.now()
-        self.state = FIND_INIT_POS 
+        self.state = FIND_INIT_POS
         self.pick_result = PARTIAL_PICK_FINISH
         self.target_success = [False, False, False]
         self.detected_targets= [objectDetection(), objectDetection(), objectDetection()]
@@ -213,7 +215,10 @@ class MainEngine:
             self.color_target_to_align = "rojo"
             current_odom_y = self.nav_odom.pose.pose.position.y
             target_odom_y = current_odom_y + (4 - self.x_tile) * 0.3
-            sign = (4-self.x_tile) / abs(4-self.x_tile)
+            try:
+                sign = (4-self.x_tile) / abs(4-self.x_tile)
+            except:
+                sign = 1
             print(f"Current odom x: {current_odom_y}")
             print(f"Max odom x: {target_odom_y}")
             
@@ -244,14 +249,14 @@ class MainEngine:
         elif self.state == Y_MOVE_TO_PICK_POS:
             rospy.loginfo("Moving to y pick pos")
             current_odom_x = self.nav_odom.pose.pose.position.x
-            target_odom_x = current_odom_x + (self.y_tile-1) * 0.33
+            target_odom_x = current_odom_x + (self.y_tile-1) * 0.31
             print(f"Current odom y: {current_odom_x}")
             print(f"Max odom y: {target_odom_x}")
             
             # While no cube is detected and the limit has not been reached, move back
             while target_odom_x - current_odom_x > 0.05:
                 msg = Twist()
-                msg.linear.x = 0.2
+                msg.linear.x = 0.25
                 self.cmd_vel_pub.publish(msg)
                 current_odom_x = self.nav_odom.pose.pose.position.x
             
@@ -266,7 +271,10 @@ class MainEngine:
             self.color_target_to_align = "azul"
             current_odom_y = self.nav_odom.pose.pose.position.y
             target_odom_y = current_odom_y + (6 - self.x_tile) * 0.3
-            sign = (6-self.x_tile) / abs(6-self.x_tile)
+            try:
+                sign = (6-self.x_tile) / abs(6-self.x_tile)
+            except:
+                sign = 1
             print(f"Current odom y: {current_odom_y}")
             print(f"Max odom y: {target_odom_y}")
             
@@ -303,7 +311,7 @@ class MainEngine:
             msg_f.data = float(self.current_angle)
 
             self.rotate_pub.publish( msg_f )
-            rospy.sleep(3)
+            rospy.sleep(2)
             self.state = RESET_ELEVATOR
 
         elif self.state == RESET_ELEVATOR:
@@ -380,7 +388,7 @@ class MainEngine:
             #self.followCubePub.publish(True)
             rospy.loginfo("Target sent")
 
-            rospy.Rate(0.5).sleep()
+            rospy.Rate(1).sleep()
             
             #tfIntake = self.tfBuffer.lookup_transform('intake', 'qbo1', rospy.Time())
             
@@ -424,7 +432,7 @@ class MainEngine:
                 rospy.loginfo("X target reached")
                 msg_z = Twist()
                 self.cmd_vel_pub.publish(msg_z)
-                rospy.Rate(0.4).sleep()
+                rospy.Rate(1).sleep()
 
         elif self.state == Y_TARGET:
             msg = Twist()
@@ -442,7 +450,7 @@ class MainEngine:
             self.cmd_vel_pub.publish(msg)
             rospy.loginfo("Target reached")
             self.flag_pub.publish(False)
-            rospy.sleep(4)
+            rospy.sleep(6)
             rospy.loginfo("Cube picked")
             self.state = ACTIVATE_ELEVATOR_TO_STORE
 
@@ -610,7 +618,7 @@ class MainEngine:
         elif self.state == MOVE_Y_UPLOAD_TILE:
             rospy.loginfo("Moving to y pick pos")
             current_odom_x = self.nav_odom.pose.pose.position.x
-            target_odom_x = current_odom_x + (self.y_tile-1) * 0.34
+            target_odom_x = current_odom_x + (self.y_tile-1) * 0.25
             print(f"Current odom y: {current_odom_x}")
             print(f"Max odom y: {target_odom_x}")
             
@@ -625,9 +633,9 @@ class MainEngine:
                 print("Waiting for color target dis")
                 pass
 
-            while abs(self.color_target_dis) > 0.52:
+            while abs(self.color_target_dis) > 0.48:
                 msg = Twist()
-                msg.linear.x = 0.15
+                msg.linear.x = 0.12
                 self.cmd_vel_pub.publish(msg)
 
             msg = Twist()
@@ -643,7 +651,10 @@ class MainEngine:
             rospy.loginfo("Moving to x pick pos 1")
             current_odom_y = self.nav_odom.pose.pose.position.y
             target_odom_y = current_odom_y + (color2tile[self.color_target_to_align] - self.x_tile) * 0.3
-            sign = (color2tile[self.color_target_to_align]-self.x_tile) / abs(color2tile[self.color_target_to_align]-self.x_tile)
+            try:
+                sign = (color2tile[self.color_target_to_align]-self.x_tile) / abs(color2tile[self.color_target_to_align]-self.x_tile)
+            except:
+                sign = 1
             print(f"Current odom x: {current_odom_y}")
             print(f"Max odom x: {target_odom_y}")
             
@@ -668,7 +679,16 @@ class MainEngine:
             self.color_target_dis = 5000
             rospy.sleep(2)
             self.x_tile = color2tile[self.color_target_to_align]
-            self.state = PICK_UNLOAD_TARGET 
+            self.state = UNLOAD_CUBE 
+        
+        elif self.state == UNLOAD_CUBE:
+            self.mechanismCommandSvr('elevator', 1)
+            rospy.sleep(2)
+            self.mechanismCommandSvr('intake', 3)
+            rospy.sleep(2)
+            self.mechanismCommandSvr('intake', 4)
+            rospy.sleep(3)
+            self.state = PICK_UNLOAD_TARGET
 
 
         elif self.state == DRIVE_TO_COLOR_AREA:
