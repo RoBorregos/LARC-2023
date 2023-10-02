@@ -181,7 +181,7 @@ class DetectorColores:
                 if len(self.depth_image) != 0:
                     depth = get_depth(self.depth_image, point2D)
                     point3D_ = deproject_pixel_to_point(self.camera_info, point2D, depth)
-                    point3D.x = point3D_[0] - 0.04
+                    point3D.x = point3D_[0] - 0.05
                     point3D.y = point3D_[1]
                     point3D.z = point3D_[2]
                     pa.poses.append(Pose(position=point3D))
@@ -210,13 +210,13 @@ class DetectorColores:
     def color_detection(self):
         frame = self.image
         
-        lowerRed = np.array([0,157,71], np.uint8)
-        upperRed = np.array([7,255,178], np.uint8)
-        lowerRed2 = np.array([174,157,71], np.uint8)
-        upperRed2 = np.array([179,255,178], np.uint8)
+        lowerRed = np.array([0,128,71], np.uint8)
+        upperRed = np.array([12,255,224], np.uint8)
+        lowerRed2 = np.array([174,128,71], np.uint8)
+        upperRed2 = np.array([179,255,224], np.uint8)
 
-        lowerBlue = np.array([114,99,49], np.uint8)
-        upperBlue = np.array([126,255,135], np.uint8)
+        lowerBlue = np.array([109,99,49], np.uint8)
+        upperBlue = np.array([126,255,163], np.uint8)
 
         lowerGreen = np.array([51,90,29], np.uint8)
         upperGreen = np.array([72,255,168], np.uint8)
@@ -272,7 +272,7 @@ class DetectorColores:
         }
     
         for i in range(sz):
-            if abs(data.detections[i].ymin - y_min_first) >= 50 or abs(data.detections[i].xmin - x_last_max) >= 90:
+            if abs(data.detections[i].ymin - y_min_first) >= 50 or abs(data.detections[i].xmin - x_last_max) >= 130:
                 continue
             color_seq += color2Letter[ data.detections[i].labelText ]
 

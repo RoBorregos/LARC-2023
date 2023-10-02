@@ -68,6 +68,7 @@ class MainEngine:
         self.last_error_x = 0
         self.ykP = 0.35
         self.target_nav_back = 0.0
+        self.pick_cube_init_odom = 0.0
 
         self.search_tries = 0
 
@@ -415,6 +416,7 @@ class MainEngine:
 
             self.state = X_TARGET
             self.last_error_x = 0
+            self.pick_cube_init_odom = self.nav_odom.pose.pose.position.x
 
 
         elif self.state == X_TARGET:
@@ -538,7 +540,8 @@ class MainEngine:
             """
             current_odom_x = self.nav_odom.pose.pose.position.x
             min_odom_x = current_odom_x - MOVE_BACK_TO_DETECT_LIMIT
-            target_odom_x = current_odom_x - MOVE_BACK_TO_DETECT_MINIMUM
+            #target_odom_x = current_odom_x - MOVE_BACK_TO_DETECT_MINIMUM
+            target_odom_x = self.pick_cube_init_odom + 0.07
             print(f"Current odom x: {current_odom_x}")
             print(f"Max odom x: {min_odom_x}")
             
