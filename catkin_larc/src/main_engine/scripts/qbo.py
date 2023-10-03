@@ -48,7 +48,7 @@ MOVE_BACK_TO_DETECT_LIMIT = 0.5 # Xcm maximum to go back from cube
 MOVE_BACK_TO_DETECT_MINIMUM = 0.45 # Xcm minimum to go back from cube
 MOVE_LEFT_TO_DETECT_LIMIT = 1.0 # 1m maximum to go left when not finding a cube
 
-NUMBER_OF_CUBES = 12
+NUMBER_OF_CUBES = 6
 
 
 
@@ -226,19 +226,19 @@ class MainEngine:
             # While no cube is detected and the limit has not been reached, move back
             while abs(current_odom_y - target_odom_y) > 0.1:
                 msg = Twist()
-                msg.linear.y = 0.2 * sign
+                msg.linear.y = 0.25 * sign
                 self.cmd_vel_pub.publish(msg)
                 current_odom_y = self.nav_odom.pose.pose.position.y
             
-            while self.color_target_dis == 5000:
+            """while self.color_target_dis == 5000:
                 print("Waiting for color target dis")
                 pass
 
             while abs(self.color_target_dis) > self.tolerance:
                 msg = Twist()
-                msg.linear.y = - 0.11 * self.color_target_dis / abs(self.color_target_dis)
+                msg.linear.y = - 0.13 * self.color_target_dis / abs(self.color_target_dis)
                 self.cmd_vel_pub.publish(msg)
-                print(f"Color target dis: {self.color_target_dis}")
+                print(f"Color target dis: {self.color_target_dis}")"""
 
             msg = Twist()
             self.cmd_vel_pub.publish(msg) # stop
@@ -282,7 +282,7 @@ class MainEngine:
             # While no cube is detected and the limit has not been reached, move back
             while abs(current_odom_y - target_odom_y) > 0.1:
                 msg = Twist()
-                msg.linear.y = 0.2 * sign
+                msg.linear.y = 0.25 * sign
                 self.cmd_vel_pub.publish(msg)
                 current_odom_y = self.nav_odom.pose.pose.position.y
             
@@ -292,7 +292,7 @@ class MainEngine:
 
             while abs(self.color_target_dis) > self.tolerance:
                 msg = Twist()
-                msg.linear.y = - 0.11 * self.color_target_dis / abs(self.color_target_dis)
+                msg.linear.y = - 0.13 * self.color_target_dis / abs(self.color_target_dis)
                 self.cmd_vel_pub.publish(msg)
 
             msg = Twist()
