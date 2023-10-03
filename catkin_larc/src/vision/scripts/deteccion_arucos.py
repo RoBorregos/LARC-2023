@@ -99,7 +99,10 @@ class DetectorAruco:
                     #print(f"Xmayor: {xmayor:.2f}, Xmenor: {xmenor:.2f}, Ymayor: {ymayor:.2f}, Ymenor: {ymenor:.2f}")    
                     tempo =  ymenor, xmenor, ymayor, xmayor
                     bb.append(tempo)
-                    detections.append(ids[i])
+
+                    #Remove brackets from ids
+                    tmp_d = ids[i].strip('[]')
+                    detections.append(tmp_d)
                     #ids[i][j] Es el id del aruco
                     #corners Es la bounding box del aruco
             self.get_objects(bb, detections)
