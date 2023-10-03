@@ -111,6 +111,9 @@ while True:
     # Filter the image and get the binary mask, where white represents
     # your target color
     mask = cv2.inRange(hsv, lower_range, upper_range)
+    if color_input == 'red':
+        mask2 = cv2.inRange(hsv, lower_range2, upper_range2)
+        mask = cv2.bitwise_or(mask, mask2)
 
     #Detect the square drawn by the user
     cv2.imshow('Raw',img)
