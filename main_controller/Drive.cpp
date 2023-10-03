@@ -68,11 +68,19 @@ float Drive::getAngleX(){
 // setSpeed with a time counter and BNO feedback
 void Drive::setSpeedOriented(float linearX, float linearY, float angularZ, unsigned long current_time){
 
-    if (digitalRead(intake_presence)){
-        hardStop();
-    }
     if( (current_time - speed_last_time < pid_time))
         return;
+        
+    if (digitalRead(intake_presence)){
+        linearY = 0;   
+    }
+    if (digitalRead(intake_presence) && current_time - presence_detection_time > Constants::kIntakePushTime){
+        hardStop();
+        linearX = 0;
+        linearY = 0;
+        angularZ = 0;
+        flag = false;
+    }
 
     // set speeds to 0 if they are less than treshold
     if(abs(linearX) < kMinSpeed)
@@ -82,7 +90,14 @@ void Drive::setSpeedOriented(float linearX, float linearY, float angularZ, unsig
     if(abs(angularZ) < kMinSpeed)
         angularZ = 0;
     
-    float current_angle = bno->getOrientation().x;
+    // to help continuous loops (beyond 180) and stability around 0
+    float current_angle;
+    if (robot_angle < 150){
+        current_angle = bno->getOrientation().x;
+    }
+    else{
+        current_angle = bno->getOrientation0to360().x;
+    }
     this->curr_angle_x = current_angle;
     /*if (current_angle > 180 || current_angle < -180){
         frontLeft.setSpeed(frontLeftSpeed, current_time);
@@ -233,6 +248,12 @@ void Drive::resetOdometry(){
 void Drive::periodicIO(unsigned long current_time){
     if( current_time - last_time < loop_time)
         return;
+
+    bool presence = digitalRead(Constants::kIntakePresence);
+    if( presence && !flag ){
+        presence_detection_time = current_time;
+        flag = true;
+    }
 
     frontLeft.periodicIO(current_time);
     frontRight.periodicIO(current_time);

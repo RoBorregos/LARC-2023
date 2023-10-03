@@ -10,13 +10,14 @@ from threading import Thread
 
 # receive the ACM number as an argument
 parser = argparse.ArgumentParser()
-parser.add_argument("acm", help="ACM number of the Arduino")
+# make optional
+parser.add_argument("--acm", help="ACM number of the serial port", type=int, default=0)
 args = parser.parse_args()
 
 ACM = args.acm
 
 #serial port
-ser = serial.Serial(f"/dev/ttyACM{ACM}", 115200, timeout=5)
+ser = serial.Serial(f"/dev/teensy", 115200, timeout=5)
 ser.flush()
 def on_press(key):
     global ACM

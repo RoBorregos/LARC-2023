@@ -43,6 +43,7 @@ class Elevator{
         const uint16_t kElevatorStepsPerMM = Constants::kElevatorStepsPerMM;
         const uint16_t kElevatorStepsVLX = Constants::kElevatorStepsVLX;
         const uint16_t kElevatorLevels[4] = {Constants::kElevatorLevel0Height, Constants::kElevatorLevel1Height, Constants::kElevatorLevel2Height, Constants::kElevatorLevel3Height};
+        const int kElevatorSmallStepDown = Constants::kElevatorLevelSmallStepDown;
         const uint8_t kElevatorTolerance = Constants::kElevatorTolerance;
         int current_steps = 0;
     public:
@@ -55,6 +56,7 @@ class Elevator{
         bool positionReached();
         void setLevel(uint8_t goal_level);
         void setSteps(ElevatorPosition position);
+        void smallStepDown();
         uint16_t readVLX();
 };
 #endif

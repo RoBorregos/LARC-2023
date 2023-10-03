@@ -21,7 +21,7 @@ void Warehouse::init(unsigned long current_time, Adafruit_VL53L0X* tof1, Adafrui
 
     for(int i=0; i<3; i++){
         pinMode(level[i].fwdPin, OUTPUT);
-        pinMode(level[i].fwdPin, OUTPUT);
+        pinMode(level[i].revPin, OUTPUT);
         stop( (LevelPosition)i );
     }
 
@@ -53,13 +53,17 @@ void Warehouse::cubeOut(LevelPosition pos, unsigned long current_time){
 }
 
 void Warehouse::reset(){
+
     for(int i=0; i<3; i++){
+        level[i].distance = level[i].tof->readRange();
+        if (level[i].distance > 100)
         level[i].demand = -level[i].speed;
-        
+        else
+        level[i].demand = level[i].speed/2;
         analogWrite(level[i].fwdPin, level[i].demand>0? abs(level[i].demand) : 0);
         analogWrite(level[i].revPin, level[i].demand<0? abs(level[i].demand) : 0);
     }
-    delay(500);
+    delay(1500);
     for(int i=0; i<3; i++){
         stop( (LevelPosition)i );
         level[i].cube_state = CubePosition::Four;
@@ -80,9 +84,18 @@ void Warehouse::periodicIO(unsigned long current_time){
         if(level[i].stopped){
             stop( (LevelPosition)i );
             continue;
+        } else{
+            level[i].demand = level[i].speed;
+            if (digitalRead(intake_presence)){
+                level[i].demand = 0;
+                level[i].state_time = current_time;
+                level[i].stopped = true;
+                stop( (LevelPosition)i );
+                continue;
+            }
         }
 
-        level[i].distance = level[i].tof->readRange();
+        /*level[i].distance = level[i].tof->readRange();
         Serial.print(level[i].distance);
         Serial.print(" ");
         int error = - (level[i].distance - (int)level[i].cube_state);
@@ -91,15 +104,20 @@ void Warehouse::periodicIO(unsigned long current_time){
             level[i].demand = 0;
         } else {
             level[i].demand = level[i].speed;
-        }
+        }*/
         /*} else if( error > 15){
             level[i].demand = level[i].speed;
         } else {
             level[i].demand = 0;
         }*/
 
-        if( current_time - level[i].state_time > 3000 )
+        if( current_time - level[i].state_time > 3000 ){
+            // motor has been running for 3 seconds, stop it
             level[i].demand = 0;
+            level[i].state_time = current_time;
+            level[i].stopped = true;
+            stop( (LevelPosition)i );
+        }
         
         analogWrite(level[i].fwdPin, level[i].demand>0? abs(level[i].demand) : 0);
         analogWrite(level[i].revPin, level[i].demand<0? abs(level[i].demand) : 0);

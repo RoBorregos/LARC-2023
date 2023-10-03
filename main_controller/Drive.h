@@ -79,7 +79,8 @@ class Drive{
         Pose2d getChassisSpeeds();
         Pose2d getPosition();
         void resetOdometry();
-
+        unsigned long presence_detection_time = 0;
+        bool flag = false;
         // current angle the robot should be facing
         float robot_angle = 0;
 };

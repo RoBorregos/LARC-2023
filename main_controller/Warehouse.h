@@ -21,7 +21,6 @@ enum LevelPosition{
 };
 
 struct Level{
-    int pwmPin = -1;
     int fwdPin;
     int revPin;
     int speed;
@@ -38,13 +37,17 @@ class Warehouse{
         constexpr static float loop_time = 50;
         Level level[3];
         unsigned long last_time = 0;
+        int intake_presence = Constants::kIntakePresence;
+        bool cube_out = false;
     public:
         void init(unsigned long current_time, Adafruit_VL53L0X* tof1, Adafruit_VL53L0X* tof2, Adafruit_VL53L0X* tof3);
         void cubeOut(LevelPosition pos, unsigned long current_time);
+        void oneCubeOut(LevelPosition pos);
         void reset();
         CubePosition getCubeState(LevelPosition pos);
         void periodicIO(unsigned long current_time);
         void stop(LevelPosition pos);
+        
 };
 
 #endif

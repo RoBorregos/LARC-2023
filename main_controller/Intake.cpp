@@ -38,9 +38,9 @@ void Intake::out(unsigned long current_time){
         return;
     }
     analogWrite(Constants::kIntakeMotor1A, 0);
-    analogWrite(Constants::kIntakeMotor1B, Constants::kIntakePickSpeed);
+    analogWrite(Constants::kIntakeMotor1B, Constants::kIntakeOutSpeed);
     analogWrite(Constants::kIntakeMotor2A, 0);
-    analogWrite(Constants::kIntakeMotor2B, Constants::kIntakePickSpeed);
+    analogWrite(Constants::kIntakeMotor2B, Constants::kIntakeOutSpeed);
 }
 
 void Intake::drop(unsigned long current_time){
@@ -49,9 +49,9 @@ void Intake::drop(unsigned long current_time){
         return;
     }
     analogWrite(Constants::kIntakeMotor1A, 0);
-    analogWrite(Constants::kIntakeMotor1B, Constants::kIntakePickSpeed);
+    analogWrite(Constants::kIntakeMotor1B, Constants::kIntakeDropSpeed);
     analogWrite(Constants::kIntakeMotor2A, 0);
-    analogWrite(Constants::kIntakeMotor2B, Constants::kIntakePickSpeed);
+    analogWrite(Constants::kIntakeMotor2B, Constants::kIntakeDropSpeed);
 }
 
 void Intake::stop(){

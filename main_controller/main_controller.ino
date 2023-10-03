@@ -44,7 +44,6 @@ void setup(){
     vlxs.initSensors(&vlx[0], &vlx[1], &vlx[2], &vlx[3]);
     mDrive.init(&mbno, &mLineSensor);
     mElevator.init(&mStepper, &vlx[3]);
-    mElevator.setLevel(0);
     mWarehouse.init(current_time, &vlx[0], &vlx[1], &vlx[2]);
 
     //Serial.write("<target>");

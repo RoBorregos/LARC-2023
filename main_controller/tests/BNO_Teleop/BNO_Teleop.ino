@@ -35,7 +35,9 @@ struct elevatorLevel{
 // Define stepper motor connections and motor interface type. Motor interface type must be set to 1 when using a driver
 Stepper stepper(STEPS, 30, 31); // Pin 2 connected to DIRECTION & Pin 3 connected to STEP Pin of Driver
 // Elevator heights: Pick: 70mm; Level1: 155; Level2: 225; Level3: 295
-struct elevatorLevel elevatorLevel = {61, 140, 212, 285};
+struct elevatorLevel elevatorLevel = {61, 143, 212, 286};
+struct elevatorLevel elevatorSteps = {0, 27000, 49000, 72000};
+int current_steps = 0;
 int elevatorTolerance = 1;
 int STEPS_PER_MM = 315;
 int INTAKESPEED = 255;
@@ -51,6 +53,10 @@ Plot mPlot(drive);
 
 struct motor intake1 = {22, 23};
 struct motor intake2 = {29, 28};
+struct motor level1 = {8, 9};
+struct motor level2 = {10, 11};
+struct motor level3 = {29, 28};
+int WAREHOUSE_SPEED = 255;
 
 bool TELEOP = true;
 bool FRONT_TEST = false;
@@ -58,8 +64,8 @@ bool DRIVE_TEST = false; //move forward, right, backward, left
 
 long unsigned int DRIVE_TEST_MOVEMENT_TIME = 1500;
 
-float SPEED = 0.5;
-long STEPPER_SPEED = 500;
+float SPEED = 0.35;
+long STEPPER_SPEED = 750;
 long STEPPER_STEPS = 1;
 
 
@@ -68,6 +74,14 @@ int state = -1;
 unsigned long state_time = 0;
 unsigned long loop_time = 0;
 unsigned long current_time = 0;
+
+//moves the elevator to a step
+void moveElevatortoStep(int steps){
+    int required_steps = steps - current_steps;
+    //Serial.print("Required steps: "); Serial.println(required_steps);
+    stepper.step(-required_steps);
+    current_steps += required_steps;
+}
 
 //moves the elevator to a height
 void moveElevatorToHeight_MM(uint height, uint tolerance){
@@ -146,6 +160,10 @@ bool pick = false;
 bool store = false;
 bool out = false;
 
+bool level1_active = false;
+bool level2_active = false;
+bool level3_active = false;
+
 
 char c = 'x';
 
@@ -154,6 +172,7 @@ void loop(){
     // teleop, receives wasd to move, qe to rotate and x to stop
     if (TELEOP){
         float xspeed, yspeed, zspeed;
+
         if (Serial.available() > 0){
             c = Serial.read();
         }
@@ -229,20 +248,93 @@ void loop(){
         }
         // elevator to levels
         else if (c=='0'){
-            moveElevatorToHeight_MM(elevatorLevel.level0, elevatorTolerance);
+            moveElevatortoStep(elevatorSteps.level0);
             c = '-';
         }
         else if (c=='1'){
-            moveElevatorToHeight_MM(elevatorLevel.level1, elevatorTolerance);
+            moveElevatortoStep(elevatorSteps.level1);
             c = '-';
         }
         else if (c=='2'){
-            moveElevatorToHeight_MM(elevatorLevel.level2, elevatorTolerance);
+            moveElevatortoStep(elevatorSteps.level2);
             c = '-';
         }
         else if (c=='3'){
-            moveElevatorToHeight_MM(elevatorLevel.level3, elevatorTolerance);
+            moveElevatortoStep(elevatorSteps.level3);
             c = '-';
+        }
+        // warehouse motors
+        else if (c=='z'){
+            if (!level1_active){
+                analogWrite(level1.pwmA, WAREHOUSE_SPEED);
+                analogWrite(level1.pwmB, 0);
+                level1_active = true;
+            }
+            else{
+                analogWrite(level1.pwmA, 0);
+                analogWrite(level1.pwmB, 0);
+                level1_active = false;
+            }
+        }
+        else if (c=='x'){
+            if (!level1_active){
+                analogWrite(level1.pwmA, 0);
+                analogWrite(level1.pwmB, WAREHOUSE_SPEED);
+                level2_active = true;
+            }
+            else{
+                analogWrite(level1.pwmA, 0);
+                analogWrite(level1.pwmB, 0);
+                level2_active = false;
+            }
+        }
+        else if (c=='c'){
+            if (!level2_active){
+                analogWrite(level2.pwmA, WAREHOUSE_SPEED);
+                analogWrite(level2.pwmB, 0);
+                level2_active = true;
+            }
+            else{
+                analogWrite(level1.pwmA, 0);
+                analogWrite(level1.pwmB, 0);
+                level2_active = false;
+            }
+        }
+        else if (c=='v'){
+            if (!level2_active){
+                analogWrite(level2.pwmA, 0);
+                analogWrite(level2.pwmB, WAREHOUSE_SPEED);
+                level2_active = true;
+            }
+            else{
+                analogWrite(level2.pwmA, 0);
+                analogWrite(level2.pwmB, 0);
+                level2_active = false;
+            }
+        }
+        else if (c=='b'){
+            if (!level3_active){
+                analogWrite(level3.pwmA, WAREHOUSE_SPEED);
+                analogWrite(level3.pwmB, 0);
+                level3_active = true;
+            }
+            else{
+                analogWrite(level3.pwmA, 0);
+                analogWrite(level3.pwmB, 0);
+                level3_active = false;
+            }
+        }
+        else if (c=='n'){
+            if (!level3_active){
+                analogWrite(level3.pwmA, 0);
+                analogWrite(level3.pwmB, WAREHOUSE_SPEED);
+                level3_active = true;
+            }
+            else{
+                analogWrite(level3.pwmA, 0);
+                analogWrite(level3.pwmB, 0);
+                level3_active = false;
+            }
         }
         else if (c=='/'){
             //restart robot

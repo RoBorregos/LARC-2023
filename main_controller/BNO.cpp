@@ -31,3 +31,13 @@ Orientation BNO::getOrientation(){
     }
     return orientation;
 }
+
+Orientation BNO::getOrientation0to360(){
+    sensors_event_t event; 
+    bno->getEvent(&event);
+    Orientation orientation;
+    orientation.x = event.orientation.x;
+    orientation.y = event.orientation.y;
+    orientation.z = event.orientation.z;
+    return orientation;
+}

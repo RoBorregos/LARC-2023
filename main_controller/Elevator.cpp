@@ -79,8 +79,28 @@ void Elevator::setLevel(uint8_t goal_level){
 void Elevator::setSteps(ElevatorPosition steps){
     int required_steps = steps - current_steps;
     //Serial.print("Required steps: "); Serial.println(required_steps);
-    stepperPtr->step(-required_steps);
+    if (steps == 0){
+        stepperPtr->step(-(required_steps+250));
+    }
+    else {
+        stepperPtr->step(-required_steps);
+    }
     current_steps += required_steps;
+}
+
+void Elevator::smallStepDown(){
+    //stepperPtr->setSpeed((Constants::kStepperSpeed)*2);
+    if (current_steps == 0){
+        return;
+    }
+    if (current_steps > ElevatorPosition::SecondIn){
+        setSteps(ElevatorPosition::SecondIn);
+        //stepperPtr->setSpeed(Constants::kStepperSpeed);
+        return;
+    }
+    stepperPtr->step(kElevatorSmallStepDown);
+    current_steps -= kElevatorSmallStepDown;
+    //stepperPtr->setSpeed(Constants::kStepperSpeed);
 }
 
 void Elevator::periodicIO(){

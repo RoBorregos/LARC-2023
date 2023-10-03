@@ -112,7 +112,11 @@ void RosBridge::elevatorCallback(int command) {
     };
     //_elevator->setPosition(positions[command]);
     //_elevator->setLevel(command);
-    _elevator->setSteps(positions[command]);
+    if (command == 50){
+        _elevator->smallStepDown();
+    } else{
+        _elevator->setSteps(positions[command]);
+    }
 }
 
 void RosBridge::warehouseCallback(int level){
