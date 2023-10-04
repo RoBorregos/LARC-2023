@@ -6,6 +6,7 @@ void Drive::init(BNO *bno, LineSensor *lineSensor){
     frontRight.init(Constants::kFrontRightA, Constants::kFrontRightB, Constants::kFrontRightEncoder);
     backLeft.init(Constants::kBackLeftA, Constants::kBackLeftB, Constants::kBackLeftEncoder);
     backRight.init(Constants::kBackRightA, Constants::kBackRightB, Constants::kBackRightEncoder);
+    pinMode(Constants::kLimitSwitch, INPUT);
     this->bno = bno;
     this->lineSensor = lineSensor;
     bno->init();
@@ -74,12 +75,35 @@ void Drive::setSpeedOriented(float linearX, float linearY, float angularZ, unsig
     if (digitalRead(intake_presence)){
         linearY = 0;   
     }
-    if (digitalRead(intake_presence) && current_time - presence_detection_time > Constants::kIntakePushTime){
+    if ((digitalRead(intake_presence) && current_time - presence_detection_time > Constants::kIntakePushTime) && !shelf_approach){
         hardStop();
         linearX = 0;
         linearY = 0;
         angularZ = 0;
         flag = false;
+    }
+    if (shelf_approach){
+        linearX = 0.2;
+        linearY = 0;
+        angularZ = 0;
+        // read line sensors and stop if back line is detected
+        // back sensors are 5, 6, 7 and 8. Have to detect one of 5 or 6, and one from 7 or 8
+        if (digitalRead(Constants::kLimitSwitch)){
+            hardStop();
+            linearX = 0;
+            linearY = 0;
+            angularZ = 0;
+            shelf_approach = false;
+        }
+        if (lineSensor->lineDetected(5) || lineSensor->lineDetected(6)){
+            if (lineSensor->lineDetected(7) || lineSensor->lineDetected(8)){
+                hardStop();
+                linearX = 0;
+                linearY = 0;
+                angularZ = 0;
+                shelf_approach = false;
+            }
+        }
     }
 
     // set speeds to 0 if they are less than treshold
@@ -148,6 +172,10 @@ void Drive::setAngle(float angle){
     else if(this->angle < -180)
         this->angle += 360;*/
     robot_angle = angle;
+}
+
+void Drive::setApproachShelf(bool approach){
+    shelf_approach = approach;
 }
 
 void Drive::setGlobalSetpoint(){

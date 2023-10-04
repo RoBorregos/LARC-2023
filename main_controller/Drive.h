@@ -56,6 +56,8 @@ class Drive{
         uint16_t hard_stop_current = 0;
         uint16_t hard_stop_time = Constants::kHardStopTime;
         uint8_t intake_presence = Constants::kIntakePresence;
+
+        bool shelf_approach = false;
     public:
         void init(BNO *bno, LineSensor *line_sensor);
         void restart();
@@ -68,6 +70,7 @@ class Drive{
         void setSpeed(float linearX, float linearY, float angularZ, unsigned long current_time);
         void setSpeedOriented(float linearX, float linearY, float angularZ, unsigned long current_time);
         void setAngle(float angle);
+        void setApproachShelf(bool approach);
         void setGlobalSetpoint();
         void stop();
         void hardStop();

@@ -32,6 +32,8 @@ class RosBridge{
 
         void warehouseCallback(int level);
 
+        void approachShelfCallback(int command);
+
         ////////////////////////////////Odometry Publisher///////////////////
         void getOdometry();
 

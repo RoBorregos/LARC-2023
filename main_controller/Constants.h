@@ -62,6 +62,10 @@ class Constants{
         static constexpr uint8_t kLineSensorS3 = 39;
         static constexpr uint8_t kLineSensorSignal = 38;
         static constexpr int kLineSensorValue = 800;
+        static constexpr int kLineSensorTreshold = 300;
+        
+        // limit switches //
+        static constexpr uint8_t kLimitSwitch = 26;
 
         // Intake //
         static constexpr uint8_t kIntakeMotor1A = 22;
@@ -75,7 +79,8 @@ class Constants{
         static constexpr int kIntakeDropSpeed = 255;
         static constexpr uint16_t kIntakePickPresenceTime = 4000;
         static constexpr uint16_t kIntakeInPresenceTime = 1000;
-        static constexpr uint16_t kIntakeOutPresenceTime = 2500;
+        static constexpr uint16_t kIntakeOutPresenceTime = 150;
+        static constexpr uint16_t kIntakeDropPresenceTime = 1000;
 
         // Elevator //
         static constexpr int kStepperSteps = 3200;
@@ -85,6 +90,7 @@ class Constants{
         static constexpr uint8_t kElevatorVLXxshut = 17;
         static constexpr uint16_t kElevatorStepsPerMM = 315;
         static constexpr uint16_t kElevatorStepsVLX = kElevatorStepsPerMM/2;
+
         // {61, 140, 212, 285};
         static constexpr uint16_t kElevatorLevel0Height = 61;
         static constexpr uint16_t kElevatorLevel1Height = 144;
@@ -95,23 +101,30 @@ class Constants{
         static constexpr int kElevatorLevel1InSteps = 27000;
         static constexpr int kElevatorLevel2InSteps = 49000;
         static constexpr int kElevatorLevel3InSteps = 70000;
+        static constexpr int kElevatorLevel1OutSteps = 25500;
+        static constexpr int kElevatorLevel2OutSteps = 48000;
+        static constexpr int kElevatorLevel3OutSteps = 70000;
+        static constexpr int kElevatorShelf1Steps = 10000;
+        static constexpr int kElevatorShelf2Steps = 46000;
+        static constexpr int kElevatorShelf3Steps = 81000;
+
         static constexpr int kElevatorLevelSmallStepDown = 10000;
         
         static constexpr uint8_t kElevatorTolerance = 1;
 
         // Warehouse //
-        static constexpr uint8_t kWarehouseUpperMotorA = 8;
-        static constexpr uint8_t kWarehouseUpperMotorB = 9;
-        static constexpr uint8_t kWarehouseMidMotorA = 10;
-        static constexpr uint8_t kWarehouseMidMotorB = 11;
-        static constexpr uint8_t kWarehouseLowerMotorA = 29;
-        static constexpr uint8_t kWarehouseLowerMotorB = 28;
+        static constexpr uint8_t kWarehouseUpperMotorA = 10;
+        static constexpr uint8_t kWarehouseUpperMotorB = 11;
+        static constexpr uint8_t kWarehouseMidMotorA = 37;
+        static constexpr uint8_t kWarehouseMidMotorB = 36;
+        static constexpr uint8_t kWarehouseLowerMotorA = 8;
+        static constexpr uint8_t kWarehouseLowerMotorB = 9;
         static constexpr uint8_t kWarehouseVLXxshutUpper = 16;
         static constexpr uint8_t kWarehouseVLXxshutMid = 15;
         static constexpr uint8_t kWarehouseVLXxshutLower = 20;
-        static constexpr int kWarehouseUpperSpeed = 180;
-        static constexpr int kWarehouseMidSpeed = 180;
-        static constexpr int kWarehouseLowerSpeed = 140;
+        static constexpr int kWarehouseUpperSpeed = 210;
+        static constexpr int kWarehouseMidSpeed = 190;
+        static constexpr int kWarehouseLowerSpeed = 190;
 };
 
 #endif

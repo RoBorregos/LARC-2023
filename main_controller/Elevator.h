@@ -11,12 +11,12 @@ enum ElevatorPosition{
     FirstIn = Constants::kElevatorLevel1InSteps,
     SecondIn = Constants::kElevatorLevel2InSteps,
     ThirdIn = Constants::kElevatorLevel3InSteps,
-    FirstOut = 20000,
-    SecondOut = 43500,
-    ThirdOut = 66500,
-    FirstShelf = 5000,
-    SecondShelf = 41500,
-    ThirdShelf = 80000
+    FirstOut = Constants::kElevatorLevel1OutSteps,
+    SecondOut = Constants::kElevatorLevel2OutSteps,
+    ThirdOut = Constants::kElevatorLevel3OutSteps,
+    FirstShelf = Constants::kElevatorShelf1Steps,
+    SecondShelf = Constants::kElevatorShelf2Steps,
+    ThirdShelf = Constants::kElevatorShelf3Steps
 };
 
 class Elevator{

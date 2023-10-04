@@ -33,7 +33,7 @@ void Intake::in(unsigned long current_time){
 }
 
 void Intake::out(unsigned long current_time){
-    if( presence && current_time - presence_detection_time > 250 ){
+    if( presence && current_time - presence_detection_time > Constants::kIntakeOutPresenceTime ){
         setAction(Stop);
         return;
     }
@@ -44,7 +44,7 @@ void Intake::out(unsigned long current_time){
 }
 
 void Intake::drop(unsigned long current_time){
-    if( !presence && current_time - presence_detection_time > Constants::kIntakeOutPresenceTime){
+    if( !presence && current_time - presence_detection_time > Constants::kIntakeDropPresenceTime){
         setAction(Stop);
         return;
     }

@@ -34,7 +34,7 @@ struct Level{
 
 class Warehouse{
     private:
-        constexpr static float loop_time = 50;
+        constexpr static float loop_time = 5;
         Level level[3];
         unsigned long last_time = 0;
         int intake_presence = Constants::kIntakePresence;

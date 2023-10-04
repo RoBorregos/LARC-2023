@@ -126,6 +126,15 @@ void RosBridge::warehouseCallback(int level){
         _warehouse->cubeOut( LevelPosition(level-1), current_time_);
 }
 
+void RosBridge::approachShelfCallback(int command){
+    if (command == 0){
+        _drive->setApproachShelf(false);
+    }
+    else{
+        _drive->setApproachShelf(true);
+    }
+}
+
 ////////////////////////////////Odometry Publisher//////////////////////////////////////
 void RosBridge::getOdometry() {
     Pose2d vel = _drive->getChassisSpeeds();
@@ -226,15 +235,23 @@ void RosBridge::executeCommand(uint8_t packet_size, uint8_t command, uint8_t* bu
                 elevatorCallback(command);
             }
             break;
+        
+        case 0xA0: // Approach to shelf
+            if (packet_size == 5){
+                int command;
+                memcpy(&command, buffer, sizeof(command));
+                approachShelfCallback(command);
+            }
+            break;
 
         case 0x0A: // Send Warehouse 
-        if (packet_size == 5) { // Check packet size
-            int level;
-            memcpy(&level, buffer, sizeof(level));
-            warehouseCallback(level);
-            writeSerial(true, nullptr, 0);
-        }
-        break;
+            if (packet_size == 5) { // Check packet size
+                int level;
+                memcpy(&level, buffer, sizeof(level));
+                warehouseCallback(level);
+                writeSerial(true, nullptr, 0);
+            }
+            break;
 
         case 0x0B: // Send Line Sensor
         if (packet_size == 1) { // Check packet size
