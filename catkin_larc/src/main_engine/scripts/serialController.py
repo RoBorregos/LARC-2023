@@ -326,8 +326,16 @@ class Microcontroller:
         else:
            return self.FAIL
     
+    def approach(self, command):
+        cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x05, 0xA0) + struct.pack("i", command) + struct.pack("B", 0xA1)
+        if (self.execute(cmd_str))==1 and self.payload_ack == b'\x00':
+           return  self.SUCCESS
+        else:
+           return self.FAIL
+    
     def warehouse(self, level):
         cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x05, 0x0A) + struct.pack("i", level) + struct.pack("B", 0x0B)
+        
         if (self.execute(cmd_str))==1 and self.payload_ack == b'\x00':
            return  self.SUCCESS
         else:
@@ -450,7 +458,6 @@ class BaseController:
         self.desired_angle = 500
         self.quaternion = Quaternion()
 
-        self.warehouse = 0 
         self.line_sensor = 0
 
         self.global_setpoint = 0
@@ -458,9 +465,10 @@ class BaseController:
         rospy.Subscriber("cmd_vel", Twist, self.cmdVelCallback)
 
         #rospy.Subscriber("intake", Int32, self.intakeCallback)
-        intakeServer = rospy.Service('intake', MechanismCommand, self.intakeHandler)
-        elevatorServer = rospy.Service('elevator', MechanismCommand, self.elevatorHandler)
-        rospy.Subscriber("warehouse", Int32, self.warehouseCallback)
+        rospy.Service('intake', MechanismCommand, self.intakeHandler)
+        rospy.Service('elevator', MechanismCommand, self.elevatorHandler)
+        rospy.Service('approach', MechanismCommand, self.approachHandler)
+        rospy.Service('warehouse', MechanismCommand, self.warehouseHandler)
         rospy.Subscriber("global_setpoint", Bool, self.globalSetpointCallback)
         rospy.Subscriber("/rotate", Float32, self.rotateCallback)
         self.intake_presence_pub = rospy.Publisher("/intake_presence", Bool, queue_size=5)
@@ -635,10 +643,6 @@ class BaseController:
                 self.Microcontroller.drive(self.v_x, self.v_y, self.v_th)
                 #self.Microcontroller.imu_angle(self.angle)
                 
-            if(self.warehouse != 0):
-                self.Microcontroller.warehouse(self.warehouse)
-                self.warehouse = 0
-
                 
             self.t_next = now + self.t_delta
             
@@ -674,13 +678,16 @@ class BaseController:
     
     def elevatorHandler(self, req):
         return self.Microcontroller.elevator( req.command ) == self.SUCCESS
+    
+    def warehouseHandler(self, req):
+        return self.Microcontroller.warehouse( req.command ) == self.SUCCESS
+
+    def approachHandler(self, req):
+        return self.Microcontroller.approach( req.command ) == self.SUCCESS
 
     def resetOdomCallback(self, req):
         if req.data:
             self.Microcontroller.reset_odometry()
-    
-    def warehouseCallback(self, req):
-        self.warehouse = req.data
 
     def resetJetsonPortHandler(self, req):
         return self.Microcontroller.reset_jetson_port() == self.SUCCESS
@@ -692,7 +699,7 @@ class MicroControllerROS():
         # Cleanup when termniating the node
         rospy.on_shutdown(self.shutdown)
         
-        self.port = rospy.get_param("~port", default="/dev/teensy")
+        self.port = rospy.get_param("~port", default="/dev/ttyACM0")
         self.baud = int(rospy.get_param("~baud", 115200))
         self.timeout = rospy.get_param("~timeout", 0.5)
         self.base_frame = rospy.get_param("~base_frame", 'base_link')

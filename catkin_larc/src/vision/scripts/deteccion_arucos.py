@@ -101,7 +101,7 @@ class DetectorAruco:
                     bb.append(tempo)
 
                     #Remove brackets from ids
-                    tmp_d = ids[i].strip('[]')
+                    tmp_d = str(ids[i]).strip('[]')
                     detections.append(tmp_d)
                     #ids[i][j] Es el id del aruco
                     #corners Es la bounding box del aruco

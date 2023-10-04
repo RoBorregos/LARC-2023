@@ -38,7 +38,14 @@ DRIVE_TO_COLOR_AREA = "drive_to_color_area"
 MOVE_BACK_TO_UNLOAD_COLOR = "move_back_to_unload_color"
 PARTIAL_FINISH = "partial_finish"
 
+FIND_TILE_SHELF = "find_tile_shelf"
+MOVE_Y_SHELF_INIT = "move_y_shelf_init"
+MOVE_X_SHELF_INIT = "move_x_shelf_init"
 GET_SHELF_UNLOAD_TARGET = "get_shelf_unload_target"
+MOVE_X_SHELF_UNLOAD = "move_x_shelf_unload"
+MOVE_Y_SHELF_UNLOAD = "move_y_shelf_unload"
+
+
 FINISH = "finish"
 
 X_TARGET = "x_target"
@@ -87,6 +94,11 @@ class MainEngine:
         self.color_target_to_align = ""
         self.color_target_dis = 5000
 
+        self.category_to_unload = 0
+        self.current_shelf = 1
+        self.shelf_target = 0
+        self.shelf_target_height = 0
+
         rospy.Subscriber('/vision/color_detect', objectDetectionArray, self.colorDetectCb)
         rospy.Subscriber('/vision/aruco_detect', objectDetectionArray, self.arucoDetectCb)
         rospy.Subscriber('/vision/letter_detect', objectDetectionArray, self.lettersDetectCb)
@@ -110,7 +122,6 @@ class MainEngine:
         if data.data and self.state == Y_TARGET:
             msg = Twist()
             self.cmd_vel_pub.publish(msg)
-            rospy.Rate(0.5).sleep()
             self.state = PICK_CUBE
             #self.flag_pub.publish(False)
 
@@ -123,13 +134,25 @@ class MainEngine:
             point_x_min_id = 0
             y_lowest = data.detections[0].ymax
             y_lowest_id = 0
+            right_half_cube = False
             for i in range(sz):
-                if data.detections[i].ymax - y_lowest >= 100:
+                # break camera frame in 3, go for the lowest cube with priority the rightmost
+                if data.detections[i].point3D.x > 0:
+                    if data.detections[i].ymax <= y_lowest:
+                        y_lowest = data.detections[i].ymax
+                        point_x_min_id = i
+                        right_half_cube = True # priority to right half cubes
+
+                elif data.detections[i].ymax < y_lowest and not right_half_cube:
                     y_lowest = data.detections[i].ymax
                     point_x_min_id = i
-                elif abs(data.detections[i].ymax - y_lowest) < 100:
+                
+                """if data.detections[i].ymax - y_lowest >= 50:
+                    y_lowest = data.detections[i].ymax
+                    point_x_min_id = i
+                elif abs(data.detections[i].ymax - y_lowest) < 50:
                     if( data.detections[i].point3D.x > data.detections[point_x_min_id].point3D.x ):
-                        point_x_min_id = i
+                        point_x_min_id = i"""
             
             self.target_success[category_id] = True
             self.detected_targets[category_id] = data.detections[point_x_min_id]
@@ -149,18 +172,23 @@ class MainEngine:
     def colorDetectCb(self, data):
         self.cubeTargetsHandler(data)
 
-        if self.state == MOVE_X_UPLOAD_TILE or self.state == MOVE_Y_UPLOAD_TILE or self.state == X_MOVE_TO_PICK_POS1 or self.state == X_MOVE_TO_PICK_POS2:
+        if self.state == MOVE_X_UPLOAD_TILE or self.state == MOVE_Y_UPLOAD_TILE or self.state == X_MOVE_TO_PICK_POS1 or self.state == X_MOVE_TO_PICK_POS2 or self.state == MOVE_X_SHELF_INIT or self.state == MOVE_Y_SHELF_INIT:
             sz = len(data.detections)
             if sz == 0:
                 return
             y_min_first = data.detections[0].ymin
             point_x_min_id = 0
+            detected = False
 
             for i in range(sz):
                 if abs(data.detections[i].ymin - y_min_first) >= 120 or data.detections[i].labelText != self.color_target_to_align:
                     continue
-                if( abs(data.detections[i].point3D.x) < abs(data.detections[point_x_min_id].point3D.x)):
+                if( abs(data.detections[i].point3D.x) <= abs(data.detections[point_x_min_id].point3D.x)):
+                    detected = True
                     point_x_min_id = i
+            if not detected:
+                return
+            
             if self.state == MOVE_X_UPLOAD_TILE or self.state == X_MOVE_TO_PICK_POS1 or self.state == X_MOVE_TO_PICK_POS2 or self.state == MOVE_X_SHELF_INIT:
                 self.color_target_dis = data.detections[point_x_min_id].point3D.x
             elif self.state == MOVE_Y_UPLOAD_TILE or self.state == MOVE_Y_SHELF_INIT:
@@ -191,7 +219,7 @@ class MainEngine:
             msg_f.data = float(self.current_angle)
 
             self.rotate_pub.publish( msg_f )
-            rospy.sleep(5)
+            rospy.sleep(3)
             rospy.wait_for_service('/detect_color_pattern')
             try:
                 client = rospy.ServiceProxy('/detect_color_pattern', DetectColorPattern)
@@ -201,7 +229,7 @@ class MainEngine:
                     self.y_tile = resp.tileY
                     rospy.loginfo(f"Tile X: {self.x_tile}")
                     rospy.loginfo(f"Tile Y: {self.y_tile}")
-                    if self.y_tile > 4 and (self.x_tile == 2 or self.x_tile == 3 or self.x_tile == 5 or self.x_tile == 6):
+                    if self.y_tile > 4:
                         self.state = X_MOVE_TO_PICK_POS1
                     elif self.y_tile > 1:
                         self.state = Y_MOVE_TO_PICK_POS
@@ -211,36 +239,36 @@ class MainEngine:
                     self.current_angle += 90.0
             except rospy.ServiceException as e:
                 print("Pattern call failed: %s"%e)
-            
 
         elif self.state == X_MOVE_TO_PICK_POS1:
             rospy.loginfo("Moving to x pick pos 1")
             self.color_target_to_align = "rojo"
             current_odom_y = self.nav_odom.pose.pose.position.y
-            target_odom_y = current_odom_y + (4 - self.x_tile) * 0.3
-            try:
-                sign = (4-self.x_tile) / abs(4-self.x_tile)
-            except:
-                sign = 1
+            target_odom_y = current_odom_y + (4 - self.x_tile) * 0.29
+            sign = 1
             print(f"Current odom x: {current_odom_y}")
             print(f"Max odom x: {target_odom_y}")
             
             # While no cube is detected and the limit has not been reached, move back
-            while abs(current_odom_y - target_odom_y) > 0.1:
+            while abs(current_odom_y - target_odom_y) > 0.07:
+                try:
+                    sign = (target_odom_y-current_odom_y) / abs(target_odom_y-current_odom_y)
+                except:
+                    sign = 1
                 msg = Twist()
                 msg.linear.y = 0.25 * sign
                 self.cmd_vel_pub.publish(msg)
                 current_odom_y = self.nav_odom.pose.pose.position.y
             
-            """while self.color_target_dis == 5000:
+            while self.color_target_dis == 5000:
                 print("Waiting for color target dis")
                 pass
 
             while abs(self.color_target_dis) > self.tolerance:
                 msg = Twist()
-                msg.linear.y = - 0.13 * self.color_target_dis / abs(self.color_target_dis)
+                msg.linear.y = - 0.11 * self.color_target_dis / abs(self.color_target_dis)
                 self.cmd_vel_pub.publish(msg)
-                print(f"Color target dis: {self.color_target_dis}")"""
+                #print(f"Color target dis: {self.color_target_dis}")
 
             msg = Twist()
             self.cmd_vel_pub.publish(msg) # stop
@@ -259,7 +287,7 @@ class MainEngine:
             # While no cube is detected and the limit has not been reached, move back
             while target_odom_x - current_odom_x > 0.05:
                 msg = Twist()
-                msg.linear.x = 0.25
+                msg.linear.x = 0.23
                 self.cmd_vel_pub.publish(msg)
                 current_odom_x = self.nav_odom.pose.pose.position.x
             
@@ -273,21 +301,23 @@ class MainEngine:
             rospy.loginfo("Moving to x pick pos 2")
             self.color_target_to_align = "azul"
             current_odom_y = self.nav_odom.pose.pose.position.y
-            target_odom_y = current_odom_y + (6 - self.x_tile) * 0.3
-            try:
-                sign = (6-self.x_tile) / abs(6-self.x_tile)
-            except:
-                sign = 1
+            target_odom_y = current_odom_y + (6 - self.x_tile) * 0.3 
+            sign = 1
             print(f"Current odom y: {current_odom_y}")
             print(f"Max odom y: {target_odom_y}")
             
             # While no cube is detected and the limit has not been reached, move back
-            while abs(current_odom_y - target_odom_y) > 0.1:
+            while abs(current_odom_y - target_odom_y) > 0.07:
+                try:
+                    sign = (target_odom_y-current_odom_y) / abs(target_odom_y-current_odom_y)
+                except:
+                    sign = 1
                 msg = Twist()
                 msg.linear.y = 0.25 * sign
                 self.cmd_vel_pub.publish(msg)
                 current_odom_y = self.nav_odom.pose.pose.position.y
             
+            """
             while self.color_target_dis == 5000:
                 print("Waiting for color target dis")
                 pass
@@ -295,7 +325,7 @@ class MainEngine:
             while abs(self.color_target_dis) > self.tolerance:
                 msg = Twist()
                 msg.linear.y = - 0.13 * self.color_target_dis / abs(self.color_target_dis)
-                self.cmd_vel_pub.publish(msg)
+                self.cmd_vel_pub.publish(msg)"""
 
             msg = Twist()
             self.cmd_vel_pub.publish(msg) # stop
@@ -314,8 +344,8 @@ class MainEngine:
             msg_f.data = float(self.current_angle)
 
             self.rotate_pub.publish( msg_f )
-            rospy.sleep(2)
             self.state = RESET_ELEVATOR
+
 
         elif self.state == RESET_ELEVATOR:
             rospy.loginfo("Resetting elevator")
@@ -340,10 +370,10 @@ class MainEngine:
                 for i in range(3):
                     if self.detected_targets[i] == objectDetection():
                         continue
-                    if self.detected_targets[i].ymax - y_lowest >= 100:
+                    if self.detected_targets[i].ymax - y_lowest >= 50:
                         y_lowest = self.detected_targets[i].ymax
                         point_x_min_id = i
-                    elif abs(self.detected_targets[i].ymax - y_lowest) < 100:
+                    elif abs(self.detected_targets[i].ymax - y_lowest) < 50:
                         if( self.detected_targets[i].point3D.x > self.detected_targets[point_x_min_id].point3D.x ):
                             point_x_min_id = i
 
@@ -439,8 +469,14 @@ class MainEngine:
                 rospy.Rate(1).sleep()
 
         elif self.state == Y_TARGET:
+
             msg = Twist()
-            msg.linear.x = max( (self.selected_target.point3D.z) * self.ykP, 0.11)
+            """if self.intakePresenceData:
+                self.cmd_vel_pub.publish(msg)
+                rospy.sleep(0.5)
+                self.state = PICK_CUBE
+                return"""
+            msg.linear.x = max( (self.selected_target.point3D.z) * self.ykP, 0.175)
             p_offset = - self.xkP * self.selected_target.point3D.x
             d_offset = - self.xkD * (self.selected_target.point3D.x - self.last_error_x)
             #print(f"P: {p_offset}, D: {d_offset}")
@@ -452,9 +488,9 @@ class MainEngine:
         elif self.state == PICK_CUBE:
             msg = Twist()
             self.cmd_vel_pub.publish(msg)
+            rospy.sleep(5)
             rospy.loginfo("Target reached")
             self.flag_pub.publish(False)
-            rospy.sleep(6)
             rospy.loginfo("Cube picked")
             self.state = ACTIVATE_ELEVATOR_TO_STORE
 
@@ -475,7 +511,7 @@ class MainEngine:
 
         elif self.state == STORE_CUBE:
             self.mechanismCommandSvr('intake', 2)
-            rospy.sleep(2)
+            rospy.sleep(1)
             
 
             # feedback if it has been stored (in progress)
@@ -513,37 +549,10 @@ class MainEngine:
                 self.state = MOVE_BACK_TO_DETECT
 
         elif self.state == MOVE_BACK_TO_DETECT:
-            """self.followCubePub.publish(False)
-            target_point = Point()
-            target_point.x = 0
-            # listen to topic odom and return to 0 position
-            target_point.y = -self.nav_odom.pose.pose.position.x
-            target_point.z = 0
-            goal = Drive2TargetGoal( target=target_point )
-            
-            rospy.loginfo("Moving back to detect")
-            self.driveTargetClient.send_goal(goal)
-            self.driveTargetClient.wait_for_result()
-            print(self.driveTargetClient.get_result())
-"""         
-            """
-            rospy.loginfo("Moving back to detect")
-            msg = Twist()
-            msg.linear.x = -0.15
-            self.cmd_vel_pub.publish(msg)
-            rospy.sleep(4)
-
-            #if self.nav_odom.pose.pose.position.x - self.target_nav_back < 0.05:
-            msg = Twist()
-            self.cmd_vel_pub.publish(msg)
-            self.target_success = [False, False, False]
-            self.detected_targets = [objectDetection(), objectDetection(), objectDetection()]
-            self.state = RESET_ELEVATOR
-            """
             current_odom_x = self.nav_odom.pose.pose.position.x
             min_odom_x = current_odom_x - MOVE_BACK_TO_DETECT_LIMIT
             #target_odom_x = current_odom_x - MOVE_BACK_TO_DETECT_MINIMUM
-            target_odom_x = self.pick_cube_init_odom + 0.07
+            target_odom_x = self.pick_cube_init_odom + 0.1
             print(f"Current odom x: {current_odom_x}")
             print(f"Max odom x: {min_odom_x}")
             
@@ -572,6 +581,7 @@ class MainEngine:
             rospy.sleep(1)
             self.state = RESET_ELEVATOR
 
+        
         elif self.state == PICK_FINISH:
             if self.pick_result == PARTIAL_PICK_FINISH:
                 rospy.loginfo("Partial pick finish")
@@ -589,25 +599,11 @@ class MainEngine:
             rotate_msg = Float32()
             rotate_msg.data = float(self.current_angle)
             self.rotate_pub.publish(rotate_msg)
-            rospy.sleep(2)
             self.state = FIND_UPLOAD_TILE 
-        
-        elif self.state == PICK_UNLOAD_TARGET:
-            # Obtain selected target from the color stack
-            if len(self.color_stack) > 0:
-                self.color_target_to_align = self.color_stack.pop()
-                rospy.loginfo(f"Cube to unload: {self.color_target_to_align}")
-            else:
-                self.state = GET_SHELF_UNLOAD_TARGET
-                rospy.loginfo("No more color cubes to unload")
-                return
-            # Wait for detections
-            rospy.sleep(1)
-            self.state = MOVE_Y_UPLOAD_TILE
-            
+
         elif self.state == FIND_UPLOAD_TILE:
             self.flag_pub.publish(True)
-            rospy.sleep(2)
+            rospy.sleep(4)
             rospy.wait_for_service('/detect_color_pattern')
             try:
                 client = rospy.ServiceProxy('/detect_color_pattern', DetectColorPattern)
@@ -621,63 +617,80 @@ class MainEngine:
             except rospy.ServiceException as e:
                 print("Pattern call failed: %s"%e)
 
+        elif self.state == PICK_UNLOAD_TARGET:
+            # Obtain selected target from the color stack
+            if len(self.color_stack) > 0:
+                self.color_target_to_align = self.color_stack.pop()
+                rospy.loginfo(f"Cube to unload: {self.color_target_to_align}")
+            else:
+                self.state = FIND_TILE_SHELF
+                rospy.loginfo("No more color cubes to unload")
+                return
+            # Wait for detections
+            rospy.sleep(1)
+            self.state = MOVE_X_UPLOAD_TILE 
+            
         elif self.state == MOVE_Y_UPLOAD_TILE:
+            self.color_target_dis = 5000
             rospy.loginfo("Moving to y pick pos")
             current_odom_x = self.nav_odom.pose.pose.position.x
-            target_odom_x = current_odom_x + (self.y_tile-1) * 0.25
+            target_odom_x = current_odom_x + (self.y_tile-2) * 0.18
             print(f"Current odom y: {current_odom_x}")
             print(f"Max odom y: {target_odom_x}")
             
             # While no cube is detected and the limit has not been reached, move back
-            while target_odom_x - current_odom_x > 0.05:
+            """while target_odom_x - current_odom_x > 0.1:
                 msg = Twist()
                 msg.linear.x = 0.2
                 self.cmd_vel_pub.publish(msg)
-                current_odom_x = self.nav_odom.pose.pose.position.x
+                current_odom_x = self.nav_odom.pose.pose.position.x"""
             
+            print("Waiting for color target dis")
             while self.color_target_dis == 5000:
-                print("Waiting for color target dis")
                 pass
 
-            while abs(self.color_target_dis) > 0.48:
+            print(self.color_target_dis)
+            while abs(self.color_target_dis) > 0.57:
+                #print(self.color_target_dis)
                 msg = Twist()
-                msg.linear.x = 0.12
+                msg.linear.x = 0.2
                 self.cmd_vel_pub.publish(msg)
 
             msg = Twist()
-            self.cmd_vel_pub.publish(msg) # stop
+            self.cmd_vel_pub.publish(msg) # stop 
             self.color_target_dis = 5000
-            rospy.sleep(2)
+            rospy.sleep(1)
             self.y_tile = 1
-            self.state = MOVE_X_UPLOAD_TILE
+            self.state = UNLOAD_CUBE 
 
         elif self.state == MOVE_X_UPLOAD_TILE:
             color2tile = {'rojo': 4, 'verde': 1, 'azul': 2, 'amarillo': 3}
 
             rospy.loginfo("Moving to x pick pos 1")
             current_odom_y = self.nav_odom.pose.pose.position.y
-            target_odom_y = current_odom_y + (color2tile[self.color_target_to_align] - self.x_tile) * 0.3
-            try:
-                sign = (color2tile[self.color_target_to_align]-self.x_tile) / abs(color2tile[self.color_target_to_align]-self.x_tile)
-            except:
-                sign = 1
+            target_odom_y = current_odom_y + (color2tile[self.color_target_to_align] - self.x_tile) * 0.26
+            sign = 1
             print(f"Current odom x: {current_odom_y}")
             print(f"Max odom x: {target_odom_y}")
             
             # While no cube is detected and the limit has not been reached, move back
             while abs(current_odom_y - target_odom_y) > 0.1:
+                try:
+                    sign = (target_odom_y-current_odom_y) / abs(target_odom_y-current_odom_y)
+                except:
+                    sign = 1
                 msg = Twist()
-                msg.linear.y = 0.2 * sign
+                msg.linear.y = 0.25 * sign
                 self.cmd_vel_pub.publish(msg)
                 current_odom_y = self.nav_odom.pose.pose.position.y
             
+            print("Waiting for color target dis")
             while self.color_target_dis == 5000:
-                print("Waiting for color target dis")
                 pass
 
             while abs(self.color_target_dis) > self.tolerance:
                 msg = Twist()
-                msg.linear.y = - 0.11 * self.color_target_dis / abs(self.color_target_dis)
+                msg.linear.y = - 0.13 * self.color_target_dis / abs(self.color_target_dis)
                 self.cmd_vel_pub.publish(msg)
 
             msg = Twist()
@@ -685,17 +698,47 @@ class MainEngine:
             self.color_target_dis = 5000
             rospy.sleep(2)
             self.x_tile = color2tile[self.color_target_to_align]
-            self.state = UNLOAD_CUBE 
+            self.state = MOVE_Y_UPLOAD_TILE
         
         elif self.state == UNLOAD_CUBE:
+            print("Starting approach")
+            self.mechanismCommandSvr('approach', 1)
+            rospy.sleep(4)
+            self.mechanismCommandSvr('approach', 0)
+
+            msg = Twist()
+            self.cmd_vel_pub.publish(msg) # stop
+
+            rospy.sleep(1)
             self.mechanismCommandSvr('elevator', 1)
             rospy.sleep(2)
             self.mechanismCommandSvr('intake', 3)
-            rospy.sleep(2)
+            rospy.sleep(0.5)
+            self.mechanismCommandSvr('warehouse', 1)
+            rospy.sleep(1)
             self.mechanismCommandSvr('intake', 4)
-            rospy.sleep(3)
+            rospy.sleep(2)
+            
+            current_odom_x = self.nav_odom.pose.pose.position.x
+            target_odom_x = current_odom_x - 0.15 
+            print(f"Current odom y: {current_odom_x}")
+            print(f"Max odom y: {target_odom_x}")
+            
+            # While no cube is detected and the limit has not been reached, move back
+            while current_odom_x - target_odom_x > 0.05:
+                msg = Twist()
+                msg.linear.x = -0.2
+                self.cmd_vel_pub.publish(msg)
+                current_odom_x = self.nav_odom.pose.pose.position.x
+
+            msg = Twist()
+            self.cmd_vel_pub.publish(msg) # stop
+            rospy.sleep(1)
+            self.y_tile = 2
+
             self.state = PICK_UNLOAD_TARGET
             
+
         elif self.state == FIND_TILE_SHELF:
             self.flag_pub.publish(True)
             rospy.sleep(2)
@@ -704,11 +747,11 @@ class MainEngine:
                 client = rospy.ServiceProxy('/detect_color_pattern', DetectColorPattern)
                 resp = client()
                 if resp.tileX != 0 and resp.tileY != 0:
-                    self.x_tile = resp.tileX
-                    self.y_tile = resp.tileY
+                    #self.x_tile = resp.tileX
+                    #self.y_tile = resp.tileY
                     rospy.loginfo(f"Tile X: {self.x_tile}")
                     rospy.loginfo(f"Tile Y: {self.y_tile}")
-                    self.state = MOVE_Y_SHELF_INIT
+                self.state = MOVE_X_SHELF_INIT
             except rospy.ServiceException as e:
                 print("Pattern call failed: %s"%e)
         
@@ -716,7 +759,7 @@ class MainEngine:
             rospy.loginfo("Moving to y shelf pos")
             self.color_target_to_align = "verde"
             current_odom_x = self.nav_odom.pose.pose.position.x
-            target_odom_x = current_odom_x + (self.y_tile-5) * 0.27
+            target_odom_x = current_odom_x + (self.y_tile-5) * 0.32
             print(f"Current odom y: {current_odom_x}")
             print(f"Max odom y: {target_odom_x}")
         
@@ -727,21 +770,22 @@ class MainEngine:
                 self.cmd_vel_pub.publish(msg)
                 current_odom_x = self.nav_odom.pose.pose.position.x
             
-            while self.color_target_dis == 5000:
-                print("Waiting for color target dis")
-                pass
-
-            while abs(self.color_target_dis) < 1.42:
-                msg = Twist()
-                msg.linear.x = -0.15
-                self.cmd_vel_pub.publish(msg)
-
             msg = Twist()
             self.cmd_vel_pub.publish(msg) # stop
             self.color_target_dis = 5000
             rospy.sleep(2)
+            
+            self.current_angle += 180
+            if self.current_angle > 270:
+                self.current_angle -= 360
+
+            rotate_msg = Float32()
+            rotate_msg.data = float(self.current_angle)
+            self.rotate_pub.publish(rotate_msg)
+            rospy.sleep(2)
+
             self.y_tile = 5
-            self.state = MOVE_X_SHELF_INIT
+            self.state = GET_SHELF_UNLOAD_TARGET
 
         elif self.state == MOVE_X_SHELF_INIT:
             rospy.loginfo("Moving to x pick pos 1")
@@ -776,16 +820,8 @@ class MainEngine:
             self.color_target_dis = 5000
             rospy.sleep(1)
             self.x_tile = 1
-            self.current_angle += 180
-            if self.current_angle > 270:
-                self.current_angle -= 360
-
-            rotate_msg = Float32()
-            rotate_msg.data = float(self.current_angle)
-            self.rotate_pub.publish(rotate_msg)
-            rospy.sleep(2)
             self.current_shelf = 1
-            self.state = GET_SHELF_UNLOAD_TARGET 
+            self.state = MOVE_Y_SHELF_INIT
 
         elif self.state == GET_SHELF_UNLOAD_TARGET:
             # Obtain selected target from the color stack
@@ -793,27 +829,29 @@ class MainEngine:
             if len(self.letter_stack) > 0:
                 self.category_to_unload = self.categoryDict['letter']
                 target_cube = self.letter_stack.pop()
-                self.shelf_target = (target_cube - 'A' + 1) % 3
-                self.shelf_target_height = (target_cube - 'A' + 1) // 3 + 1
-                rospy.loginfo(f"Cube to unload: {target_cube}")
+                self.shelf_target = (ord(target_cube) - ord('A') ) % 3 + 1
+                self.shelf_target_height = (ord(target_cube) - ord('A') ) // 3 + 1
             elif len(self.aruco_stack) > 0:
                 self.category_to_unload = self.categoryDict['aruco']
                 target_cube = self.aruco_stack.pop()
-                self.shelf_target = (target_cube - '0') % 3
-                self.shelf_target_height = (target_cube - '0') // 3 + 1
-                rospy.loginfo(f"Cube to unload: {target_cube}")
+                self.shelf_target = (ord(target_cube) - ord('1') ) % 3 + 5
+                self.shelf_target_height = (ord(target_cube) - ord('1') ) // 3 + 1
             else:
                 self.state = FINISH
                 return
             
             # Wait for detections
+            rospy.loginfo(f"Cube to unload: {target_cube}")
+            rospy.loginfo(f"Shelf target: {self.shelf_target}")
+            rospy.loginfo(f"Shelf target height: {self.shelf_target_height}")
+
             rospy.sleep(1)
             self.state = MOVE_X_SHELF_UNLOAD
 
         elif self.state == MOVE_X_SHELF_UNLOAD:
             rospy.loginfo("Moving to x shelf")
             current_odom_y = self.nav_odom.pose.pose.position.y
-            target_odom_y = current_odom_y + (self.shelf_target - self.current_shelf) * 0.32
+            target_odom_y = current_odom_y - (self.shelf_target - self.current_shelf) * 0.32
             # TODO offset para aruco
             sign = 1
             print(f"Current odom x: {current_odom_y}")
@@ -832,10 +870,12 @@ class MainEngine:
             
             msg = Twist()
             self.cmd_vel_pub.publish(msg) # stop
+            rospy.sleep(0.5)
             self.current_shelf = self.shelf_target
-            self.mechanismCommandSvr('elevator', self.category_to_unload+1)
+            self.mechanismCommandSvr('elevator', self.category_to_unload+4)
             rospy.sleep(2)
             self.mechanismCommandSvr('intake', 3)
+            self.mechanismCommandSvr('warehouse', self.category_to_unload+1)
             rospy.sleep(2)
             self.mechanismCommandSvr('elevator', self.shelf_target_height+6)
             rospy.sleep(2)
@@ -844,19 +884,20 @@ class MainEngine:
         elif self.state == MOVE_Y_SHELF_UNLOAD:
             rospy.loginfo("Moving to y shelf")
             current_odom_x = self.nav_odom.pose.pose.position.x
-            while self.distance_to_shelf > 20:
-                msg = Twist()
-                msg.linear.x = 0.2
-                self.cmd_vel_pub.publish(msg)
 
+            self.mechanismCommandSvr('approach', 1)
+            print("approach finished")
+            rospy.sleep(5)
+            self.mechanismCommandSvr('approach', 0)
             msg = Twist()
             self.cmd_vel_pub.publish(msg) # stop
+            rospy.sleep(0.5)
             self.mechanismCommandSvr('intake', 4)
             rospy.sleep(2)
             rospy.logdebug("Cube unloaded")
 
-            target_odom_x = current_odom_x
             current_odom_x = self.nav_odom.pose.pose.position.x
+            target_odom_x = current_odom_x - 0.15
             print(f"Current odom y: {current_odom_x}")
             print(f"Max odom y: {target_odom_x}")
             
