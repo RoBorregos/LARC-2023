@@ -699,7 +699,7 @@ class MicroControllerROS():
         # Cleanup when termniating the node
         rospy.on_shutdown(self.shutdown)
         
-        self.port = rospy.get_param("~port", default="/dev/ttyACM0")
+        self.port = rospy.get_param("~port", default="/dev/teensy")
         self.baud = int(rospy.get_param("~baud", 115200))
         self.timeout = rospy.get_param("~timeout", 0.5)
         self.base_frame = rospy.get_param("~base_frame", 'base_link')
@@ -748,7 +748,7 @@ class MicroControllerROS():
 
 def testController():
     # Initialize the controlller
-    port = "/dev/ttyACM0"
+    port = "/dev/teensy"
     baud = 115200 
     timeout = 0.1
     controller = Microcontroller(port, baud, timeout)
