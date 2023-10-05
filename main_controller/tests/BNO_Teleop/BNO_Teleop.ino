@@ -54,9 +54,9 @@ Plot mPlot(drive);
 struct motor intake1 = {22, 23};
 struct motor intake2 = {29, 28};
 struct motor level1 = {8, 9};
-struct motor level2 = {10, 11};
-struct motor level3 = {29, 28};
-int WAREHOUSE_SPEED = 255;
+struct motor level3 = {10, 11};
+struct motor level2 = {37, 36};
+int WAREHOUSE_SPEED = 180;
 
 bool TELEOP = true;
 bool FRONT_TEST = false;
@@ -141,6 +141,20 @@ void setup(){
     attachInterrupt(digitalPinToInterrupt(Constants::kBackLeftEncoder), interruptBL, CHANGE);
     attachInterrupt(digitalPinToInterrupt(Constants::kBackRightEncoder), interruptBR, CHANGE);
 
+    pinMode(level1.pwmA, OUTPUT);
+    pinMode(level1.pwmB, OUTPUT);
+    pinMode(level2.pwmA, OUTPUT);
+    pinMode(level2.pwmB, OUTPUT);
+    pinMode(level3.pwmA, OUTPUT);
+    pinMode(level3.pwmB, OUTPUT);
+
+    analogWrite(level3.pwmA, 180);
+    analogWrite(level3.pwmB, 0);
+    delay(1000);
+    digitalWrite(level3.pwmA, LOW);
+    digitalWrite(level3.pwmB, LOW);
+
+
     initRobot();
     delay(3000);
 
@@ -164,8 +178,8 @@ bool level1_active = false;
 bool level2_active = false;
 bool level3_active = false;
 
-
-char c = 'x';
+ 
+char c = '-';
 
 void loop(){
 
@@ -212,11 +226,6 @@ void loop(){
             xspeed = 0;
             yspeed = 0;
             zspeed = 3*SPEED;
-        }
-        else if (c=='x'){
-            xspeed = 0;
-            yspeed = 0;
-            zspeed = 0;
         }
         // Intake
         else if (c=='i'){
@@ -265,76 +274,40 @@ void loop(){
         }
         // warehouse motors
         else if (c=='z'){
-            if (!level1_active){
-                analogWrite(level1.pwmA, WAREHOUSE_SPEED);
-                analogWrite(level1.pwmB, 0);
-                level1_active = true;
-            }
-            else{
-                analogWrite(level1.pwmA, 0);
-                analogWrite(level1.pwmB, 0);
-                level1_active = false;
-            }
+            analogWrite(level1.pwmA, WAREHOUSE_SPEED);
+            analogWrite(level1.pwmB, 0);
         }
         else if (c=='x'){
-            if (!level1_active){
-                analogWrite(level1.pwmA, 0);
-                analogWrite(level1.pwmB, WAREHOUSE_SPEED);
-                level2_active = true;
-            }
-            else{
-                analogWrite(level1.pwmA, 0);
-                analogWrite(level1.pwmB, 0);
-                level2_active = false;
-            }
+            analogWrite(level1.pwmA, 0);
+            analogWrite(level1.pwmB, 0);
         }
         else if (c=='c'){
-            if (!level2_active){
-                analogWrite(level2.pwmA, WAREHOUSE_SPEED);
-                analogWrite(level2.pwmB, 0);
-                level2_active = true;
-            }
-            else{
-                analogWrite(level1.pwmA, 0);
-                analogWrite(level1.pwmB, 0);
-                level2_active = false;
-            }
+            analogWrite(level1.pwmA, 0);
+            analogWrite(level1.pwmB, WAREHOUSE_SPEED);
+        }
+        else if (c=='f'){
+            analogWrite(level2.pwmA, WAREHOUSE_SPEED);
+            analogWrite(level2.pwmB, 0);
+        }
+        else if (c=='g'){
+            analogWrite(level2.pwmA, 0);
+            analogWrite(level2.pwmB, 0);
+        }
+        else if (c=='h'){
+            analogWrite(level2.pwmA, 0);
+            analogWrite(level2.pwmB, WAREHOUSE_SPEED);
         }
         else if (c=='v'){
-            if (!level2_active){
-                analogWrite(level2.pwmA, 0);
-                analogWrite(level2.pwmB, WAREHOUSE_SPEED);
-                level2_active = true;
-            }
-            else{
-                analogWrite(level2.pwmA, 0);
-                analogWrite(level2.pwmB, 0);
-                level2_active = false;
-            }
+            analogWrite(level3.pwmA, WAREHOUSE_SPEED);
+            analogWrite(level3.pwmB, 0);
         }
         else if (c=='b'){
-            if (!level3_active){
-                analogWrite(level3.pwmA, WAREHOUSE_SPEED);
-                analogWrite(level3.pwmB, 0);
-                level3_active = true;
-            }
-            else{
-                analogWrite(level3.pwmA, 0);
-                analogWrite(level3.pwmB, 0);
-                level3_active = false;
-            }
+            analogWrite(level3.pwmA, 0);
+            analogWrite(level3.pwmB, 0);
         }
         else if (c=='n'){
-            if (!level3_active){
-                analogWrite(level3.pwmA, 0);
-                analogWrite(level3.pwmB, WAREHOUSE_SPEED);
-                level3_active = true;
-            }
-            else{
-                analogWrite(level3.pwmA, 0);
-                analogWrite(level3.pwmB, 0);
-                level3_active = false;
-            }
+            analogWrite(level3.pwmA, 0);
+            analogWrite(level3.pwmB, WAREHOUSE_SPEED);
         }
         else if (c=='/'){
             //restart robot
@@ -353,6 +326,14 @@ void loop(){
             xspeed = 0;
             yspeed = 0;
             zspeed = 0;
+        }
+        if (digitalRead(INTAKEPRESENCE)){
+            analogWrite(level1.pwmA, 0);
+            analogWrite(level1.pwmB, 0);
+            analogWrite(level2.pwmA, 0);
+            analogWrite(level2.pwmB, 0);
+            analogWrite(level3.pwmA, 0);
+            analogWrite(level3.pwmB, 0);
         }
         if (pick){
             if (!digitalRead(INTAKEPRESENCE)){
@@ -448,7 +429,7 @@ void loop(){
             xspeed = 0;
             yspeed = 0;
         }
-        
+
         current_time = millis();
         mDrive.periodicIO(current_time);
         mDrive.setSpeed(xspeed, yspeed, 0, current_time);

@@ -38,7 +38,7 @@ class Constants{
         static constexpr uint8_t kBackLeftB = 3;
         static constexpr uint8_t kBackRightA = 4;
         static constexpr uint8_t kBackRightB = 5;
-        static constexpr int kIntakePushTime = 100;
+        static constexpr int kIntakePushTime = 300;
 
         //Encoders
         static constexpr float kEncoderTicksPerRevolution = 979.62;
@@ -63,9 +63,6 @@ class Constants{
         static constexpr uint8_t kLineSensorSignal = 38;
         static constexpr int kLineSensorValue = 800;
         static constexpr int kLineSensorTreshold = 300;
-        
-        // limit switches //
-        static constexpr uint8_t kLimitSwitch = 26;
 
         // Intake //
         static constexpr uint8_t kIntakeMotor1A = 22;
@@ -75,11 +72,11 @@ class Constants{
         static constexpr uint8_t kIntakePresence = 12;
         static constexpr int kIntakePickSpeed = 255;
         static constexpr int kIntakeInSpeed = 255;
-        static constexpr int kIntakeOutSpeed = 210;
+        static constexpr int kIntakeOutSpeed = 235;
         static constexpr int kIntakeDropSpeed = 255;
-        static constexpr uint16_t kIntakePickPresenceTime = 3000;
+        static constexpr uint16_t kIntakePickPresenceTime = 4000;
         static constexpr uint16_t kIntakeInPresenceTime = 1000;
-        static constexpr uint16_t kIntakeOutPresenceTime = 400;
+        static constexpr uint16_t kIntakeOutPresenceTime = 150;
         static constexpr uint16_t kIntakeDropPresenceTime = 1000;
 
         // Elevator //
@@ -98,15 +95,15 @@ class Constants{
         static constexpr uint16_t kElevatorLevel3Height = 286;
         // for levels using steps
         static constexpr int kElevatorLevel0InSteps = 0;
-        static constexpr int kElevatorLevel1InSteps = 26000;
+        static constexpr int kElevatorLevel1InSteps = 27000;
         static constexpr int kElevatorLevel2InSteps = 49000;
-        static constexpr int kElevatorLevel3InSteps = 71000;
-        static constexpr int kElevatorLevel1OutSteps = 22500;
-        static constexpr int kElevatorLevel2OutSteps = 45500;
-        static constexpr int kElevatorLevel3OutSteps = 68000;
+        static constexpr int kElevatorLevel3InSteps = 70000;
+        static constexpr int kElevatorLevel1OutSteps = 25500;
+        static constexpr int kElevatorLevel2OutSteps = 48000;
+        static constexpr int kElevatorLevel3OutSteps = 70000;
         static constexpr int kElevatorShelf1Steps = 10000;
         static constexpr int kElevatorShelf2Steps = 46000;
-        static constexpr int kElevatorShelf3Steps = 82000;
+        static constexpr int kElevatorShelf3Steps = 79000;
 
         static constexpr int kElevatorLevelSmallStepDown = 10000;
         
@@ -122,9 +119,9 @@ class Constants{
         static constexpr uint8_t kWarehouseVLXxshutUpper = 16;
         static constexpr uint8_t kWarehouseVLXxshutMid = 15;
         static constexpr uint8_t kWarehouseVLXxshutLower = 20;
-        static constexpr int kWarehouseUpperSpeed = 230;
-        static constexpr int kWarehouseMidSpeed = 230;
-        static constexpr int kWarehouseLowerSpeed = 230;
+        static constexpr int kWarehouseUpperSpeed = 240;
+        static constexpr int kWarehouseMidSpeed = 200;
+        static constexpr int kWarehouseLowerSpeed = 200;
 };
 
 #endif

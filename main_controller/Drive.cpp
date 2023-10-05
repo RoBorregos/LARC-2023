@@ -72,9 +72,10 @@ void Drive::setSpeedOriented(float linearX, float linearY, float angularZ, unsig
     if( (current_time - speed_last_time < pid_time))
         return;
         
-    if (digitalRead(intake_presence)){
+    /*if (digitalRead(intake_presence) && !shelf_approach){
         linearY = 0;   
-    }
+        linearX = 0.125;
+    }*/
     if ((digitalRead(intake_presence) && current_time - presence_detection_time > Constants::kIntakePushTime) && !shelf_approach){
         hardStop();
         linearX = 0;

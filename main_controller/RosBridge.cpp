@@ -241,6 +241,7 @@ void RosBridge::executeCommand(uint8_t packet_size, uint8_t command, uint8_t* bu
                 int command;
                 memcpy(&command, buffer, sizeof(command));
                 approachShelfCallback(command);
+                writeSerial(true, nullptr, 0);
             }
             break;
 
