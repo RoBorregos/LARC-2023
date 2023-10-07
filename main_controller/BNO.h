@@ -21,6 +21,7 @@ class BNO{
         BNO(Adafruit_BNO055 *bno);
         bool init();
         Orientation getOrientation();
+        Orientation getOrientation0to360();
 };
 
 #endif

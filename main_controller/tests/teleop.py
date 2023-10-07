@@ -4,16 +4,20 @@ from pynput import keyboard
 import serial
 import time
 import argparse
+# have the serial reades as an async thread
+from threading import Thread
+
 
 # receive the ACM number as an argument
 parser = argparse.ArgumentParser()
-parser.add_argument("acm", help="ACM number of the Arduino")
+# make optional
+parser.add_argument("--acm", help="ACM number of the serial port", type=int, default=0)
 args = parser.parse_args()
 
 ACM = args.acm
 
 #serial port
-ser = serial.Serial(f"/dev/ttyACM{ACM}", 115200, timeout=5)
+ser = serial.Serial(f"/dev/teensy", 115200, timeout=5)
 ser.flush()
 def on_press(key):
     global ACM
@@ -34,6 +38,8 @@ def on_press(key):
         key.char = 'S'
     if key == keyboard.Key.enter:
         key.char = 'I'
+    if key ==keyboard.Key.backspace:
+        key.char = '/'
     try:
         # space to stop
         val = key.char
@@ -66,8 +72,10 @@ def serialReadThread():
 
 #keyboard teleop
 while True:
+    # start the serial read thread
     with keyboard.Listener(on_press=on_press, on_release=on_release) as listener:
         listener.join()
+    
 
 '''
 from pynput import keyboard

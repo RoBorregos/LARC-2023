@@ -16,9 +16,9 @@ class Constants{
         static constexpr float kDriveKP = 0.017;
         static constexpr float kDriveKD = 0.00;
 
-        static constexpr float kBNOKP = 0.1;
+        static constexpr float kBNOKP = 0.3;
         static constexpr float kBNOKI = 0.0;
-        static constexpr float kBNOKD = 1.0;
+        static constexpr float kBNOKD = 0.1;
         static constexpr float kBNOKImax = 0.1;
         static constexpr float KBNOMaxAngular = 2.0;
         static constexpr float kBNOMinAngular = -2.0;
