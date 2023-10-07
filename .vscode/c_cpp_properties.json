@@ -26,6 +26,7 @@
             ],
             "intelliSenseMode": "gcc-x64",
             "includePath": [
+
                 "/tmp/arduino/sketch-770AAFB3FEB0948053A47FA81FADBCF8/pch",
                 "/home/nvidia/.arduino15/packages/teensy/hardware/avr/1.58.0/cores/teensy4",
                 "/home/nvidia/.arduino15/packages/teensy/hardware/avr/1.58.0/libraries/Wire",

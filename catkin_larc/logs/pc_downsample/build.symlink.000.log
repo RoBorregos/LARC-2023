@@ -1,0 +1,8 @@
+Symlinking /home/nvidia/workspace/LARC-2023/catkin_larc/devel/share/pc_downsample/cmake/pc_downsampleConfig.cmake
+Symlinking /home/nvidia/workspace/LARC-2023/catkin_larc/devel/share/pc_downsample/cmake/pc_downsample-msg-paths.cmake
+Symlinking /home/nvidia/workspace/LARC-2023/catkin_larc/devel/share/pc_downsample/cmake/pc_downsampleConfig-version.cmake
+Symlinking /home/nvidia/workspace/LARC-2023/catkin_larc/devel/share/pc_downsample/cmake/pc_downsample-msg-extras.cmake
+Symlinking /home/nvidia/workspace/LARC-2023/catkin_larc/devel/share/roseus/ros/pc_downsample/manifest.l
+Symlinking /home/nvidia/workspace/LARC-2023/catkin_larc/devel/lib/pc_downsample/DownSamplePC
+Symlinking /home/nvidia/workspace/LARC-2023/catkin_larc/devel/lib/pkgconfig/pc_downsample.pc
+Symlinking /home/nvidia/workspace/LARC-2023/catkin_larc/devel/lib/python3/dist-packages/pc_downsample/__init__.py

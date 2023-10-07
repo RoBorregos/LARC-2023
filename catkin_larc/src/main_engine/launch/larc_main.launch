@@ -1,0 +1,9 @@
+<launch>
+    <node pkg="tf2_ros" type="static_transform_publisher" name="robot_to_cam" args="0 0.1419 0.3682 0 0 -0.5236 robot cam"/>
+    <node pkg="tf2_ros" type="static_transform_publisher" name="robot_to_intake" args="0 0.2394 0 0 0 0 robot intake"/>
+
+    <!--<node pkg="main_engine" type="serialController.py" name="Microcontroller" />
+    <node pkg="nav" type="nav_main.py" name="main_nav"/>
+    <node pkg="main_engine" type="qbo.py" name="mainEngine"/>-->
+    
+</launch>
