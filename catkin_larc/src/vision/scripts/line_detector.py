@@ -25,6 +25,8 @@ class LineDetector:
         #self.subscriberDepth = rospy.Subscriber("/zed2/zed_node/depth/depth_registered", Image, self.depthImageRosCallback)
         #self.subscriberInfo = rospy.Subscriber("/zed2/zed_node/depth/camera_info", CameraInfo, self.infoImageRosCallback)
 
+        #self.sub = rospy.Subscriber('/camera/rgb/image_raw', Image, self.callback)
+        
         self.mask  = None
         self.cv_image = np.array([])
         rospy.loginfo("Subscribed to image")

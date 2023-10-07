@@ -3,6 +3,7 @@ import rospy
 import cv2
 import numpy as np
 from std_msgs.msg import Int32
+from std_msgs.msg import Bool
 from sensor_msgs.msg import Image, CameraInfo
 from cv_bridge import CvBridge, CvBridgeError
 from vision.msg import objectDetection, objectDetectionArray
@@ -18,28 +19,35 @@ from vision_utils import *
 
 class DetectorAruco:
     def __init__(self):
+        self.cx = 0
+        self.cy = 0
+
         self.bridge = CvBridge()
         self.pub = rospy.Publisher('/aruco_out', Image, queue_size=10)
-        self.pubData = rospy.Publisher('detect_markers', objectDetectionArray, queue_size=5)
+        self.pubData = rospy.Publisher('/vision/aruco_detect', objectDetectionArray, queue_size=5)
         self.pubmarker = rospy.Publisher('markers', Int32, queue_size=10)
-        self.posePublisher = rospy.Publisher("/test/detectionposes", PoseArray, queue_size=5)
+        self.posePublisher = rospy.Publisher("vision/arucos/detectionposes", PoseArray, queue_size=5)
         self.sub = rospy.Subscriber('/zed2/zed_node/rgb/image_rect_color', Image, self.callback)
         self.subscriberDepth = rospy.Subscriber("/zed2/zed_node/depth/depth_registered", Image, self.depthImageRosCallback)
         self.subscriberInfo = rospy.Subscriber("/zed2/zed_node/depth/camera_info", CameraInfo, self.infoImageRosCallback)
-        self.pcsubs = rospy.Subscriber("/object", Image, self.pc_callback)
+       # self.pcsubs = rospy.Subscriber("/object", Image, self.pc_callback)
+        self.flagsubs = rospy.Subscriber("flag", Bool, self.callback_flag)
+
         
+        self.flag = False
         self.pubmask = rospy.Publisher('/mask_aruco', Image, queue_size=10)
         self.mask  = None
         self.cv_image = np.array([])
         rospy.loginfo("Subscribed to image")
         self.main()
         
-    def pc_callback(self, data):
-        try:
-            self.cv_image = self.bridge.imgmsg_to_cv2(data,desired_encoding="bgr8")
-            self.detectar_arucos()
-        except CvBridgeError as e:
-            print(e)
+    # def pc_callback(self, data):
+    #     try:
+    #         self.cv_image = self.bridge.imgmsg_to_cv2(data,desired_encoding="bgr8")
+    #         if flag:
+    #             self.detectar_arucos()
+    #     except CvBridgeError as e:
+    #         print(e)
     
 
         # Function to handle a ROS depth input.
@@ -54,6 +62,10 @@ class DetectorAruco:
     def infoImageRosCallback(self, data):
         self.camera_info = data
         self.subscriberInfo.unregister()
+        
+    def callback_flag(self, data):
+            self.flag = data.data
+            rospy.loginfo(self.flag)
 
 
     def detectar_arucos(self):
@@ -72,16 +84,25 @@ class DetectorAruco:
             if corners:
                 for i, marker_corners in enumerate(corners):
                     print(ids[i])
-                    corner = corners[0][0]
+                    corner = corners[i][0]
                     xmayor = np.amax(corner[:, 0])
                     ymayor = np.amax(corner[:, 1])
                     xmenor = np.amin(corner[:, 0])
                     ymenor = np.amin(corner[:, 1])
+                    #get x and y centroid
+                    self.cx = (xmayor + xmenor)/2 / self.cv_image.shape[1]
+                    self.cy = (ymayor + ymenor)/2 / self.cv_image.shape[0]
+
+                    # draw a point on the centroid
+                    cv2.circle(self.cv_image, (int(self.cx * self.cv_image.shape[1]), int(self.cy * self.cv_image.shape[0])), 5, (0, 0, 255), -1)
 
                     #print(f"Xmayor: {xmayor:.2f}, Xmenor: {xmenor:.2f}, Ymayor: {ymayor:.2f}, Ymenor: {ymenor:.2f}")    
                     tempo =  ymenor, xmenor, ymayor, xmayor
                     bb.append(tempo)
-                    detections.append(ids[i])
+
+                    #Remove brackets from ids
+                    tmp_d = str(ids[i]).strip('[]')
+                    detections.append(tmp_d)
                     #ids[i][j] Es el id del aruco
                     #corners Es la bounding box del aruco
             self.get_objects(bb, detections)
@@ -93,14 +114,15 @@ class DetectorAruco:
     def callback(self, data):
 
         self.cv_image = self.bridge.imgmsg_to_cv2(data,desired_encoding="bgr8")
-        self.detectar_arucos()
+        if self.flag:
+            self.detectar_arucos()
 
 
     def get_objects(self, boxes, detections):
         res = []
 
         pa = PoseArray()
-        pa.header.frame_id = "camera_depth_frame"
+        pa.header.frame_id = "zed2_base_link"
         pa.header.stamp = rospy.Time.now()
         for index in range(len(boxes)):
             if True:
@@ -116,7 +138,7 @@ class DetectorAruco:
                 if len(self.depth_image) != 0:
                     depth = get_depth(self.depth_image, point2D)
                     point3D_ = deproject_pixel_to_point(self.camera_info, point2D, depth)
-                    point3D.x = point3D_[0]
+                    point3D.x = point3D_[0] - 0.05
                     point3D.y = point3D_[1]
                     point3D.z = point3D_[2]
                     pa.poses.append(Pose(position=point3D))
@@ -124,8 +146,10 @@ class DetectorAruco:
                     objectDetection(
 
                         label = int(index), # 1
-                        labelText = str(detections[index]), # "H"
-                        #score = float(0.0),
+                        labelText = str(detections[index]), # "Hscore = float(0.0),
+                        category = str('aruco'),
+                        cx = float(self.cx),
+                        cy = float(self.cy),    
                         ymin = float(boxes[index][0]),
                         xmin = float(boxes[index][1]),
                         ymax = float(boxes[index][2]),

@@ -1,0 +1,4 @@
+bool check
+---
+int32 tileX
+int32 tileY

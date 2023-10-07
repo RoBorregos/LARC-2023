@@ -24,6 +24,7 @@ from nav_msgs.msg import Odometry
 from std_msgs.msg import Int16, Int32, UInt16, Float32, String, Bool
 from tf.broadcaster import TransformBroadcaster
 from sensor_msgs.msg import Range, Imu
+from main_engine.srv import MechanismCommand, MechanismCommandResponse 
 
 from tf.transformations import quaternion_from_euler
 
@@ -63,6 +64,7 @@ class Microcontroller:
     
     def __init__(self, port="/dev/ttyUSB0", baudrate=115200, timeout=0.5):
         self.port = port
+        self.port_name = port
         self.baudrate = baudrate
         self.timeout = timeout
         self.encoder_count = 0
@@ -114,6 +116,28 @@ class Microcontroller:
             traceback.print_exc(file=sys.stdout)
             print("Cannot connect to Microcontroller!")
             os._exit(1)
+
+    def reconnect(self):
+        self.port.close()
+        try:
+            print("Reconnecting to Microcontroller on port", self.port, "...")
+            self.port = Serial(port=self.port_name, baudrate=self.baudrate, timeout=self.timeout, writeTimeout=self.writeTimeout)
+            state_, val = self.get_baud()
+            if val != self.baudrate:
+                state_, val  = self.get_baud()
+                if val != self.baudrate:
+                    raise SerialException
+            
+            print("Connected at", self.baudrate)
+            print("Microcontroller is ready.")
+        
+        except SerialException:
+            print("Serial Exception:")
+            print(sys.exc_info())
+            print("Traceback follows:")
+            traceback.print_exc(file=sys.stdout)
+            print("Cannot connect to Microcontroller!")
+
 
     def open(self): 
         ''' Open the serial port.
@@ -251,35 +275,12 @@ class Microcontroller:
         else:
            return self.FAIL, 0, 0
 
-    def imu_angle(self, angle):
-        cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x05, 0x05) + struct.pack("f", angle) + struct.pack("B", 0x06)
-        if (self.execute(cmd_str))==1 and self.payload_ack == b'\x00':
-           return  self.SUCCESS
-        else:
-           return self.FAIL
-
-    def get_emergency_button(self):
-        cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x01, 0x15) + struct.pack("B", 0x16)
-        if (self.execute(cmd_str))==1 and self.payload_ack == b'\x00':
-           emergency_state, = struct.unpack('B', self.payload_args)
-           return  self.SUCCESS, emergency_state
-        else:
-           return self.FAIL, 0
-
     def reset_odometry(self):
         cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x01, 0x03) + struct.pack("B", 0x04)
         if (self.execute(cmd_str))==1 and self.payload_ack == b'\x00':
            return  self.SUCCESS
         else:
            return self.FAIL
-
-    def get_check_sum(self,list):
-        list_len = len(list)
-        cs = 0
-        for i in range(list_len):
-            cs += list[i]
-        cs=cs%255
-        return cs
 
     def drive(self, x, y, th):
         # data1 = struct.pack("h", x)
@@ -294,12 +295,29 @@ class Microcontroller:
         else:
            return self.FAIL
     
+    def imu_angle(self):
+        cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x01, 0x05) + struct.pack("B", 0x06)
+        if (self.execute(cmd_str))==1 and self.payload_ack == b'\x00':
+           x,y,z,w = struct.unpack('4f', self.payload_args)
+           return  self.SUCCESS, x, y, z, w
+        else:
+           return self.FAIL
+
     def intake(self, command):
         cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x05, 0x06) + struct.pack("i", command) + struct.pack("B", 0x07)
         if (self.execute(cmd_str))==1 and self.payload_ack == b'\x00':
            return  self.SUCCESS
         else:
            return self.FAIL
+        
+    def intake_presence(self):
+        cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x01, 0x07) + struct.pack("B", 0x08)
+        if (self.execute(cmd_str))==1 and self.payload_ack == b'\x00':
+           presence = struct.unpack('c', self.payload_args)
+           return  self.SUCCESS, presence
+        else:
+           return self.FAIL
+    
         
     def elevator(self, command):
         cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x05, 0x08) + struct.pack("i", command) + struct.pack("B", 0x09)
@@ -308,6 +326,21 @@ class Microcontroller:
         else:
            return self.FAIL
     
+    def approach(self, command):
+        cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x05, 0xA0) + struct.pack("i", command) + struct.pack("B", 0xA1)
+        if (self.execute(cmd_str))==1 and self.payload_ack == b'\x00':
+           return  self.SUCCESS
+        else:
+           return self.FAIL
+    
+    def warehouse(self, level):
+        cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x05, 0x0A) + struct.pack("i", level) + struct.pack("B", 0x0B)
+        
+        if (self.execute(cmd_str))==1 and self.payload_ack == b'\x00':
+           return  self.SUCCESS
+        else:
+           return self.FAIL
+
     def line_sensors(self):
         cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x01, 0x0B) + struct.pack("B", 0x0C)
         if (self.execute(cmd_str))==1 and self.payload_ack == b'\x00':
@@ -316,13 +349,6 @@ class Microcontroller:
         else:
             return self.FAIL, 0, 0, 0, 0, 0, 0, 0, 0
         
-    def warehouse(self, level):
-        cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x05, 0x0A) + struct.pack("i", level) + struct.pack("B", 0x0B)
-        if (self.execute(cmd_str))==1 and self.payload_ack == b'\x00':
-           return  self.SUCCESS
-        else:
-           return self.FAIL
-
     def set_global_setpoint(self):
         cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x01, 0x0D) + struct.pack("B", 0x0E)
         if (self.execute(cmd_str))==1 and self.payload_ack == b'\x00':
@@ -330,11 +356,6 @@ class Microcontroller:
         else:
             return self.FAIL
         
-    def stop(self):
-        ''' Stop both motors.
-        '''
-        return self.drive(0, 0, 0)
-
     def get_hardware_version(self):
         ''' Get the current version of the hardware.
         '''
@@ -344,6 +365,41 @@ class Microcontroller:
            return  self.SUCCESS, val
         else:
            return self.FAIL, -1, -1
+
+    def rotate(self, command):
+        cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x05, 0x14) + struct.pack("f", command) + struct.pack("B", 0x15)
+        if (self.execute(cmd_str))==1 and self.payload_ack == b'\x00':
+            return self.SUCCESS
+        else:
+            return self.FAIL
+
+    def get_emergency_button(self):
+        cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x01, 0x15) + struct.pack("B", 0x16)
+        if (self.execute(cmd_str))==1 and self.payload_ack == b'\x00':
+           emergency_state, = struct.unpack('B', self.payload_args)
+           return  self.SUCCESS, emergency_state
+        else:
+           return self.FAIL, 0
+        
+    def reset_jetson_port(self):
+        cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x01, 0xF0) + struct.pack("B", 0xF1)
+        if (self.execute(cmd_str))==1 and self.payload_ack == b'\x00':
+           return  self.SUCCESS
+        else:
+           return self.FAIL
+
+    def get_check_sum(self,list):
+        list_len = len(list)
+        cs = 0
+        for i in range(list_len):
+            cs += list[i]
+        cs=cs%255
+        return cs
+
+    def stop(self):
+        ''' Stop both motors.
+        '''
+        return self.drive(0, 0, 0)
 
 
 """ Class to receive Twist commands and publish Odometry data """
@@ -399,22 +455,26 @@ class BaseController:
         self.last_cmd_vel = now
 
         self.angle = 0
+        self.desired_angle = 500
         self.quaternion = Quaternion()
 
-        self.intake_command = 0
-        self.elevator_command = 0
-        self.warehouse = 0 
         self.line_sensor = 0
 
         self.global_setpoint = 0
         # Subscriptions
         rospy.Subscriber("cmd_vel", Twist, self.cmdVelCallback)
 
-        rospy.Subscriber("intake", Int32, self.intakeCallback)
-        rospy.Subscriber("elevator", Int32, self.elevatorCallback)
-        rospy.Subscriber("warehouse", Int32, self.warehouseCallback)
+        #rospy.Subscriber("intake", Int32, self.intakeCallback)
+        rospy.Service('intake', MechanismCommand, self.intakeHandler)
+        rospy.Service('elevator', MechanismCommand, self.elevatorHandler)
+        rospy.Service('approach', MechanismCommand, self.approachHandler)
+        rospy.Service('warehouse', MechanismCommand, self.warehouseHandler)
         rospy.Subscriber("global_setpoint", Bool, self.globalSetpointCallback)
+        rospy.Subscriber("/rotate", Float32, self.rotateCallback)
+        self.intake_presence_pub = rospy.Publisher("/intake_presence", Bool, queue_size=5)
         self.line_sensor_pub = rospy.Publisher("line_sensors", lineSensor, queue_size=5)
+
+        jetson_port_reset = rospy.Service('reset_teensy', MechanismCommand, self.resetJetsonPortHandler)
         
         # Clear any old odometry info
         #self.Microcontroller.reset_encoders()
@@ -467,6 +527,9 @@ class BaseController:
     def globalSetpointCallback(self, req):
         if req.data:
             self.Microcontroller.set_global_setpoint()
+    
+    def rotateCallback(self, req):
+        self.desired_angle = req.data
 
     def poll(self):
         now = rospy.Time.now()
@@ -476,18 +539,53 @@ class BaseController:
             self.then = now
             dt = dt.to_sec()
 
+            try:
+                ack, presence = self.Microcontroller.intake_presence()
+                #print(presence)
+                # change presence var to char type
+                char_presence = presence[0]
+                if ack==self.FAIL:
+                    rospy.logerr("get intake presence failed ")
+                if char_presence == b'1':
+                    self.intake_presence_pub.publish(True)
+            except:
+                rospy.logerr("get intake presence exception ")
+                self.Microcontroller.reconnect()
+
             vx = 0.0
             vy = 0
             vth = 0
+
+            ax = 0.0
+            ay = 0.0
+            az = 0.0
+            aw = 0.0
+
             # Get odometry from the microcontroller
+            
             try:
                 ack, vx, vy, vth, self.x, self.y  = self.Microcontroller.get_odometry()
                 if ack==self.FAIL:
                     rospy.logerr("get odometry failed ")
-                    return
             except:
                 rospy.logerr("get odometry exception ")
+                self.Microcontroller.reconnect()
+            
+            """
+            try:
+                ack, ax, ay, az, aw = self.Microcontroller.imu_angle()
+                if ack==self.FAIL:
+                    rospy.logerr("get imu angle failed ")
+                    return
+            except:
+                rospy.logerr("get imu angle exception ")
                 return
+            
+
+            self.quaternion = Quaternion(aw, ax, ay, az)
+            """
+
+            self.quaternion = quaternion_from_euler(0, 0, 0)
             
             odom = Odometry()
             odom.header.frame_id = "odom"
@@ -496,10 +594,10 @@ class BaseController:
             odom.pose.pose.position.x = self.x
             odom.pose.pose.position.y = self.y
             odom.pose.pose.position.z = 0
-            odom.pose.pose.orientation = self.quaternion
+            odom.pose.pose.orientation = Quaternion(*self.quaternion)
             odom.twist.twist.linear.x = vx
             odom.twist.twist.linear.y = vy
-            odom.twist.twist.angular.z = vth
+            odom.twist.twist.angular.z = 0
 
             odom.pose.covariance = ODOM_POSE_COVARIANCE
             odom.twist.covariance = ODOM_TWIST_COVARIANCE
@@ -537,22 +635,14 @@ class BaseController:
             """
             
             # Set motor speeds in encoder ticks per PID loop
+            if( self.desired_angle != 500):
+                self.Microcontroller.rotate(self.desired_angle)
+                self.desired_angle = 500
+            
             if ((not self.stopped)):
                 self.Microcontroller.drive(self.v_x, self.v_y, self.v_th)
-                self.Microcontroller.imu_angle(self.angle)
+                #self.Microcontroller.imu_angle(self.angle)
                 
-            if(self.intake_command != 0):
-                self.Microcontroller.intake(self.intake_command)
-                self.intake_command = 0
-
-            if(self.elevator_command != 0):
-                self.Microcontroller.elevator(self.elevator_command)
-                self.elevator_command = 0
-
-            if(self.warehouse != 0):
-                self.Microcontroller.warehouse(self.warehouse)
-                self.warehouse = 0
-
                 
             self.t_next = now + self.t_delta
             
@@ -583,19 +673,24 @@ class BaseController:
         else:
             self.angle = -req.z
 
-    def intakeCallback(self, req):
-        self.intake_command = req.data
-
-    def elevatorCallback(self, req):
-        self.elevator_command = req.data
+    def intakeHandler(self, req):
+        return self.Microcontroller.intake( req.command ) == self.SUCCESS
     
+    def elevatorHandler(self, req):
+        return self.Microcontroller.elevator( req.command ) == self.SUCCESS
+    
+    def warehouseHandler(self, req):
+        return self.Microcontroller.warehouse( req.command ) == self.SUCCESS
+
+    def approachHandler(self, req):
+        return self.Microcontroller.approach( req.command ) == self.SUCCESS
+
     def resetOdomCallback(self, req):
         if req.data:
             self.Microcontroller.reset_odometry()
-    
-    def warehouseCallback(self, req):
-        self.warehouse = req.data
 
+    def resetJetsonPortHandler(self, req):
+        return self.Microcontroller.reset_jetson_port() == self.SUCCESS
 
 class MicroControllerROS():
     def __init__(self):
@@ -604,7 +699,7 @@ class MicroControllerROS():
         # Cleanup when termniating the node
         rospy.on_shutdown(self.shutdown)
         
-        self.port = rospy.get_param("~port", default="/dev/ttyACM0")
+        self.port = rospy.get_param("~port", default="/dev/teensy")
         self.baud = int(rospy.get_param("~baud", 115200))
         self.timeout = rospy.get_param("~timeout", 0.5)
         self.base_frame = rospy.get_param("~base_frame", 'base_link')
@@ -653,7 +748,7 @@ class MicroControllerROS():
 
 def testController():
     # Initialize the controlller
-    port = "/dev/ttyACM0"
+    port = "/dev/teensy"
     baud = 115200 
     timeout = 0.1
     controller = Microcontroller(port, baud, timeout)
