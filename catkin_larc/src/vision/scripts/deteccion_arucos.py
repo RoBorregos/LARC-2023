@@ -9,6 +9,8 @@ from cv_bridge import CvBridge, CvBridgeError
 from vision.msg import objectDetection, objectDetectionArray
 import pathlib
 from geometry_msgs.msg import Point, PoseArray, Pose
+from PIL import Image as PILImage
+from PIL import ImageEnhance
 
 # import sys
 # sys.setrecursionlimit(10**6)
@@ -16,6 +18,11 @@ from geometry_msgs.msg import Point, PoseArray, Pose
 import sys
 sys.path.append(str(pathlib.Path(__file__).parent) + '/../include')
 from vision_utils import *
+
+IMAGE_SUB = '/zedImageFiltered'
+#IMAGE_SUB = '/zed2/zed_node/rgb/image_rect_color'
+
+FILTER=True
 
 class DetectorAruco:
     def __init__(self):
@@ -27,7 +34,7 @@ class DetectorAruco:
         self.pubData = rospy.Publisher('/vision/aruco_detect', objectDetectionArray, queue_size=5)
         self.pubmarker = rospy.Publisher('markers', Int32, queue_size=10)
         self.posePublisher = rospy.Publisher("vision/arucos/detectionposes", PoseArray, queue_size=5)
-        self.sub = rospy.Subscriber('/zed2/zed_node/rgb/image_rect_color', Image, self.callback)
+        self.sub = rospy.Subscriber(IMAGE_SUB, Image, self.callback)
         self.subscriberDepth = rospy.Subscriber("/zed2/zed_node/depth/depth_registered", Image, self.depthImageRosCallback)
         self.subscriberInfo = rospy.Subscriber("/zed2/zed_node/depth/camera_info", CameraInfo, self.infoImageRosCallback)
        # self.pcsubs = rospy.Subscriber("/object", Image, self.pc_callback)
@@ -70,6 +77,11 @@ class DetectorAruco:
 
     def detectar_arucos(self):
         frame = self.cv_image
+        if FILTER:
+            frame = PILImage.fromarray(frame)
+            frame = ImageEnhance.Brightness(frame).enhance(2.5)
+            frame = ImageEnhance.Contrast(frame).enhance(1.6)
+            frame = np.array(frame)
         dictionary = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_50)
         parameters = cv2.aruco.DetectorParameters_create()
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -107,7 +119,7 @@ class DetectorAruco:
                     #corners Es la bounding box del aruco
             self.get_objects(bb, detections)
 
-
+        
         self.pub.publish(self.bridge.cv2_to_imgmsg(self.cv_image, encoding="bgr8"))
 
 

@@ -13,10 +13,16 @@ from cv_bridge import CvBridge, CvBridgeError
 from vision.msg import objectDetection, objectDetectionArray
 import pathlib
 from geometry_msgs.msg import Point, PoseArray, Pose
+from PIL import Image as PILImage
+from PIL import ImageEnhance
+
 
 import sys
 sys.path.append(str(pathlib.Path(__file__).parent) + '/../include')
 from vision_utils import *
+
+IMAGE_SUB = '/zedImageFiltered'
+IMAGE_SUB = '/zed2/zed_node/rgb/image_rect_color'
 
 class letras_yolov8:
         def __init__(self):
@@ -24,7 +30,8 @@ class letras_yolov8:
             self.cx = 0.0
             self.cy = 0.0
 
-            self.model = ultralytics.YOLO("/home/nvidia/Desktop/LARC-2023/catkin_larc/src/vision/scripts/larc5000n3.pt")
+            self.model = ultralytics.YOLO("/home/nvidia/workspace/LARC-2023/catkin_larc/src/vision/scripts/letras_colores_v3.pt")
+            #self.model = ultralytics.YOLO("/home/nvidia/Desktop/LARC-2023/catkin_larc/src/vision/scripts/larc5000n3.pt")
             self.bridge = CvBridge()
             
             self.cv_image = np.array([])
@@ -37,7 +44,7 @@ class letras_yolov8:
             self.pubimg = rospy.Publisher('vision/letras/image', Image, queue_size=10)
             self.posePublisher = rospy.Publisher("vision/letras/detectionposes", PoseArray, queue_size=5)
 
-            self.sub = rospy.Subscriber('/zed2/zed_node/rgb/image_rect_color', Image, self.callback)
+            self.sub = rospy.Subscriber(IMAGE_SUB, Image, self.callback)
             self.subscriberDepth = rospy.Subscriber("/zed2/zed_node/depth/depth_registered", Image, self.depthImageRosCallback)
             self.subscriberInfo = rospy.Subscriber("/zed2/zed_node/rgb/camera_info", CameraInfo, self.infoImageRosCallback)
             self.flagsubs = rospy.Subscriber("flag", Bool, self.callback_flag)
@@ -65,15 +72,21 @@ class letras_yolov8:
             self.cv_image = self.bridge.imgmsg_to_cv2(data,desired_encoding="bgr8")
             if self.flag:
                 self.lector()
-                self.pubimg.publish(self.bridge.cv2_to_imgmsg(self.cv_image, encoding="bgr8"))
+                #self.pubimg.publish(self.bridge.cv2_to_imgmsg(self.cv_image, encoding="bgr8"))
         
         def callback_flag(self, data):
             self.flag = data.data
             #rospy.loginfo(flag)
         
         def lector(self):
-            
             frame = self.cv_image
+            """frame = self.cv_image.copy()
+            frame = PILImage.fromarray(frame)
+            frame = ImageEnhance.Brightness(frame).enhance(1.2)
+            frame = ImageEnhance.Contrast(frame).enhance(0.5)
+            frame = ImageEnhance. Color(frame).enhance(0.1)
+            frame = np.array(frame)
+            self.cv_image = frame"""
             #model = torch.hub.load("ultralytics/yolov5", "yolov5s")  # or yolov5n - yolov5x6, custom
             
             #prevtime = time.time()
@@ -83,13 +96,15 @@ class letras_yolov8:
             #prevtime = time.time()
             try:
                 results = self.model(frame, verbose=False)
-                boxes, confidences, classids = self.generate_boxes_confidences_classids_v8(results, 0.65)
+                boxes, confidences, classids = self.generate_boxes_confidences_classids_v8(results, 0.2)
                 #print(f"Prediction done in {time.time() - prevtime} seconds")
                 # Draw results
                 bb = []
                 detections = []
                 for i in range(len(boxes)):
                     x, y, w, h = boxes[i]
+                    if (self.model.model.names[classids[i]] in ["amarillo", "azul", "verde", "rojo"]):
+                        continue
                     cv2.rectangle(frame, (x, y), (x+w, y+h), (255, 0, 0), 2)
                     cv2.putText(frame, str(confidences[i]), (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
                     class_name = self.model.model.names[classids[i]]

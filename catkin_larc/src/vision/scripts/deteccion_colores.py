@@ -3,7 +3,7 @@ import rospy
 import cv2
 import numpy as np
 from sensor_msgs.msg import Image, CameraInfo
-from std_msgs.msg import String, Bool
+from std_msgs.msg import String, Bool, Int32
 from cv_bridge import CvBridge, CvBridgeError
 from vision.msg import objectDetection, objectDetectionArray
 from vision.srv import DetectColorPattern, DetectColorPatternResponse
@@ -14,6 +14,10 @@ import actionlib
 import sys
 sys.path.append(str(pathlib.Path(__file__).parent) + '/../include')
 from vision_utils import *
+
+IMAGE_SUB = '/zedImageFiltered'
+#IMAGE_SUB = '/zed2/zed_node/rgb/image_rect_color'
+
 
 class DetectorColores:
     def __init__(self):
@@ -37,10 +41,12 @@ class DetectorColores:
         self.posePublisher = rospy.Publisher("/test/detectionposes", PoseArray, queue_size=5)
         self.flagsubs = rospy.Subscriber("flag", Bool, self.callback_flag)
         self.flag = False
+        self.flag_selection = rospy.Subscriber("flag_selection", Int32, self.callback_flag_selection)
+        self.flag_selection = 0 # 0 = pattern, 1 = cubes
 
         #Suscriber topics changed for simulation
         
-        self.sub = rospy.Subscriber('/zed2/zed_node/rgb/image_rect_color', Image, self.callback)
+        self.sub = rospy.Subscriber(IMAGE_SUB, Image, self.callback)
         self.subscriberDepth = rospy.Subscriber("/zed2/zed_node/depth/depth_registered", Image, self.depthImageRosCallback)
         self.subscriberInfo = rospy.Subscriber("/zed2/zed_node/depth/camera_info", CameraInfo, self.infoImageRosCallback)
 
@@ -63,6 +69,10 @@ class DetectorColores:
     def callback_flag(self, data):
         self.flag = data.data
         rospy.loginfo(self.flag)
+    
+    def callback_flag_selection(self, data):
+        self.flag_selection = data.data
+        rospy.loginfo(self.flag_selection)
 
 
     def depthImageRosCallback(self, data):
@@ -81,6 +91,9 @@ class DetectorColores:
 
     def dibujar(self,mask,color):
         frame= self.image
+        kernel = np.ones((5,5), np.uint8)
+        mask = cv2.erode(mask, kernel, iterations=1)
+        mask = cv2.dilate(mask, kernel, iterations=3)
         contornos,_ = cv2.findContours(mask, cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
        
         temp = []
@@ -181,9 +194,13 @@ class DetectorColores:
                 if len(self.depth_image) != 0:
                     depth = get_depth(self.depth_image, point2D)
                     point3D_ = deproject_pixel_to_point(self.camera_info, point2D, depth)
-                    point3D.x = point3D_[0] - 0.05
                     point3D.y = point3D_[1]
                     point3D.z = point3D_[2]
+                    if point3D.z > 1.3:
+                        point3D.x = point3D_[0] 
+                    else:
+                        point3D.x = point3D_[0] - 0.05
+
                     pa.poses.append(Pose(position=point3D))
                     res.append(
                     objectDetection(
@@ -209,34 +226,73 @@ class DetectorColores:
 
     def color_detection(self):
         frame = self.image
+
+        lowerRed = np.array([0,162,150], np.uint8)
+        upperRed = np.array([4,255,255], np.uint8)
+        lowerRed2 = np.array([160,162,150], np.uint8)
+        upperRed2 = np.array([179,255,255], np.uint8)
         
-        lowerRed = np.array([0,128,71], np.uint8)
+        lowerBlue = np.array([105,250,200], np.uint8)
+        upperBlue = np.array([121,255,255], np.uint8)
+        
+        lowerYellow = np.array([26,171,168], np.uint8)
+        upperYellow = np.array([34,255,255], np.uint8)
+        
+        lowerGreen = np.array([79,150,15], np.uint8)
+        upperGreen = np.array([101,255,255], np.uint8)
+
+        if self.flag_selection == 1:
+            lowerRed = np.array([0,143,110], np.uint8)
+            upperRed = np.array([1,237,255], np.uint8)
+            lowerRed2 = np.array([166,143,110], np.uint8)
+            upperRed2 = np.array([179,237,255], np.uint8)
+
+            lowerBlue = np.array([123,164,100], np.uint8)
+            upperBlue = np.array([135,255,192], np.uint8)
+
+            """lowerGreen = np.array([81,108,72], np.uint8)
+            upperGreen = np.array([104,185,88], np.uint8)"""
+
+            lowerGreen = np.array([81,79,61], np.uint8)
+            upperGreen = np.array([131,188,91], np.uint8)
+
+            lowerYellow = np.array([13,170,113], np.uint8)
+            upperYellow = np.array([34,255,255], np.uint8)           
+
+        
+        """lowerRed = np.array([0,128,71], np.uint8)
         upperRed = np.array([12,255,224], np.uint8)
         lowerRed2 = np.array([174,128,71], np.uint8)
-        upperRed2 = np.array([179,255,224], np.uint8)
+        upperRed2 = np.array([179,255,224], np.uint8)"""
+        
 
-        lowerBlue = np.array([109,99,49], np.uint8)
+
+        """lowerBlue = np.array([109,99,49], np.uint8)
         upperBlue = np.array([126,255,163], np.uint8)
 
-        lowerGreen = np.array([51,90,29], np.uint8)
-        upperGreen = np.array([72,255,168], np.uint8)
+        lowerGreen2 = np.array([51,90,29], np.uint8)
+        upperGreen2 = np.array([72,255,168], np.uint8)
+
         lowerGreen2 = np.array([71,30,26], np.uint8)
         upperGreen2 = np.array([107,191,66], np.uint8)
 
         lowerYellow = np.array([21,163,82], np.uint8)
-        upperYellow = np.array([30,255,255], np.uint8)
+        upperYellow = np.array([30,255,255], np.uint8)"""
+
+        
 
         font = cv2.FONT_HERSHEY_SIMPLEX
 
         frameHSV = cv2.cvtColor(frame,cv2.COLOR_BGR2HSV)
         maskAzul = cv2.inRange(frameHSV, lowerBlue, upperBlue)
         maskVerde1 = cv2.inRange(frameHSV, lowerGreen, upperGreen)
-        maskVerde2 = cv2.inRange(frameHSV, lowerGreen2, upperGreen2)
+        #maskVerde2 = cv2.inRange(frameHSV, lowerGreen2, upperGreen2)
         maskamarillo = cv2.inRange(frameHSV, lowerYellow, upperYellow)
         maskRed1 = cv2.inRange(frameHSV, lowerRed, upperRed)
         maskRed2 = cv2.inRange(frameHSV, lowerRed2, upperRed2)
         maskred = cv2.add(maskRed1,maskRed2)
-        maskverde = cv2.add(maskVerde1,maskVerde2)
+        #maskverde = cv2.add(maskVerde1,maskVerde2)
+        maskverde = maskVerde1
         self.dibujar(maskAzul,(255,0,0))
         self.dibujar(maskamarillo,(0,255,255))
         self.dibujar(maskverde,(0,255,0))
@@ -272,7 +328,7 @@ class DetectorColores:
         }
     
         for i in range(sz):
-            if abs(data.detections[i].ymin - y_min_first) >= 50 or abs(data.detections[i].xmin - x_last_max) >= 130:
+            if abs(data.detections[i].ymin - y_min_first) >= 50 or abs(data.detections[i].xmin - x_last_max) >= 200:
                 continue
             color_seq += color2Letter[ data.detections[i].labelText ]
 
@@ -308,9 +364,9 @@ class DetectorColores:
                 xTile = 1
 
             y_point = data.detections[point_x_min_id].point3D.z
-            if y_point < 0.52:
+            if y_point < 0.47: #0.52
                 yTile = 1
-            elif y_point < 0.78:
+            elif y_point < 0.71:
                 yTile = 2
             elif y_point < 0.96:
                 yTile = 3
