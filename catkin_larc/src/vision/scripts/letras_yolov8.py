@@ -21,10 +21,10 @@ from vision_utils import *
 class letras_yolov8:
         def __init__(self):
             #self.model = ultralytics.YOLO("/home/nvidia/Desktop/LARC-2023/catkin_larc/src/vision/scripts/yolov8n.pt")
+            self.model = ultralytics.YOLO("/home/nvidia/Desktop/LARC-2023/catkin_larc/src/vision/scripts/letras_colores_v2.pt")
             self.cx = 0.0
             self.cy = 0.0
 
-            self.model = ultralytics.YOLO("/home/nvidia/Desktop/LARC-2023/catkin_larc/src/vision/scripts/larc5000n3.pt")
             self.bridge = CvBridge()
             
             self.cv_image = np.array([])
