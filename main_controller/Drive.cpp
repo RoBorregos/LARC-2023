@@ -6,8 +6,19 @@ void Drive::init(BNO *bno, LineSensor *lineSensor){
     frontRight.init(Constants::kFrontRightA, Constants::kFrontRightB, Constants::kFrontRightEncoder);
     backLeft.init(Constants::kBackLeftA, Constants::kBackLeftB, Constants::kBackLeftEncoder);
     backRight.init(Constants::kBackRightA, Constants::kBackRightB, Constants::kBackRightEncoder);
+    pinMode(Constants::kLimitSwitch, INPUT);
     this->bno = bno;
     this->lineSensor = lineSensor;
+    bno->init();
+    robot_angle = bno->getOrientation().x;
+    line_move = false;
+}
+
+void Drive::restart(){
+    frontLeft.init(Constants::kFrontLeftA, Constants::kFrontLeftB, Constants::kFrontLeftEncoder);
+    frontRight.init(Constants::kFrontRightA, Constants::kFrontRightB, Constants::kFrontRightEncoder);
+    backLeft.init(Constants::kBackLeftA, Constants::kBackLeftB, Constants::kBackLeftEncoder);
+    backRight.init(Constants::kBackRightA, Constants::kBackRightB, Constants::kBackRightEncoder);
     bno->init();
     robot_angle = bno->getOrientation().x;
     line_move = false;
@@ -51,20 +62,80 @@ void Drive::setSpeed(float linearX, float linearY, float angularZ, unsigned long
     speed_last_time = current_time;
 }
 
+float Drive::getAngleX(){
+    return curr_angle_x;
+}
+
 // setSpeed with a time counter and BNO feedback
 void Drive::setSpeedOriented(float linearX, float linearY, float angularZ, unsigned long current_time){
 
-    if( current_time - speed_last_time < pid_time)
+    if( (current_time - speed_last_time < pid_time))
         return;
+        
+    /*if (digitalRead(intake_presence) && !shelf_approach){
+        linearY = 0;   
+        linearX = 0.125;
+    }*/
+    if ((digitalRead(intake_presence) && current_time - presence_detection_time > Constants::kIntakePushTime) && !shelf_approach){
+        hardStop();
+        linearX = 0;
+        linearY = 0;
+        angularZ = 0;
+        flag = false;
+    }
+    if (shelf_approach){
+        linearX = 0.2;
+        linearY = 0;
+        angularZ = 0;
+        // read line sensors and stop if back line is detected
+        // back sensors are 5, 6, 7 and 8. Have to detect one of 5 or 6, and one from 7 or 8
+        if (digitalRead(Constants::kLimitSwitch)){
+            hardStop();
+            linearX = 0;
+            linearY = 0;
+            angularZ = 0;
+            shelf_approach = false;
+        }
+        if (lineSensor->lineDetected(5) || lineSensor->lineDetected(6)){
+            if (lineSensor->lineDetected(7) || lineSensor->lineDetected(8)){
+                hardStop();
+                linearX = 0;
+                linearY = 0;
+                angularZ = 0;
+                shelf_approach = false;
+            }
+        }
+    }
 
+    // set speeds to 0 if they are less than treshold
+    if(abs(linearX) < kMinSpeed)
+        linearX = 0;
+    if(abs(linearY) < kMinSpeed)
+        linearY = 0;
+    if(abs(angularZ) < kMinSpeed)
+        angularZ = 0;
+    
+    // to help continuous loops (beyond 180) and stability around 0
+    float current_angle;
+    if (robot_angle < 150){
+        current_angle = bno->getOrientation().x;
+    }
+    else{
+        current_angle = bno->getOrientation0to360().x;
+    }
+    this->curr_angle_x = current_angle;
+    /*if (current_angle > 180 || current_angle < -180){
+        frontLeft.setSpeed(frontLeftSpeed, current_time);
+        frontRight.setSpeed(frontRightSpeed, current_time);
+        backLeft.setSpeed(backLeftSpeed, current_time);
+        backRight.setSpeed(backRightSpeed, current_time);
+    }*/
     // if an angular speed is set, update the angle
     if(angularZ != 0){
-        robot_angle = bno->getOrientation().x;
+        robot_angle = curr_angle_x;
     }
-    
     // get angular speed to compensate angle error, using PID
     else {
-        float current_angle = bno->getOrientation().x;
         // if difference is higher than a threshold, correct with angular speed
         float angle_difference = current_angle - robot_angle;
         if(abs(angle_difference) > Constants::kAngleTolerance){
@@ -92,7 +163,7 @@ void Drive::setSpeedOriented(float linearX, float linearY, float angularZ, unsig
 }
 
 void Drive::setAngle(float angle){
-    if(angle == 500){
+    /*if(angle == 500){
         this->angle = setpoint;
         return;
     }
@@ -100,7 +171,12 @@ void Drive::setAngle(float angle){
     if(this->angle > 180)
         this->angle -= 360;
     else if(this->angle < -180)
-        this->angle += 360;
+        this->angle += 360;*/
+    robot_angle = angle;
+}
+
+void Drive::setApproachShelf(bool approach){
+    shelf_approach = approach;
 }
 
 void Drive::setGlobalSetpoint(){
@@ -120,6 +196,7 @@ void Drive::hardStop(){
     frontRight.hardStop();
     backLeft.hardStop();
     backRight.hardStop();
+    hard_stop_current = hard_stop_time;
 }
 
 void Drive::encoderInterrupt(MotorID motorID){
@@ -200,6 +277,12 @@ void Drive::resetOdometry(){
 void Drive::periodicIO(unsigned long current_time){
     if( current_time - last_time < loop_time)
         return;
+
+    bool presence = digitalRead(Constants::kIntakePresence);
+    if( presence && !flag ){
+        presence_detection_time = current_time;
+        flag = true;
+    }
 
     frontLeft.periodicIO(current_time);
     frontRight.periodicIO(current_time);

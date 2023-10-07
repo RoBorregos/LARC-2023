@@ -26,7 +26,8 @@
             ],
             "intelliSenseMode": "gcc-x64",
             "includePath": [
-                "/tmp/arduino/sketch-818F06E4AEE8715666842BA53CAD9B6F/pch",
+
+                "/tmp/arduino/sketch-770AAFB3FEB0948053A47FA81FADBCF8/pch",
                 "/home/nvidia/.arduino15/packages/teensy/hardware/avr/1.58.0/cores/teensy4",
                 "/home/nvidia/.arduino15/packages/teensy/hardware/avr/1.58.0/libraries/Wire",
                 "/home/nvidia/Arduino/libraries/Adafruit_VL53L0X/src",
@@ -43,7 +44,7 @@
                 "/home/nvidia/.arduino15/packages/teensy/tools/teensy-compile/11.3.1/arm/arm-none-eabi/include"
             ],
             "forcedInclude": [
-                "/tmp/arduino/sketch-818F06E4AEE8715666842BA53CAD9B6F/pch/Arduino.h"
+                "/tmp/arduino/sketch-770AAFB3FEB0948053A47FA81FADBCF8/pch/Arduino.h"
             ],
             "cStandard": "c11",
             "cppStandard": "c++14",
@@ -51,7 +52,7 @@
                 "__IMXRT1062__",
                 "TEENSYDUINO=158",
                 "ARDUINO=10607",
-                "ARDUINO_TEENSY40",
+                "ARDUINO_TEENSY41",
                 "F_CPU=600000000",
                 "USB_SERIAL",
                 "LAYOUT_US_ENGLISH",

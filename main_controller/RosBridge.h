@@ -7,6 +7,7 @@
 #include "Elevator.h"
 #include "Warehouse.h"
 #include "LineSensor.h"
+#include "VLX.h"
 
 class RosBridge{
     private:
@@ -15,10 +16,12 @@ class RosBridge{
         Elevator *_elevator;
         Warehouse *_warehouse;
         LineSensor *_lineSensor;
+        VLX *_vlxs;
 
         //////////////////////////////////Velocity Suscriber//////////////////////////////////////
         // Receives velocity commands.
         void velocityCallback(float linearx, float lineary, float angularz);
+        void driveAngleCallback(float angle);
 
         // Receives imu angle
         void imuCallback(float angle);
@@ -29,9 +32,13 @@ class RosBridge{
 
         void warehouseCallback(int level);
 
+        void approachShelfCallback(int command);
+
         ////////////////////////////////Odometry Publisher///////////////////
         void getOdometry();
 
+        void resetRobot();
+        
         //Serial
         void readSerial();
         static constexpr uint16_t kWatchdogPeriod = 350;
@@ -49,7 +56,7 @@ class RosBridge{
         unsigned long warehouse_motor_timer_ = 0;
 
         unsigned long current_time_ = 0;
-
+        unsigned long unactive_time_ = 0;
         // CMD Velocity.
         float linearX_ = 0;
         float linearY_ = 0;
@@ -59,7 +66,7 @@ class RosBridge{
         void executeCommand(uint8_t packet_size, uint8_t command, uint8_t* buffer);
         void writeSerial(bool success, uint8_t* payload, int elements);
     public:
-        void init(Drive *drive, Intake *intake, Elevator *elevator, Warehouse *warehouse, LineSensor *lineSensor);
+        void init(Drive *drive, Intake *intake, Elevator *elevator, Warehouse *warehouse, LineSensor *lineSensor, VLX *vlxs);
         void spin(unsigned long current_time);
 };
 

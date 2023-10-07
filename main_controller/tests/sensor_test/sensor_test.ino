@@ -4,6 +4,14 @@
 #define EN3 18
 #define EN4 2
 
+int treshold = 300;
+
+bool PRINT_VALUE = false;
+bool PRINT_RESULT = false;
+bool LIMIT_SWITCH = true;
+
+int limitSwitch = 26;
+
 volatile long en1_count = 0;
 volatile long en2_count = 0;
 volatile long en3_count = 0;
@@ -31,21 +39,21 @@ void encoder4() {
 }
 
 //multiplexor tests
-#define S0 A11
-#define S1 A12
-#define S2 A13
-#define S3 A14
-#define SIG A15
+#define S0 14
+#define S1 41
+#define S2 40
+#define S3 39
+#define SIG 38
 
-int last_value[16] = {0};
-
+int averages[16] = {0};
 void setup() {
     // put your setup code here, to run once:
     pinMode(EN1, INPUT_PULLUP);
     pinMode(EN2, INPUT_PULLUP);
     pinMode(EN3, INPUT_PULLUP);
     pinMode(EN4, INPUT_PULLUP);
-    Serial.begin(9600);
+    pinMode(limitSwitch, INPUT);
+    Serial.begin(115200);
 
     //attach interrupt to encoder pins
     attachInterrupt(digitalPinToInterrupt(EN1), encoder1, CHANGE);
@@ -59,8 +67,31 @@ void setup() {
     pinMode(S2, OUTPUT);
     pinMode(S3, OUTPUT);
     pinMode(SIG, INPUT);
+
+    // obtain an average of 100 readings from each sensor
+    delay(2000);
+    long sums[16] = {0};
+
+    for (int i = 0; i < 100; i++) {
+        for (int j = 0; j < 16; j++) {
+            digitalWrite(S0, j & 1);
+            digitalWrite(S1, j & 2);
+            digitalWrite(S2, j & 4);
+            digitalWrite(S3, j & 8);
+            sums[j] += analogRead(SIG);
+        }
+    }
+
+    // print the average values
+    Serial.println("AVERAGE VALUES");
+    for (int i = 0; i < 16; i++) {
+        averages[i] = sums[i] / 100;
+        Serial.print(sums[i] / 100);
+        Serial.print(" ");
+    }
+    Serial.println();
+    delay(2000);
     
-       
 }
 
 void loop() {
@@ -86,22 +117,43 @@ void loop() {
 
     //multiplexor test
     ///*
-    Serial.print("Li//");
-    for (int i = 0; i < 16; i++) {
-        digitalWrite(S0, i & 1);
-        digitalWrite(S1, i & 2);
-        digitalWrite(S2, i & 4);
-        digitalWrite(S3, i & 8);
-        //Serial.print(" ");
-        //Serial.print(analogRead(SIG));
-        if( analogRead(SIG) > 800){
-            Serial.print(i);
+    if (PRINT_VALUE){
+        Serial.print("Li//");
+        for (int i = 0; i < 16; i++) {
+            digitalWrite(S0, i & 1);
+            digitalWrite(S1, i & 2);
+            digitalWrite(S2, i & 4);
+            digitalWrite(S3, i & 8);
             Serial.print(" ");
+            Serial.print(analogRead(SIG));
+            /*if( analogRead(SIG) > 800){
+                Serial.print(i);
+                Serial.print(" ");
+            }*/
         }
-        last_value[i] = analogRead(SIG);
+        Serial.println();
+        //*/
     }
-    Serial.println();
-    //*/
+    else if (PRINT_RESULT) {
+        Serial.print("Li//");
+        for (int i = 0; i < 16; i++) {
+            digitalWrite(S0, i & 1);
+            digitalWrite(S1, i & 2);
+            digitalWrite(S2, i & 4);
+            digitalWrite(S3, i & 8);
+            Serial.print(" ");
+            bool result = analogRead(SIG) > averages[i] + treshold;
+            Serial.print(result);
+            /*if( analogRead(SIG) > 800){
+                Serial.print(i);
+                Serial.print(" ");
+            }*/
+        }
+        Serial.println(); 
+    }
+    else if (LIMIT_SWITCH){
+        Serial.println(digitalRead(limitSwitch));
+    }
 
-    delay(100);
+    delay(10);
 }

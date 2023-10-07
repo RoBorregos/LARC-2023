@@ -5,18 +5,18 @@
 #include "Constants.h"
 
 enum SensorID{
-    FrontLeft1 = 8,
-    FrontLeft2 = 9,
-    FrontRight1 = 0,
-    FrontRight2 = 1,
-    RightFront1 = 4,
-    RightFront2 = 5,
+    FrontLeft1 = 0,
+    FrontLeft2 = 1,
+    FrontRight1 = 2,
+    FrontRight2 = 3,
+    RightFront1 = 8,
+    RightFront2 = 9,
     RightBack1 = 10,
     RightBack2 = 11,
-    BackRight1 = 6,
-    BackRight2 = 7,
-    BackLeft1 = 2,
-    BackLeft2 = 3,
+    BackRight1 = 4,
+    BackRight2 = 5,
+    BackLeft1 = 6,
+    BackLeft2 = 7,
     LeftBack1 = 12,
     LeftBack2 = 13,
     LeftFront1 = 14,
@@ -25,10 +25,13 @@ enum SensorID{
 
 class LineSensor{
     private:
-
+    /* data */
+        int averages[16] = {0};
     public:
         LineSensor();
+        void calibrate();
         bool lineDetected(SensorID sensor);
+        bool lineDetected(int sensor);
         int getData();
 };
 
