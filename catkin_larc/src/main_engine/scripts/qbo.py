@@ -115,7 +115,7 @@ class MainEngine:
         rospy.Subscriber('/odom', Odometry, self.odomCb)
         self.flag_pub = rospy.Publisher('/flag', Bool, queue_size=10)
         self.flag_selection = rospy.Publisher('/flag_selection', Int32, queue_size=10)
-        self.rotate_pub = rospy.Publisher('/rotate', Float32, queue_size=10)
+        self.rotate_pub = rospy.Publisher('/rotate_angle', Float32, queue_size=10)
 
         #rospy.Subscriber('/odom', Odometry, self.odomCb)
         self.cmd_vel_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
@@ -404,12 +404,51 @@ class MainEngine:
                         y_lowest = self.detected_targets[i].ymax
                         point_x_min_id = i
 
-                if point_x_min_id != -1:
+                """if point_x_min_id != -1:
                     self.selected_target = self.detected_targets[point_x_min_id]
                     rospy.loginfo("Target Selected")
                     print(f"Going to {self.selected_target.labelText}")
                     self.search_tries = 0
                     self.state = DRIVE_TO_TARGET
+                    return"""
+                if point_x_min_id != -1:
+                    self.selected_target = self.detected_targets[point_x_min_id]
+                    print(f"Detected {self.selected_target.labelText}")
+
+                    start_time_d = self.current_time
+                    detections_total = 0
+                    detections_success = 0
+
+                    while( rospy.get_time() - start_time_d ) < 1.5:
+                        detections_total += 1
+
+                        point_x_min_id = -1
+                        y_lowest = -70
+                        y_lowest_id = 0
+                        right_half_cube = False
+                        for i in range(3):
+                            if self.detected_targets[i] == objectDetection():
+                                continue
+                        
+                            if self.detected_targets[i].point3D.x > 0:
+                                if self.detected_targets[i].ymax >= y_lowest:
+                                    y_lowest = self.detected_targets[i].ymax
+                                    point_x_min_id = i
+                                    right_half_cube = True # priority to right half cubes
+
+                            elif self.detected_targets[i].ymax >= y_lowest and not right_half_cube:
+                                y_lowest = self.detected_targets[i].ymax
+                                point_x_min_id = i
+
+                        if point_x_min_id != -1:
+                            if self.selected_target.labelText == self.detected_targets[point_x_min_id].labelText:
+                                detections_success += 1
+
+                    if detections_success/detections_total > 0.4:
+                        self.state = DRIVE_TO_TARGET
+                        rospy.loginfo("Target Selected")
+
+                    self.search_tries = 0
                     return
                 else:
                     rospy.logwarn("No target found")
@@ -599,11 +638,12 @@ class MainEngine:
             p_offset = - self.xkP * self.selected_target.point3D.x
             d_offset = - self.xkD * (self.selected_target.point3D.x - self.last_error_x)
             #print(f"P: {p_offset}, D: {d_offset}")
-            if self.selected_target.point3D.x != 0 and self.selected_target_seen:
+            if abs(self.selected_target.point3D.x) > self.tolerance and self.selected_target_seen:
                 msg.linear.y = - 0.13 * self.selected_target.point3D.x / abs(self.selected_target.point3D.x) + p_offset + d_offset
                 self.pick_drive_target_timeout_flag = False
 
-            if not self.selected_target_seen and not self.pick_drive_target_timeout_flag:
+
+            """if not self.selected_target_seen and not self.pick_drive_target_timeout_flag:
                 self.pick_drive_target_timeout = self.current_time
                 self.pick_drive_target_timeout_flag = True
 
@@ -613,7 +653,7 @@ class MainEngine:
                 self.state = PICK_CUBE_TARGET
                 self.selected_target = objectDetection()
                 self.target_success = [False, False, False]
-                self.detected_targets = [objectDetection(), objectDetection(), objectDetection()]
+                self.detected_targets = [objectDetection(), objectDetection(), objectDetection()]"""
 
             self.last_error_x = self.selected_target.point3D.x
             self.cmd_vel_pub.publish(msg)
@@ -648,11 +688,11 @@ class MainEngine:
 
         elif self.state == STORE_CUBE:
             self.mechanismCommandSvr('intake', 2)
-            rospy.sleep(1)
+            rospy.sleep(2)
             
 
             # feedback if it has been stored (in progress)
-            if self.intakePresenceData:
+            if not self.intakePresenceData:
                 rospy.loginfo("Cube stored")
                 if self.selected_target.category == str('color'):
                     self.color_stack.append(self.selected_target.labelText)
@@ -663,7 +703,7 @@ class MainEngine:
             else:
                 rospy.loginfo("Cube not stored")
                 self.mechanismCommandSvr('intake', 4) # drop cube
-                rospy.Rate(0.2).sleep()
+                rospy.Rate(1).sleep()
             
             # moving elevator a small step down to avoid cube blocking the intake
             self.mechanismCommandSvr('elevator', ELEVATOR_SMALLSTEPDOWN_COMMAND)

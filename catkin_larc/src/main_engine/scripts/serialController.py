@@ -137,6 +137,9 @@ class Microcontroller:
             print("Traceback follows:")
             traceback.print_exc(file=sys.stdout)
             print("Cannot connect to Microcontroller!")
+        
+        except:
+            rospy.logerr("Could not reconnect, trying again")
 
 
     def open(self): 
@@ -259,13 +262,16 @@ class Microcontroller:
     def get_baud(self):
         ''' Get the current baud rate on the serial port.
         '''
-        cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x01, 0x00) + struct.pack("B", 0x01)
-        if (self.execute(cmd_str))==1 and self.payload_ack == b'\x00':
-           val, = struct.unpack('I', self.payload_args)
-           return  self.SUCCESS, val 
-        else:
-           # print("ACK", self.payload_ack, self.payload_ack == b'\x00', self.execute(cmd_str)==1)
-           return self.FAIL, 0
+        try:
+            cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x01, 0x00) + struct.pack("B", 0x01)
+            if (self.execute(cmd_str))==1 and self.payload_ack == b'\x00':
+                val, = struct.unpack('I', self.payload_args)
+                return  self.SUCCESS, val 
+            else:
+                # print("ACK", self.payload_ack, self.payload_ack == b'\x00', self.execute(cmd_str)==1)
+                return self.FAIL, 0
+        except:
+            print("*_*")
 
     def get_odometry(self):
         cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x01, 0x02) + struct.pack("B", 0x03)
@@ -470,7 +476,7 @@ class BaseController:
         rospy.Service('approach', MechanismCommand, self.approachHandler)
         rospy.Service('warehouse', MechanismCommand, self.warehouseHandler)
         rospy.Subscriber("global_setpoint", Bool, self.globalSetpointCallback)
-        rospy.Subscriber("/rotate", Float32, self.rotateCallback)
+        rospy.Subscriber("/rotate_angle", Float32, self.rotateCallback)
         self.intake_presence_pub = rospy.Publisher("/intake_presence", Bool, queue_size=5)
         self.line_sensor_pub = rospy.Publisher("line_sensors", lineSensor, queue_size=5)
 
@@ -548,6 +554,8 @@ class BaseController:
                     rospy.logerr("get intake presence failed ")
                 if char_presence == b'1':
                     self.intake_presence_pub.publish(True)
+                else:
+                    self.intake_presence_pub.publish(False)
             except:
                 rospy.logerr("get intake presence exception ")
                 self.Microcontroller.reconnect()
@@ -634,14 +642,18 @@ class BaseController:
             self.line_sensor_pub.publish(line_data)
             """
             
-            # Set motor speeds in encoder ticks per PID loop
-            if( self.desired_angle != 500):
-                self.Microcontroller.rotate(self.desired_angle)
-                self.desired_angle = 500
-            
-            if ((not self.stopped)):
-                self.Microcontroller.drive(self.v_x, self.v_y, self.v_th)
-                #self.Microcontroller.imu_angle(self.angle)
+            try:
+                # Set motor speeds in encoder ticks per PID loop
+                if( self.desired_angle != 500):
+                    self.Microcontroller.rotate(self.desired_angle)
+                    self.desired_angle = 500
+                
+                if ((not self.stopped)):
+                    self.Microcontroller.drive(self.v_x, self.v_y, self.v_th)
+                    #self.Microcontroller.imu_angle(self.angle)
+            except:
+                rospy.logerr("Drive exception ")
+                self.Microcontroller.reconnect()
                 
                 
             self.t_next = now + self.t_delta

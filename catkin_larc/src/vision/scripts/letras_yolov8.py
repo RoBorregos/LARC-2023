@@ -30,6 +30,7 @@ class letras_yolov8:
             self.cx = 0.0
             self.cy = 0.0
 
+            #self.model = ultralytics.YOLO("/home/nvidia/workspace/LARC-2023/catkin_larc/src/vision/scripts/brazil_v1.pt")
             self.model = ultralytics.YOLO("/home/nvidia/workspace/LARC-2023/catkin_larc/src/vision/scripts/letras_colores_v3.pt")
             #self.model = ultralytics.YOLO("/home/nvidia/Desktop/LARC-2023/catkin_larc/src/vision/scripts/larc5000n3.pt")
             self.bridge = CvBridge()
