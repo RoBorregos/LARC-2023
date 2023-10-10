@@ -65,13 +65,13 @@ class MainEngine:
     def __init__(self):
         rospy.loginfo("MainEngine init")
         self.current_time = rospy.Time.now()
-        self.state = FIND_INIT_POS
+        self.state = RESET_ELEVATOR
         self.pick_result = PARTIAL_PICK_FINISH
         self.target_success = [False, False, False]
         self.detected_targets= [objectDetection(), objectDetection(), objectDetection()]
         self.selected_target = objectDetection()
         self.dis_to_intake = 0.10
-        self.tolerance = 0.04
+        self.tolerance = 0.03
         self.align_tolerance = 0.05
         self.xkP = 0.17
         self.xkD = 2.0
@@ -141,19 +141,14 @@ class MainEngine:
                 return
             category_id = self.categoryDict[ data.detections[0].category ]
             point_x_min_id = 0
-            y_lowest = data.detections[0].ymax
+            y_lowest = (data.detections[0].ymin + data.detections[0].ymax) / 2
             y_lowest_id = 0
             right_half_cube = False
             for i in range(sz):
                 # break camera frame in 3, go for the lowest cube with priority the rightmost
-                if data.detections[i].point3D.x < 0:
-                    if data.detections[i].ymax >= y_lowest:
-                        y_lowest = data.detections[i].ymax
-                        point_x_min_id = i
-                        right_half_cube = True # priority to right half cubes
-
-                elif data.detections[i].ymax >= y_lowest and not right_half_cube:
-                    y_lowest = data.detections[i].ymax
+                c_y = (data.detections[i].ymin + data.detections[i].ymax) / 2
+                if c_y >= y_lowest:
+                    y_lowest = c_y
                     point_x_min_id = i
                 
                 """if data.detections[i].ymax - y_lowest >= 50:
@@ -222,6 +217,7 @@ class MainEngine:
         self.current_time = rospy.get_time()
         
         if self.state == FIND_INIT_POS:
+            self.mechanismCommandSvr('hard_stop', 1)
             self.flag_pub.publish(True)
             self.flag_selection.publish(0)
             print( self.current_angle )
@@ -369,6 +365,9 @@ class MainEngine:
 
 
         elif self.state == RESET_ELEVATOR:
+            self.mechanismCommandSvr('hard_stop', 1)
+            rospy.sleep(1)
+
             rospy.loginfo("Resetting elevator")
             rospy.loginfo(f"Color stack: {self.color_stack}")
             rospy.loginfo(f"Aruco stack: {self.aruco_stack}")
@@ -388,20 +387,14 @@ class MainEngine:
                 
                 point_x_min_id = -1
                 y_lowest = -70
-                y_lowest_id = 0
-                right_half_cube = False
                 for i in range(3):
                     if self.detected_targets[i] == objectDetection():
                         continue
-                
-                    if self.detected_targets[i].point3D.x < 0:
-                        if self.detected_targets[i].ymax >= y_lowest:
-                            y_lowest = self.detected_targets[i].ymax
-                            point_x_min_id = i
-                            right_half_cube = True # priority to right half cubes
+                    
+                    c_y = (self.detected_targets[i].ymin + self.detected_targets[i].ymax) / 2
 
-                    elif self.detected_targets[i].ymax >= y_lowest and not right_half_cube:
-                        y_lowest = self.detected_targets[i].ymax
+                    if c_y>= y_lowest:
+                        y_lowest = c_y
                         point_x_min_id = i
 
                 """if point_x_min_id != -1:
@@ -424,20 +417,13 @@ class MainEngine:
 
                         point_x_min_id = -1
                         y_lowest = -70
-                        y_lowest_id = 0
-                        right_half_cube = False
                         for i in range(3):
                             if self.detected_targets[i] == objectDetection():
                                 continue
                         
-                            if self.detected_targets[i].point3D.x > 0:
-                                if self.detected_targets[i].ymax >= y_lowest:
-                                    y_lowest = self.detected_targets[i].ymax
-                                    point_x_min_id = i
-                                    right_half_cube = True # priority to right half cubes
-
-                            elif self.detected_targets[i].ymax >= y_lowest and not right_half_cube:
-                                y_lowest = self.detected_targets[i].ymax
+                            c_y = (self.detected_targets[i].ymin + self.detected_targets[i].ymax) / 2
+                            if c_y>= y_lowest:
+                                y_lowest = c_y
                                 point_x_min_id = i
 
                         if point_x_min_id != -1:
@@ -597,15 +583,42 @@ class MainEngine:
 
         elif self.state == X_TARGET:
             msg = Twist()
+            current_odom_y = self.nav_odom.pose.pose.position.y
+            target_odom_y = current_odom_y - self.selected_target.point3D.x
+            sign = 1
+            print(f"Current odom x: {current_odom_y}")
+            print(f"Max odom x: {target_odom_y}")
+            
+            # While no cube is detected and the limit has not been reached, move back
+            while abs(current_odom_y - target_odom_y) > 0.015:
+                try:
+                    sign = (target_odom_y-current_odom_y) / abs(target_odom_y-current_odom_y)
+                except:
+                    sign = 1
+                msg = Twist()
+                msg.linear.y = 0.2 * sign
+                self.cmd_vel_pub.publish(msg)
+                current_odom_y = self.nav_odom.pose.pose.position.y
+
+            msg = Twist()
+            self.cmd_vel_pub.publish(msg) # stop
+            self.mechanismCommandSvr('hard_stop', 1)
+            rospy.sleep(1)
+
+            self.state = Y_TARGET
+            rospy.loginfo("X target reached")
+
+            """
             #print(self.selected_target.point3D.x)
             p_offset = - self.xkP * self.selected_target.point3D.x
             d_offset = - self.xkD * (self.selected_target.point3D.x - self.last_error_x)
             #print(f"P: {p_offset}, D: {d_offset}")
             if self.selected_target.point3D.x != 0 and self.selected_target_seen:
-                msg.linear.y = - 0.14 * self.selected_target.point3D.x / abs(self.selected_target.point3D.x) + p_offset + d_offset
+                msg.linear.y = - 0.17 * self.selected_target.point3D.x / abs(self.selected_target.point3D.x) + p_offset + d_offset
                 self.pick_drive_target_timeout_flag = False
 
             if not self.selected_target_seen and not self.pick_drive_target_timeout_flag:
+                self.mechanismCommandSvr('hard_stop', 1)
                 self.pick_drive_target_timeout = self.current_time
                 self.pick_drive_target_timeout_flag = True
 
@@ -624,7 +637,8 @@ class MainEngine:
                 rospy.loginfo("X target reached")
                 msg_z = Twist()
                 self.cmd_vel_pub.publish(msg_z)
-                rospy.Rate(1).sleep()
+                self.mechanismCommandSvr('hard_stop', 1)
+                rospy.Rate(1).sleep()"""
 
         elif self.state == Y_TARGET:
 
@@ -639,7 +653,7 @@ class MainEngine:
             d_offset = - self.xkD * (self.selected_target.point3D.x - self.last_error_x)
             #print(f"P: {p_offset}, D: {d_offset}")
             if abs(self.selected_target.point3D.x) > self.tolerance and self.selected_target_seen:
-                msg.linear.y = - 0.13 * self.selected_target.point3D.x / abs(self.selected_target.point3D.x) + p_offset + d_offset
+                msg.linear.y = - 0.17 * self.selected_target.point3D.x / abs(self.selected_target.point3D.x) + p_offset + d_offset
                 self.pick_drive_target_timeout_flag = False
 
 
@@ -785,7 +799,7 @@ class MainEngine:
             self.mechanismCommandSvr('approach', 0)
             msg = Twist()
             self.cmd_vel_pub.publish(msg) # stop
-            rospy.sleep(1)
+            rospy.sleep(3)
 
             self.state = FIND_UPLOAD_TILE 
 
@@ -823,7 +837,7 @@ class MainEngine:
             self.color_target_dis = 5000
             rospy.loginfo("Moving to y pick pos")
             current_odom_x = self.nav_odom.pose.pose.position.x
-            target_odom_x = current_odom_x + (self.y_tile-2) * 0.29
+            target_odom_x = current_odom_x + (self.y_tile-1) * 0.24
             print(f"Current odom y: {current_odom_x}")
             print(f"Max odom y: {target_odom_x}")
             
@@ -885,7 +899,29 @@ class MainEngine:
             while self.color_target_dis == 5000:
                 pass
             
-            tmp_tolerance = self.align_tolerance
+            current_odom_y = self.nav_odom.pose.pose.position.y
+            target_odom_y = current_odom_y - self.color_target_dis
+            sign = 1
+            print(f"Current odom x: {current_odom_y}")
+            print(f"Max odom x: {target_odom_y}")
+            
+            # While no cube is detected and the limit has not been reached, move back
+            while abs(current_odom_y - target_odom_y) > 0.02:
+                try:
+                    sign = (target_odom_y-current_odom_y) / abs(target_odom_y-current_odom_y)
+                except:
+                    sign = 1
+                msg = Twist()
+                msg.linear.y = 0.2 * sign
+                self.cmd_vel_pub.publish(msg)
+                current_odom_y = self.nav_odom.pose.pose.position.y
+
+            msg = Twist()
+            self.cmd_vel_pub.publish(msg) # stop
+            self.mechanismCommandSvr('hard_stop', 1)
+            rospy.sleep(1)
+
+            """tmp_tolerance = self.align_tolerance
             if self.color_target_to_align == "verde":
                 tmp_tolerance *= 3
 
@@ -895,10 +931,32 @@ class MainEngine:
                 self.cmd_vel_pub.publish(msg)
 
             msg = Twist()
-            self.cmd_vel_pub.publish(msg) # stop
+            self.cmd_vel_pub.publish(msg) # stop"""
             self.color_target_dis = 5000
-            rospy.sleep(1)
+            """self.mechanismCommandSvr('hard_stop', 1)
+            rospy.sleep(1)"""
             self.x_tile = color2tile[self.color_target_to_align]
+            
+            self.mechanismCommandSvr('approach', 1)
+            rospy.sleep(3)
+            self.mechanismCommandSvr('approach', 0)
+            msg = Twist()
+            self.cmd_vel_pub.publish(msg) # stop
+            rospy.sleep(2)
+            
+            print("pattern")
+            rospy.wait_for_service('/detect_color_pattern')
+            try:
+                client = rospy.ServiceProxy('/detect_color_pattern', DetectColorPattern)
+                resp = client()
+                if resp.tileX != 0 and resp.tileY != 0:
+                    self.y_tile = resp.tileY
+                    rospy.loginfo(f"Tile X: {self.x_tile}")
+                    rospy.loginfo(f"Tile Y: {self.y_tile}")
+                    self.state = PICK_UNLOAD_TARGET
+            except rospy.ServiceException as e:
+                print("Pattern call failed: %s"%e)
+                
             self.state = MOVE_Y_UPLOAD_TILE
         
         elif self.state == UNLOAD_CUBE:
@@ -1027,6 +1085,7 @@ class MainEngine:
 
             msg = Twist()
             self.cmd_vel_pub.publish(msg) # stop
+            self.mechanismCommandSvr('hard_stop', 1)
             self.color_target_dis = 5000
             rospy.sleep(1)
             self.x_tile = 2
@@ -1186,7 +1245,7 @@ class MainEngine:
 if __name__ == '__main__':
     rospy.init_node('mainEngine', anonymous=True)
     rospy.loginfo("mainEngine node started")
-    rate = rospy.Rate(10) # 10hz
+    rate = rospy.Rate(50) # 10hz
 
     """rospy.wait_for_service('/reset_teensy')
     try:

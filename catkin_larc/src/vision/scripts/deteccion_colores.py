@@ -196,10 +196,10 @@ class DetectorColores:
                     point3D_ = deproject_pixel_to_point(self.camera_info, point2D, depth)
                     point3D.y = point3D_[1]
                     point3D.z = point3D_[2]
-                    if point3D.z > 1.3:
+                    """if point3D.z > 1.3:
                         point3D.x = point3D_[0] 
-                    else:
-                        point3D.x = point3D_[0] - 0.05
+                    else:"""
+                    point3D.x = point3D_[0] - 0.05
 
                     pa.poses.append(Pose(position=point3D))
                     res.append(

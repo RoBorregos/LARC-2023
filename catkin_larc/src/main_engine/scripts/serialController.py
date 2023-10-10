@@ -272,6 +272,13 @@ class Microcontroller:
                 return self.FAIL, 0
         except:
             print("*_*")
+    
+    def hard_stop(self):
+        cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x01, 0x01) + struct.pack("B", 0x02)
+        if (self.execute(cmd_str))==1 and self.payload_ack == b'\x00':
+           return self.SUCCESS
+        else:
+           return self.FAIL
 
     def get_odometry(self):
         cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x01, 0x02) + struct.pack("B", 0x03)
@@ -413,7 +420,7 @@ class BaseController:
     def __init__(self, Microcontroller, base_frame):
         self.Microcontroller = Microcontroller
         self.base_frame = base_frame
-        self.rate = float(rospy.get_param("~base_controller_rate", 10))
+        self.rate = float(rospy.get_param("~base_controller_rate", 50))
         self.timeout = rospy.get_param("~base_controller_timeout", 1.0)
         self.stopped = False
         self.useImu = rospy.get_param("~useImu", True)
@@ -475,6 +482,7 @@ class BaseController:
         rospy.Service('elevator', MechanismCommand, self.elevatorHandler)
         rospy.Service('approach', MechanismCommand, self.approachHandler)
         rospy.Service('warehouse', MechanismCommand, self.warehouseHandler)
+        rospy.Service('hard_stop', MechanismCommand, self.hardStopHandler)
         rospy.Subscriber("global_setpoint", Bool, self.globalSetpointCallback)
         rospy.Subscriber("/rotate_angle", Float32, self.rotateCallback)
         self.intake_presence_pub = rospy.Publisher("/intake_presence", Bool, queue_size=5)
@@ -673,6 +681,7 @@ class BaseController:
         self.v_x = x
         self.v_y = y
         self.v_th = th
+
     
     def imuDataCallback(self, req):
         self.quaternion = req.orientation
@@ -696,6 +705,12 @@ class BaseController:
 
     def approachHandler(self, req):
         return self.Microcontroller.approach( req.command ) == self.SUCCESS
+    
+    def hardStopHandler(self, req):
+        self.v_x = 0
+        self.v_y = 0
+        self.v_th = 0
+        return self.Microcontroller.hard_stop() == self.SUCCESS
 
     def resetOdomCallback(self, req):
         if req.data:
@@ -712,12 +727,12 @@ class MicroControllerROS():
         rospy.on_shutdown(self.shutdown)
         
         self.port = rospy.get_param("~port", default="/dev/teensy")
-        self.baud = int(rospy.get_param("~baud", 115200))
+        self.baud = int(rospy.get_param("~baud", 1024000))
         self.timeout = rospy.get_param("~timeout", 0.5)
         self.base_frame = rospy.get_param("~base_frame", 'base_link')
 
         # Overall loop rate: should be faster than fastest sensor rate
-        self.rate = int(rospy.get_param("~rate", 10))
+        self.rate = int(rospy.get_param("~rate", 50))
         r = rospy.Rate(self.rate)
 
 
