@@ -40,7 +40,7 @@ class DetectorColores:
         self.pubcolor = rospy.Publisher('colors', String, queue_size=10)
         self.posePublisher = rospy.Publisher("/test/detectionposes", PoseArray, queue_size=5)
         self.flagsubs = rospy.Subscriber("flag", Bool, self.callback_flag)
-        self.flag = False
+        self.flag = True
         self.flag_selection = rospy.Subscriber("flag_selection", Int32, self.callback_flag_selection)
         self.flag_selection = 0 # 0 = pattern, 1 = cubes
 
@@ -67,7 +67,7 @@ class DetectorColores:
         self.main()
     
     def callback_flag(self, data):
-        self.flag = data.data
+        #self.flag = data.data
         rospy.loginfo(self.flag)
     
     def callback_flag_selection(self, data):
@@ -92,8 +92,8 @@ class DetectorColores:
     def dibujar(self,mask,color):
         frame= self.image
         kernel = np.ones((5,5), np.uint8)
-        mask = cv2.erode(mask, kernel, iterations=1)
-        mask = cv2.dilate(mask, kernel, iterations=3)
+        mask = cv2.erode(mask, kernel, iterations=2)
+        mask = cv2.dilate(mask, kernel, iterations=5)
         contornos,_ = cv2.findContours(mask, cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
        
         temp = []
@@ -196,10 +196,10 @@ class DetectorColores:
                     point3D_ = deproject_pixel_to_point(self.camera_info, point2D, depth)
                     point3D.y = point3D_[1]
                     point3D.z = point3D_[2]
-                    """if point3D.z > 1.3:
-                        point3D.x = point3D_[0] 
-                    else:"""
-                    point3D.x = point3D_[0] - 0.05
+                    if point3D.z > 1.3:
+                        point3D.x = point3D_[0] +0.02
+                    else:
+                        point3D.x = point3D_[0] - 0.05
 
                     pa.poses.append(Pose(position=point3D))
                     res.append(
@@ -228,8 +228,8 @@ class DetectorColores:
         frame = self.image
 
         lowerRed = np.array([0,162,150], np.uint8)
-        upperRed = np.array([4,255,255], np.uint8)
-        lowerRed2 = np.array([160,162,150], np.uint8)
+        upperRed = np.array([7,255,255], np.uint8)
+        lowerRed2 = np.array([155,162,150], np.uint8)
         upperRed2 = np.array([179,255,255], np.uint8)
         
         lowerBlue = np.array([105,250,200], np.uint8)
@@ -238,8 +238,8 @@ class DetectorColores:
         lowerYellow = np.array([26,171,168], np.uint8)
         upperYellow = np.array([34,255,255], np.uint8)
         
-        lowerGreen = np.array([79,150,15], np.uint8)
-        upperGreen = np.array([101,255,255], np.uint8)
+        lowerGreen = np.array([76,150,15], np.uint8)
+        upperGreen = np.array([103,255,255], np.uint8)
 
         if self.flag_selection == 1:
             lowerRed = np.array([0,143,110], np.uint8)
@@ -328,7 +328,7 @@ class DetectorColores:
         }
     
         for i in range(sz):
-            if abs(data.detections[i].ymin - y_min_first) >= 50 or abs(data.detections[i].xmin - x_last_max) >= 200:
+            if abs(data.detections[i].ymin - y_min_first) >= 50 or abs(data.detections[i].xmin - x_last_max) >= 230:
                 continue
             color_seq += color2Letter[ data.detections[i].labelText ]
 

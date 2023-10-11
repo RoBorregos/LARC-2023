@@ -41,7 +41,7 @@ class DetectorAruco:
         self.flagsubs = rospy.Subscriber("flag", Bool, self.callback_flag)
 
         
-        self.flag = False
+        self.flag = True
         self.pubmask = rospy.Publisher('/mask_aruco', Image, queue_size=10)
         self.mask  = None
         self.cv_image = np.array([])
@@ -71,7 +71,7 @@ class DetectorAruco:
         self.subscriberInfo.unregister()
         
     def callback_flag(self, data):
-            self.flag = data.data
+            #self.flag = data.data
             rospy.loginfo(self.flag)
 
 
