@@ -1,0 +1,6 @@
+<launch>
+    <node pkg="vision" type="zedFilter.py" name="image_viewer" />
+    <node pkg="vision" type="deteccion_colores.py" name="detector_colores" />
+    <node pkg="vision" type="deteccion_arucos.py" name="detector_arucos" />
+    <node pkg="vision" type="letras_yolov8.py" name="detector_letras" />
+</launch>

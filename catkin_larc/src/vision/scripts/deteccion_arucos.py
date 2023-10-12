@@ -109,12 +109,23 @@ class DetectorAruco:
                     cv2.circle(self.cv_image, (int(self.cx * self.cv_image.shape[1]), int(self.cy * self.cv_image.shape[0])), 5, (0, 0, 255), -1)
 
                     #print(f"Xmayor: {xmayor:.2f}, Xmenor: {xmenor:.2f}, Ymayor: {ymayor:.2f}, Ymenor: {ymenor:.2f}")    
-                    tempo =  ymenor, xmenor, ymayor, xmayor
-                    bb.append(tempo)
-
+                    tempo =  [ymenor, xmenor, ymayor, xmayor]
                     #Remove brackets from ids
                     tmp_d = str(ids[i]).strip('[]')
-                    detections.append(tmp_d)
+                    
+                    repeated = False
+                    for i, detection in enumerate(detections):
+                        if tmp_d == detection:
+                            # get average of both repeated detections
+                            bb[i][0] = (bb[i][0] + tempo[0]) / 2
+                            bb[i][1] = (bb[i][1] + tempo[1]) / 2
+                            bb[i][2] = (bb[i][2] + tempo[2]) / 2
+                            bb[i][3] = (bb[i][3] + tempo[3]) / 2
+                            repeated = True
+                            break
+                    if not repeated:
+                        bb.append(tempo)
+                        detections.append(tmp_d)
                     #ids[i][j] Es el id del aruco
                     #corners Es la bounding box del aruco
             self.get_objects(bb, detections)

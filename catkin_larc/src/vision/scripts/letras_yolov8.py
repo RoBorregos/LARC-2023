@@ -31,8 +31,9 @@ class letras_yolov8:
             self.cy = 0.0
 
             #self.model = ultralytics.YOLO("/home/nvidia/workspace/LARC-2023/catkin_larc/src/vision/scripts/brazil_v1.pt")
-            self.model = ultralytics.YOLO("/home/nvidia/workspace/LARC-2023/catkin_larc/src/vision/scripts/letras_colores_v3.pt")
+            #self.model = ultralytics.YOLO("/home/nvidia/workspace/LARC-2023/catkin_larc/src/vision/scripts/letras_colores_v3.pt")
             #self.model = ultralytics.YOLO("/home/nvidia/Desktop/LARC-2023/catkin_larc/src/vision/scripts/larc5000n3.pt")
+            self.model = ultralytics.YOLO("/home/nvidia/workspace/LARC-2023/catkin_larc/src/vision/scripts/brazil_v2.pt")
             self.bridge = CvBridge()
             
             self.cv_image = np.array([])
@@ -49,7 +50,7 @@ class letras_yolov8:
             self.subscriberDepth = rospy.Subscriber("/zed2/zed_node/depth/depth_registered", Image, self.depthImageRosCallback)
             self.subscriberInfo = rospy.Subscriber("/zed2/zed_node/rgb/camera_info", CameraInfo, self.infoImageRosCallback)
             self.flagsubs = rospy.Subscriber("flag", Bool, self.callback_flag)
-            self.flag = False
+            self.flag = True
 
             self.main()
 
@@ -76,8 +77,8 @@ class letras_yolov8:
                 #self.pubimg.publish(self.bridge.cv2_to_imgmsg(self.cv_image, encoding="bgr8"))
         
         def callback_flag(self, data):
-            self.flag = data.data
-            #rospy.loginfo(flag)
+            #self.flag = data.data
+            rospy.loginfo(self.flag)
         
         def lector(self):
             frame = self.cv_image
@@ -97,7 +98,7 @@ class letras_yolov8:
             #prevtime = time.time()
             try:
                 results = self.model(frame, verbose=False)
-                boxes, confidences, classids = self.generate_boxes_confidences_classids_v8(results, 0.2)
+                boxes, confidences, classids = self.generate_boxes_confidences_classids_v8(results, 0.4)
                 #print(f"Prediction done in {time.time() - prevtime} seconds")
                 # Draw results
                 bb = []
